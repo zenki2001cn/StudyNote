@@ -1,0 +1,78 @@
+Grub2使用
+在Debian中安装Grub2是非常简便的，可以直接从源中进行安装
+没有的话，可以直接从官方下载安装。
+个人喜欢将Grub2直接安装到MBR中，并特意设置个250M的空间，存储Grub2的引用模块和配置文件。
+sudo grub-install --root-directory=/media/sda1 /dev/sda
+
+grub2命令
+在grub2命令中使用Tab键可以进行代码自动补全。
+grub2中使用的设备是从1开始的，与grub是从0开始不同
+
+ls命令 列出当前所有设备 
+
+ls (hd0,1)
+    列出该设备详细信息，包括文件系统类型，Label,UUID等基本修信息
+
+ls (hd0,1)/
+    列出该设备中的文件列表
+
+    search命令 根据参数查找相应的分区，类此于grub中find
+
+    默认会根据根目录文件来查找出相应的分区
+    search --set=root /boot/grub/grub.cfg
+
+    这里不能写成search --set=root grub.cfg
+
+    可以简写为
+    search --set /boot/grub/grub.cfg
+
+    系统会自动将查找出来的分区变量赋给root
+
+    search --fs-uuid --set 0e4aa4fb-46cf-4b5e-9dad-cc9e7eeda694
+
+    根据UUID查找分区
+
+    search -l --set debian
+
+    根据label查找分区
+
+    set命令 设置变量
+
+set root=(hd0,1)
+    设置根目录
+    set gfxpayload=1024x768
+
+    设置命令行分辨率，需要vbe支持
+    insmod命令 加载模块
+
+    insmod ntfs
+    ntfs支持
+
+    insmod ext2
+    ext2支持
+
+    insmod lvm
+    lvm支持
+
+
+    insmod vbe
+    vbe支持，要设置命令行分辨率时，已经不支持在加载vmlinuz时设置vga参数，而是改为了设置gfxpayload变量
+
+    linux命令 与grub的kernel命令相同
+    initrd命令 与grub的initrd命令相同
+
+    chainloader命令 与grub的chainloader命令相同
+
+    loopback命令 建立回放设备
+    loopback支持嵌套使用
+
+    可惜试图使用该命令引导WindowXP安装镜像文件，失败。
+    loopback loop /DEEPIN-LITEXP-6.2.iso
+    chainloader (loop) +1
+
+    drivemap命令 与grub的map命令相似，可以映射分区。
+
+drivemap -s (hd0,hd1)
+    分区进行交换，与以下grub命令相同
+    map (hd0) (hd1)
+    map (hd1) (hd0)

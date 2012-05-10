@@ -1,0 +1,30 @@
+需要安装几个工具:gprof, kprof, graphviz, gcov, lcov
+
+一. 
+1. 使用 -pg 编译和链接你的应用程序
+2. 执行应用程序生成可供gprof分析的数据
+3. gprof [options] a.out gmon.out
+   options: -b 不再输出统计图表中每个字段的详细描述。
+            -p 只输出函数的调用图(Call graph 的那部分信息).
+            -q 只输出函数的时间消耗列表。
+            -E Name不再输出函数Name 及其子函数的调用图，此标志类似于 -e 标志，但它在总时间和百分比时间的计算中排除了由函数Name 及其子函数所用的时间。
+            -e Name 不再输出函数Name 及其子函数的调用图（除非它们有未被限制的其它父函数）。可以给定多个 -e 标志。一个 -e 标志只能指定一个函数。
+            -F Name 输出函数Name 及其子函数的调用图，它类似于 -f 标志，但它在总时间和百分比时间计算中仅使用所打印的例程的时间。可以指定多个 -F 标志。一个 -F 标志只能指定一个函数。-F 标志覆盖 -E 标志。
+            -f Name输出函数Name 及其子函数的调用图。可以指定多个 -f 标志。一个 -f 标志只能指定一个函数。
+            -z 显示使用次数为零的例程（按照调用计数和累积时间计算）。
+
+4. kprof -f ./a.out 生成.dot文件,必须含有gprof生成的.out文件
+5. dot -Tjpg xxx.dot -o xxx.jpg
+
+二. 
+1. cflow main.c 
+
+三. 
+1. 使用-ftest-coverage -fprofile-arcs编译程序
+2. 使用gcov来分析
+    gcov --directory . --capture --output-file myapp.info
+
+3. 转换成html格式
+    genhtml -o results myapp.info
+
+% vim:ft=txt

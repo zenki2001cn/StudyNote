@@ -1,0 +1,39 @@
+　　到 http://www.kernel.org 查看最新的内核版本。
+
+　　切换到新内核的目录
+
+　　cd linux-2.6.28.4
+
+　　为了节省时间，执行以下命令从现有内核中获得配置
+
+　　make oldconfig
+
+　　执行完此条命令后，会根据新老内核的差异情况，询问你一些问题，如果不确定的话都是用默认（直接按回车）。
+
+　　以上步骤完成后，执行内核配置程序
+
+　　make menuconfig
+
+　　至此，内核的配置就算完成了。按 ESC 多次后退出内核配置页面（在系统询问是否要保存新内核的配置时，当然要选择yes）。
+
+　　执行以下命令进行新内核的生成！
+
+　　make-kpkg clean
+
+　　fakeroot make-kpkg --initrd --append-to-version=ofog --revision=1.0 kernel_image
+
+　　fakeroot 的作用是在内核的生成过程中暂时性获取root权限（和sudo不同的是fakeroot只是让程序获得root的行为特征而不是真正具备root权限）。如果你直接是用root帐号操作的话，可以省略fakeroot。--append-to-version定义的是内核的软件包名字，类似 kernel-image-2.6.28.4-ofog 这样。而 -revision定义的是软件包的版本。
+
+　　现在系统会开始进行新内核的生成，屏幕上会有许多文字闪过。注意，如果生成过程中出现错误，执行 make clean 后，用 make menuconfig 重新配置内核。一般都是仔细看错误信息，找到出错的模块，然后将其去除。
+
+　　内核顺利生成完毕后，会在/usr/src目录下产生一个 deb 包。例如 kernel-image-2.6.28.4-ofog_1.0_i386.deb
+
+　　执行以下命令安装新内核！
+
+　　dpkg -i kernel-image-2.6.28.4-ofog_1.0_i386.deb
+
+　　接着Debian会安装新内核并更新Grub的配置文件。
+
+　　重新启动（shutdown -r now 或者 reboot）后将会引导到新内核。
+
+% vim:ft=potwiki.txt

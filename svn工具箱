@@ -1,0 +1,121 @@
+1. svnlook
+
+1.1. info 输出库信息
+$ svnlook info REPOS_PATH
+$ svnlook info REPOS_PATH --revision 19
+
+1.2. youngest 显示修订版本号
+$ svnlook youngest REPOS_PATH
+
+1.3. tree 显示目录树
+$ svnlook tree REPOS_PATH --show-ids
+
+1.4. author 显示该树作者
+$ svnlook author REPOS_PATH
+
+1.5. cat 查看某个文件的内容
+$ svnlook cat REPOS_PATH/FILE
+
+1.6. changed 显示树中修改过的文件和目录
+$ svnlook changed REPOS_PATH
+$ svnlook dirs-changed REPOS_PATH
+
+1.7. date 显示时间戳
+$ svnlook date REPOS_PATH
+
+1.8. diff 显示修改的文件
+$ svnlook diff REPOS_PATH
+
+1.9. history 显示版本控制路径
+$ svnlook history REPOS_PATH
+
+1.10. log 显示日志信息
+$ svnlook log REPOS_PATH
+
+1.11. uuid 显示全局唯一标识
+$ svnlook uuid REPOS_PATH
+
+2. svnadmin 
+
+2.1. create 创建新的版本库
+$ svnadmin create repos_name
+
+2.2. hotcopy 任何时候对版本库做安全拷贝
+$ svnadmin hotcopy REPOS_PATH REPOS_PATH_NEW
+
+2.3. lstxns 显示所有未提交事务的名称
+$ svnadmin lstxns REPOS_PATH
+
+2.4. rmtxns 删除未提交的事务
+$ svnadmin rmtxns REPOS_PATH TXN_NAME
+
+2.5. dump 导出一组修订版
+$ svnadmin dump REPOS_PATH > repos-dumpfile
+
+2.6. load 导入由dump导出的修订版
+$ svnadmin load REPOS_PATH < repos-dumpfile
+
+2.7. recover 恢复版本库
+$ svnadmin recover REPOS_PATH
+
+3. svndumpfilter
+3.1. 过滤dump文件
+$ svnadmin dump REPOS_PATH > repos-dumpfile
+
+分别dump三个独立版本库
+$ cat repos-dumpfile | svndumpfilter include calc > calc-dumpfile
+$ cat repos-dumpfile | svndumpfilter include calendar > cal-dumpfile
+$ cat repos-dumpfile | svndumpfilter include sheet > sheet-dumpfile
+
+导入三个独立版本库
+$ svnadmin create calc; svnadmin load calc < calc-dumpfile
+$ svnadmin create calendar; svnadmin load calendar < cal-dumpfile
+$ svnadmin create sheet; svnadmin load sheet < sheet-dumpfile
+
+4. svn
+4.1. info 查看当前副本的信息
+svn info LOCAL_REPOS
+
+4.2. diff 查看版本之前的差异
+svn diff -r2:4 REPOS_PATH
+svn diff -r2:4 REPOS_PATH > diff.patch
+patch -p0 -i diff.patch
+
+4.3. log 查看版本库log信息
+svn log -r2:4 REPOS_PATH
+
+4.4. commit 提交工作修改
+svn ci -m "comments" REPOS_PATH
+
+4.5. update 更新版本
+svn update -rN REPOS_PATH
+
+4.6. checkout 导出副本
+svn co REPOS_PATH
+
+4.7. checkin 提交副本
+svn ci REPOS_PATH
+
+4.8. list 列出版本库文件和目录
+svn list REPOS_PATH
+
+4.9. merge 合并版本库
+svn merge sourceURL1[@N] sourceURL2[@M] [WCPATH]
+
+1、对trunk做branches: svn cp proj/trunk proj/branches/proj_branch1
+2、将sourceURL1和sourceURL2的代码diff，再合并到WCPATH中: svn merge proj/branches/proj_branch1@101 proj/branches/proj_branch1 proj/trunk
+
+4.10. lock/unlock 加锁/解锁
+svn lock -m "comments" [--force] REPOS_PATH
+svn unlock REPOS_PATH
+
+4.11 import 导入版本库
+svn import LOCAL_PATH REPOS_PATH --username xxx --password xxx
+
+4.12 copy版本库
+svn cp SRC_REPOS_PATH DES_REPOS_PATH --username xxx --password xxx
+
+5. PS
+5.1. REPOS_PATH: SVN的URL
+
+% vim:ft=txt

@@ -1,0 +1,114 @@
+1. 打开链接，文件，或使用搜索引擎
+:o[pen]/o     /*在当前标签页打开*/   |\      /frome/to/file.txt  /*打开本地文件*/
+:t[abopen]/t  /*在新标签页里打开*/   | |==>  [engine] keyword    /*在引擎里搜索关键词*/
+:winopen      /*新开窗口实例打开*/   |/      bbs.newsmth.net     /*打开一个网页*/
+例子：
+:o  ../user/file.txt    /*打开$HOME目录下的file.txt文件*/
+:t  google 水木         /*在新的标签页打开谷歌并搜索“水木”*/
+:o 水木社区             /*在fx默认搜索引擎里搜索“水木社区”，由’defsearch’来设定默认引擎 */
+:t  bbs.newsmth.net, bbs.lqqm.net, news.sina.com.cn    /*用3个新标签后台打开这三个网页*/
+
+2. 关掉或重新打开标签页
+:2bd/:2tabc/2d          /* 关掉当前标签及右边紧邻的标签；2D是关掉当前及左边的标签 */
+:3u[ndo]/3u             /* 重新打开最近关掉的3个标签；恢复全部被关掉的标签用 :undoall，最多恢复10个*/
+:qall/:winclose/ZQ      /* 退出fx，不保存各tab地址 */
+:xall/ZZ                /* 保存tab地址退出，重启fx后可以重新打开这些标签 */
+注：文中的tab、标签、buffer、缓冲区指的都是同一个东西
+
+3. 移动
+卷屏：  <C-f> <--> <C-b>    /* 上下卷动一屏 */
+        <C-d> <--> <C-u>    /* 上下卷动半屏；可由’scroll’来定制 */
+        gg <--> G    /* 到页面顶部/尾部；45gg/45G 指到页面45%处*/
+        0 <--> $     /* 到页面最左端/最右端 */ 
+        h，j，k，l   /* 上下左右移动页面 */
+        gg
+        3k
+        3j
+        G
+
+Element：2gi       /* 光标定位到当前frame的第二个输入框 */
+        ]f/[f      /* 前进后退一个frame */
+        ]]/[[      /* 浏览一些论坛时的“下一页/上一页”，可由’nextpattern’定制 */
+标签栏： g0/:tabfirst <--> g$/:tablast              /* 到第一个或最后一个标签 */
+        gT/<C-p>/:tabp <--> gt/<C-n>/:tabn        /* 到前一个或后一个标签  */
+        b5<CR>                  /* 到第五个标签，<CR>指回车，这个结合我的
+
+“给tab编个号”一文，那简直是绝配   */
+        <C-o>/:ba <--> <C-i>/:fo    /* 当前标签页的前后一个历史标签 */
+        <C-6>                       /* 可在标签栏上来回切换最近浏览过的两个标签 */                   
+        i                           /* caret mode，fx默认快捷键是F7；此时按下v，就可以选择文本，然后按下y，就把选择的文本拷贝到系统粘贴板上了 */
+
+4. 搜索当前页面
+    /pattern<CR> <--> ?pattern<CR>      /* 往下/上搜索pattern，支持正则 */
+    * <--> #                            /* 往下/上搜索当前光标处的词，最好进入caret mode，好操作 */
+    注：上面两种情形都可以用 n/N来下/上寻找下一个匹配
+ 
+5. 链接地址：URL
+    gu              /* 到URL的上一层目录 */
+    gU              /* 到URL的根目录    */
+    <C-a>/<C-x>     /* 把URL最后一个数字增加/减少1，然后打开 */
+
+例如：
+    2gu 是指从http://www.example.com/dir1/dir2/file.htm到 http://www.example.com/dir1/
+    <C-a>是指从 http://www.example.com/2008.htm 到 http://www.example.com/2009.htm
+    y/p             /* 把当前URL拷贝到粘贴板或把粘贴板上的URL在当然页打开 */
+    P               /* 大写的P是在新标签页打开粘贴板里的URL   */
+
+6. 页面
+    g<C-g>/:pageinfo                /* 查看当前页面信息 */
+    gf/:viewsource                  /* 查看当前页源代码 */
+    zi <--> zo                      /* 放大/缩小当前页，zoom in/out */
+    r/:reload <--> <C-c>/:stop      /* 重新载入当前页或停止载入当前页 */
+
+7. 调用fx的各种属性
+    :pref                       /* 调出fx的option对话框 */
+    :pref!                      /* 调出fx的about:config  */
+    :addon                      /* 调出fx的扩展对话框  */
+    addons                      /*  调出fx的扩展对话框 */
+    :dialog   checkupdates      /* 调出升级对话框 */
+    console                     /* 调出控制台 */
+    downloads                   /* 调出历史下载列表 */
+ 
+8. 怎么打开链接？
+    在一个页面按f键，进入QuickHint mode（作者给取了这个名字），就会发现所有的链接都被数字编号了，此时只要你输入那个数字或者链接中部分关键词，就可以在当前页进入那个链接了（F是在新标签里打开）。Vimperator1.0之前的版本是用一个或者几个字母来编号的，如果你喜欢这样子的编号，可以下载个vimperator的插件：char-hints.js。
+除此之外，作者还给出了另外一种“模”： ExtendedHint mode，它在一些情况下，如保存图片，拷贝链接地址等方面很有用，形式是：  ;{mode}{hint}
+例如：
+    ;y23             /* 拷贝编号为23的链接地址到粘贴板 */
+    ;t35             /* 后台在新标签中打开编号为35的链接 */
+ 
+9. ex命令、选项、配置文件及插件
+A)  ex命令，也就是按下冒号后输入的命令，下面介绍几个最常用的
+    :cd             /* 切换当前目录 */
+    :pwd            /* 显示当前目录 */
+    :restart        /* 重启fx */
+    :saveas         /* 保存页面 */
+    :hardcopy       /* 打印当前页面 */
+    :set            /* 设置选项 */
+    :mkv            /* 建立配置文件 */
+    :!cmd           /* 可以执行系统命令 */
+
+B) 选项设置
+有5种数据类型：
+    布尔型        例如：  set ic                /* 忽略大小写；反之则set noic */
+    数字型        例如： set ls=2，             /* 总是显示状态栏 */
+    字符串型      例如： set titlestring=fx     /* 把标题栏名字改为“fx” */
+    单字符串型    例如： set go=mT              /* 显示菜单栏和工具栏 */
+    串列表型      例如： set act=tabopen,paste  /* 自动激活:tabopen和y,Y命令 */
+
+set命令的几种用法
+    :set                        /* 显示所有和默认不同的设置 */
+    :set all                    /* 显示所有设置 */
+    :set {option}?              /* 显示option的值 */
+    :set {option}&              /* 重新设定option的值为默认的 */
+    :set all&                   /* 重新设定所有option的值为默认的 */
+    :set {option}+={value}      /* 把option的值在原来基础上加value */
+    :set {option}-= {value}     /* 把option的值在原来基础上减value */
+
+注：在配置文件里set命令前的冒号可以省略
+C) 配置文件和插件
+    Vimperator可以有配置文件，文件名是.vimperatorrc或者_vimperatorrc，该文件所在的目录是系统变量$HOME所定义的位置
+    在unix/linux下一般为：  ~/
+    在Windows下一般为：  C:\Documents and Settings\user\
+    并且还可以设置一个用户变量或者系统变量$VIMPERATOR_HOME来改变vimperatorrc所在目录的位置，并且$VIMPERATOR_HOME优先度大于$HOME
+    (强烈建议作者把vimperator扩展所在的相对目录也可存放配置文件，这样把fx放在U盘里，就不用麻烦还要拷贝配置文件到另外一台机子上的$HOME目录)
+    Vimperatorrc里可以是ex命令，也可以是js脚本。你既可以新建这个文件，也可以在fx里用命令 :mkv来自动建立这个文件。并且vimperator还可以拥有插件，全放在vimperator目录下，插件都是些js脚本。而“vimperator目录”与配置文件所在目录一样。例如如果你需要hint mode下的链接编号为字母的话，就需要在http://vimperator.mozdev.org/scripts.html 下载插件char-hints.js 放入vimperator目录中，然后重启fx，或者用:source命令使之生效。目前绝大多数网上的插件都是日本人写的。

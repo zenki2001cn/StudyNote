@@ -1,0 +1,189 @@
+开源的开发工具
+0. TODO
+（1）按照软件开发流程进行归纳整理；
+（2）把这些工具与VS2008/Rational产品家族进行类比；
+
+1. 工具介绍
+
+编辑器及编辑辅助工具
+
+- vim+plugins, gvim
+
+- emacs, xemacs
+
+- indent：源代码美化工具，可以对源代码进行缩进和折行等排版美化工作。
+
+- sloccount：源代码行数统计工具，可以统计出某目录下各种语言的代码行数。
+
+- CLOC：代码统计工具，http://fyting.javaeye.com/blog/226339
+
+- Code Review：“简单实用的Code Review工具”，http://blog.csdn.net/haoel/archive/2009/08/22/4469462.aspx
+
+项目构建工具
+
+- make(Makefile)：常用的项目构建工具，用一个Makefile就可以从整个项目的代码中构建各个目标
+
+- autotool(包括Autoconf, Automake 和 Libtool)：方便在你的项目中生成标准的Makefile
+
+- cmake
+
+编译器及二进制文件处理工具
+
+- gcc：GNU项目所开发的全能编译器，它支持的语言包括C、C++、Objective-C、 Fortran、Java和Ada，它支持的处理器包括i386、MIPS、ARM、PowerPC、IA64等等，此外你还可以为它添加其他语言前端和其他处理器后端。gcc性能不俗，还支持交叉编译，为这个星球;)许多软件项目所采用。
+
+- binutils：GNU项目所开发的二进制和目标文件处理工具包，包括多种开发过程所需的工具：连接器、汇编器、一系列的二进制和目标文件处理工具还有一个性能分析器。你一般很少直接用到它们，但常常间接用到它们。其中部分工具对调试极有帮助，如：
+用objdump反汇编，查看目标文件或可执行文件内部信息。
+用addr2line把机器地址转换到代码对应的位置
+用nm查看目标文件或可执行文件中的各种符号。
+用gprof分析各个函数的使用情况，找出性能的瓶颈所在(这需要加编译选项)。
+
+下附binutils中全部工具的简介：
+
+* ld – the GNU linker.
+* as – the GNU assembler.
+* addr2line – Converts addresses into filenames and line numbers.
+* ar – A utility for creating, modifying and extracting from archives.
+* c++filt – Filter to demangle encoded C++ symbols.
+* gprof – Displays profiling information.
+* nlmconv – Converts object code into an NLM.
+* nm – Lists symbols from object files.
+* objcopy – Copys and translates object files.
+* objdump – Displays information from object files.
+* ranlib – Generates an index to the contents of an archive.
+* readelf – Displays information from any ELF format object file.
+* size – Lists the section sizes of an object or archive file.
+* strings – Lists printable strings from files.
+* strip – Discards symbols.
+* windres – A compiler for Windows resource files.
+
+- ld-linux：现在加载ELF可执行文件的工作，已经落到ld-linux.so.2头上了。你可能会问，这与有调试程序有关系吗？有的。比如，在 linux中，共享库里所有非static的函数/全局变量都是export的，更糟的是C语言中没有名字空间这个概念，导致函数名极易冲突。在多个共享库中，名字冲突引起的BUG是比较难查的。这时，你可以通过设置LD_ DEBUG环境变量，来观察ld-linux.so加载可执行文件的过程，从中可以得到不少帮助信息。LD_ DEBUG的取值如下：
+
+* libs display library search paths
+* reloc display relocation processing
+* files display progress for input file
+* symbols display symbol table processing
+* bindings display information about symbol binding
+* versions display version dependencies
+* all all previous options combined
+* statistics display relocation statistics
+* unused determined unused DSOs
+* help display this help message and exit
+
+调试工具
+
+- gdb：GNU项目所开发的调试器，功能强大，是程序员的好助手
+
+除了只用命令行gdb外，还可以用gdb的gui,有
+
+（1）cgdb 缺点：界面简陋，自动化程度低，只是把terminal分为两部分，上面部分显示源码，下面打命令。由于没有显示反汇编的窗体，不适合要求使用到 stepi命令的场合。优点：运行快，锻炼手指头. 最大的优点是，它有完美的代码着色功能。其他几款调试器中都没有。
+
+（2）ddd: 缺点：与kdbg相比，界面凌乱。优点：代码显示效果比kdbg好，c和反汇编代码分开在两个窗口。可以随时暂停程序的运行。data windows 这个功能非常强大灵活。ddd和配置成图形模式的qemu搭配使用时，经常会出现鼠标粘在虚拟系统的界面里面，也就是qemu的ctrl+alt快捷键失效的问题。想最大发挥ddd的优势，必要把qemu配置成非图形模式，通过串口调试。提示 ddd –tty 2>/dev/null ./vmlinux ; remote target localhost:1234
+
+（3）kdbg: 缺点：功能比ddd弱。字体太小，c和反汇编代码交错显示，反汇编代码折叠隐藏在C代码之间，要显示反汇编代码要手动展开，不可忍受。太过界面化，居然找不到是在哪里手动打gdb命令。致命缺点是，内核跑起来后，如果没有断点拦截，就没法把内核的运行暂停下来，kdbg成了没事姥，源码窗口的显示不更新。另一个致命缺点是，如果没有源码只有二进制文件，虽然可以下断点，但无法显示反汇编代码，没意义。据说kdbg是用来调试kde程序的，实际上也能调试内核。优点：窗口可以整合到一块，稳定。有变化的寄存器会显示红色。提示 kdbg -r localhost:1234 ./vmlinux
+
+（4）insight: 和ddd都是基于TCL/TK，比较相似。优点：源码显示功能最强，可以选择C和反汇编代码分开和交叉显示。可以选择反汇编代码使用intel还是 at&t格式。可以列出当前有哪些源文件，当前文件有哪些函数。变化的寄存器有改变颜色的功能，ddd则没有。缺点：和ddd一样，小窗口无法整合到到窗口中，但比ddd差的是，主窗口最大化后小窗口无法保持置顶。相对ddd的大劣势是没有一个强大的data windows。感觉界面比ddd强大，但灵活性比ddd差点。对于调试内核来说，还有一个和kdbg相同的大缺点，内核只能通过断点暂停运行，而ddd 下还可以用ctrl+c暂停内核。另外它有个SB错误，显示backtrace的窗口,标题居然是stack. 提示: insight ./vmlinux
+
+（5）其实，gdb自带了一个基于curses的gui。启动方式是gdbtui xxx; 或者在gdb启动之后用命令layout启动gui。很好用，可以至多同时显示三个分窗口。要是代码有着色功能就好了。
+
+针对内核调试的总结：
+
+（1）kdbg不适合调试内核
+
+（2）如果想复习gdb强大的命令，选cgdb或纯gdb。
+
+（3） 如果想学习汇编，insight是不二选择。
+
+（4）如果倾向于把调试器当作浏览器使用，作为source insight等工具的辅助工具，在内核运行中拦截函数，分析函数的调用关系，不需要反汇编的话，则cgdb是不错的选择 .(source insight等源码分析工具有个共同的缺点，因为体系和内核配置不同，一个函数有很多的定义，借助调试器可以在内核运行的时候找出实际调用的那个)
+
+（5）insight和ddd很接近，各有千秋。但如果侧重于追溯数据结构体间的联系，ddd更好一点，因为它有data window，它的强项是数据和数据结构关系分析并用图像方式显示出来（DDD = Data Display Debugger)。如果侧重于分析汇编指令是怎么在cpu中跑的，推荐用insight，因为它汇编代码显示功能更细致。
+
+调用跟踪器
+
+- strace：系统调用跟踪器，可以跟踪你的程序所调用的系统调用
+
+- ltrace：动态库调用跟踪器，可以跟踪你的程序所调用的动态库接口
+
+性能分析器
+
+- gprof：binutils中带的性能分析器，可以帮助你优化你的代码，提高程序速度
+
+- qprof：另一个性能分析器，支持动态库的性能分析和多线程、多进程性能分析
+
+- oprofile：一个系统范围的性能分析器，使用内核模块和一个后台进程进行数据采集，它不但可以获得某个进程的性能分析数据还可以获得内核的性能分析数据
+
+- gcov+lcov：gcov是gcc自带的代码覆盖分析工具，可以追踪程序运行时哪部分代码被执行了，该部分代码执行的频率，以及执行的时间消耗。这可以帮助你测试软件已经进行程序优化。lcov是gcov的一个扩展，可以提供直观的分析信息。
+
+- valgrind
+valgrind：非常优秀的内存检查器，可以帮助你检测你程序中的内存错误。另外还可以对cache的使用和堆(也可以包括栈)的使用进行分析，让你能够优化你的代码。Valgrind是我的最爱，用习惯了，写的程序不在valgrind下跑一遍，就像没有写单元测试程序一样，有点放心不下。它有BoundsChecker/Purify的功能，而且速度更快。有点遗憾的是valgrind目前只支持x86 平台，当然，这对大多数情况已经足够了。你可以到http://valgrind.org/ 下载最新版本。
+
+版本控制工具
+版本控制的两种基本模式：
+
+（1）以patch形式维护和改进软件的开发模式；
+（2）以SCM工具（SVN/CVS/git）为中心仓库的软件开发模式。
+
+- diff & patch：代码打补丁工具，一对好搭挡，diff用来生成代码补丁，而patch则用来给代码打补丁。另见“使用diff和patch维护源代码”，http://hi.baidu.com/olaputan/blog/item/3d6585011b9e53df277fb5fd.html
+
+- [quilt] 最早是 Linux 知名 hacker - Andrew Morton - 為了維護大量的 patch，而撰寫一系列協助管理的 script，後來經過許多開發者的潤飾，成為 Linux Kernel tree 相當重要的补丁維護工具。
+
+參考資料：
+[quilt的官方网站] http://savannah.nongnu.org/projects/quilt
+[quilt - 強大的 patch 管理工具]，http://blog.linux.org.tw/~jserv/archives/001838.html
+[quilt: An Introduction ] (簡報) by Jerome Lacoste，http://www.coffeebreaks.org/blogs/wp-content/archives/talks/2005/quilt/quiltintro-s5.html
+[How To Survive With Many Patches or Introduction to Quilt] (PDF) by Andreas Grunbacher，http://www.suse.de/~agruen/quilt.pdf
+[quilt - patch tools]，http://orzlab.blogspot.com/2007/05/quilt-patch-tools.html
+
+- cvs：老牌的版本控制工具，适用于集中式版本控制，为许多项目服务过，现在略显疲态
+
+- subversion：一个为了代替cvs而开发的版本控制工具，解决了cvs的一些诟病
+
+- git：Linus Torvalds为内核版本控制所开发的版本控制工具，当然也适用于应用程序，属于分布式版本控制工具
+
+- cgit：cgit 是git的一种web前端，cgit和git的关系就像viewvc和svn的关系。由于gnome.org已经使用git代替svn，所以原有的基于viewvc的发布架构也被迁移到了基于cgit下面，见http://svn.gnome.org/。
+
+- ViewVC的安装与配置：http://blog.chinaunix.net/u1/42517/showart_1860401.html
+
+定制 bugzilla 进行项目管理：http://www.ibm.com/developerworks/cn/java/j-lo-bugzilla/
+
+版本管理与SVN为核心的快速开发环境：http://www.woodpecker.org.cn:9081/media/products/s5/0707-SVNnTrac/
+
+微客的博客 » SVN实践案例：http://microke.cn/?page_id=46
+
+强力推荐：Trac 手记{一，二，三} ：http://www.cnblogs.com/zealic/category/118896.html
+
+用Open Source工具開發軟體：http://www.study-area.org/cyril/opentools/opentools/book1.html
+
+2. WIN32下商业开发工具在Linux平台下的替代方案
+Mission - 本文意在搜集、整理出可以替代在WIN32下开发用到的软件在Linux平台下的替代者，软件的排序要尽量依照其在“软件生命周期”中使用的顺序。
+Reference - 江边之鸟的GNU开发环境.doc(D:\_UNIX C\！！自己写的代码分析)，善用佳软相关文章。
+
+（1）Dia, http://xbeta.info/visio-alternative.htm
+
+（2）vpuml, http://www.visual-paradigm.com/product/vpuml/ http://tx.china-pub.com/34209
+
+（3）浏览器的“代码高亮插件”
+
+- 在firefox中，请直接将文件拖拽至firefox窗口中进行安装。
+安装后重启firefox。打开firefox后点击firefox状态栏后下角的highlighting图标，Copy你的代码点击提交，就获得美观的代码了。高亮代码可复制到Blog、论坛、Email、Word中。
+支持127中编程语言，支持多种高亮代码主题
+也可在firefox 网站进行在线安装，URL是： https://addons.mozilla.org/zh-CN/firefox/addon/11086
+
+- IE用户可访问 http://www.xiudaima.com 高亮您的代码
+
+- 主页code.google.com/hightlight-extension
+
+（4）AsciiDoc：AsciiDoc is a text document format for writing short documents, articles, books and UNIX man pages. AsciiDoc files can be translated to HTML and DocBook markups using the asciidoc(1) command.AsciiDoc is highly configurable: both the AsciiDoc source file syntax and the backend output markups (which can be almost any type of SGML/XML markup) can be customized and extended by the user.You write an AsciiDoc document the same way you would write a normal text document, there are no markup tags or weird format notations. AsciiDoc files are designed to be viewed, edited and printed directly or translated to other presentation formats using the asciidoc(1) command.The asciidoc(1) command translates AsciiDoc files to HTML, XHTML and DocBook markups. DocBook can be post-processed to presentation formats such as HTML, PDF, DVI, LaTeX, roff, and Postscript using readily available Open Source tools.Ref AsciiDoc Home Page
+
+3. 常访问的bugzilla, viewvc, cgit, trac列表
+
+http://bugzilla.kernel.org  
+
+https://fedoraproject.org/wiki/Bugzilla,
+
+http://bugzilla.turbolinux.com.cn, http://bugzilla.asianux.com
+
+http://bugzilla.gnome.org/ http://svn.gnome.org/viewvc/ http://git.gnome.org./cgit/
+
+https://admin.fedoraproject.org/pkgdb http://cvs.fedoraproject.org/viewvc/
+
+% vim:ft=txt

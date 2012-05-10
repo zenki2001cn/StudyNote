@@ -1,0 +1,37 @@
+Mod4 + Left 切换到上一个Tag
+Mod4 + Right 切换到下一个Tag
+Mod4 + 1~9 切换到指定Tag
+Mod4 + t 标记当前窗口
+Mod4 + Ctrl + 1~9 把标记的窗口移动到指定桌面
+Mod4 + Esc 切换到最后使用过的Tag
+Mod4 + Ctrl + r 重启awesome
+Mod4 + Ctrl + q 退出awesome
+Mod4 + m 最大化/还原当前窗口
+Mod4 + f 全屏/恢复当前窗口
+Mod4 + Shift +c 关闭当前窗口
+Mod4 + j 切换到下一个窗口
+Mod4 + k 切换到上一个窗口
+Mod4 + Shift + j 当前窗口和前一个窗口互换位置
+Mod4 + Shift + k 当前窗口和后一个窗口互换位置
+Mod4 + Ctrl + j 切换到下一个屏幕
+Mod4 + Ctrl + k 切换到前一个屏幕
+Mod4 + Ctrl + Space 切换当前窗口是否为浮动的
+Mod4 + Ctrl + Return
+Mod4 + Return
+Mod4 + Tab 切换到最后使用过的窗口
+Mod4 + o
+Mod4 + u
+Mod4 + Shift + r 重绘当前窗口
+Mod4 + l 当前窗口的宽度减小5%
+Mod4 + h 当前窗口的宽度增大5%
+Mod4 + Shilt + h 增加主区域窗口的数量
+Mod4 + Shift + l 减少主区域窗口的数量
+Mod4 + Ctrl + h 增加非主区域窗口的数量
+Mod4 + Ctrl + l 减少非主区域窗口的数量
+Mod4 + Space 切换下一布局
+Mod4 + Shift + Space 切换上一个布局
+Mod4 + r 运行程序
+Mod4 + x 运行Lua命令
+Mod4 + Ctrl + i 显示当前窗口的class和instance
+Ctrl + Alt + BackSpace 注销当前登录
+Mod4 + Shift + F1~F9 把当前桌面和1~9桌面同时显示

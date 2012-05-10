@@ -1,0 +1,118 @@
+gpg --keyserver subkeys.pgp.net --recv-keys 提示所缺少的那个公钥
+gpg --armor --export 公钥串 | apt-key add -
+或在zsh下使用
+gpg --armor --export 公钥 > a.asc && apt-key add a.asc
+
+1. 生成和查看密钥
+
+gpg --gen-key
+
+查看生成的公钥
+
+gpg --list-keys
+
+查看、建立的私钥
+
+gpg --list-secret-keys
+
+2 加密解密文件
+
+用公钥加密
+gpg -ea -r xli@redhat.com  /directory/filename
+
+用私钥解密
+
+gpg -d /directory/filename.asc > /directory/filename
+
+3. 导出和导入公钥
+
+gpg --export "xli@redhat.com" -o leonli_publickey.asc (-a 输出ascii格式）
+
+gpg --import leonli_publickey.asc
+
+导入他人公钥以后，一般需要用自己的私钥对导入的他人公钥进行签名，（使用 --sign-key 选项进行签名，签名的目的是证明您完全信任这个公钥的合法性。 ）：
+
+gpg --sign-key brian@worldcontrol.com
+
+对公钥签名以后，可以使用下面命令来对公钥环中的公钥的签名进行检查：
+
+ gpg --check-sig
+
+导入对方的公钥以后，就可以用对方的公钥来加密文件：
+
+gpg -ea -r  xli@redhat.com  /directory/filename
+
+4. 查看公钥指纹信息：
+
+gpg --fingerprint xli@redhat.com
+
+得到指纹以后，通过其他途径与公钥所有人确认(电话等）
+
+5 发送公钥到互联网网站
+
+gpg --keyserver subkeys.pgp.net --send-keys xli@redhat.com
+
+发送到互联网网站以后，可以从服务器上查找(查找到以后，命令会提示是否要下载)：
+
+gpg --keyserver subkeys.pgp.net --search-keys xli@redhat.com
+
+也可以直接从服务器上下载
+
+gpg --recv-keys brian@worldcontrol.com
+
+6 修改密钥
+gpg --edit-key "Leon Li"
+
+7 备份密钥
+备份公钥：
+
+gpg -o keyfilename --export KeyID
+如果没有KeyID则是备份所有的公钥，-o表示输出到文件keyfilename中，如果加上-a的参数则输出文本格式的信息，否则输出的是二进制格式信息。
+
+备份私钥：
+
+gpg -o keyfilename --export-secret-keys KeyID
+
+如果没有KeyID则是备份所有的私钥，-o表示输出到文件keyfilename中，如果加上-a的参数则输出文本格式的信息，否则输出的是二进制格式信息。
+
+在别的机器上可以通过
+
+gpg --import filename
+
+导入这些信息。
+
+8 签名
+
+进行签名：
+gpg --output doc.sig --sign doc
+签名以后得到的内容是二进制（在签名以前对源文件进行压缩，然后签名），签名得到的结果同时也就是被加密了的
+
+给定一个签名的文档，你或者可以检查签名，或者可以检查签名并恢复原始文档。要检查签名使用 --verify 选项。要验证签名并提取文档使用 --decrypt选项。 输入要验证并恢复的签名文档，就可以输出恢复后的文档。
+gpg --verify doc.sig
+gpg --output doc --decrypt doc.sig
+
+明文签名(clearsigned)文档
+
+数字签名的一个普遍用途就是对usenet的帖子或是email消息进行签名。在这种情况下我们对文档进行签名但不希望压缩文档。选项 --clearsign 让文档封装在一个ASCII铠甲式的签名中，但并不改动文档。
+
+alice% gpg --clearsign doc
+
+分离签名
+
+签名后的文档只有有限的用途。其他用户必须从签名版本中恢复原始文档，即使在明文签名文档中，签名后的文档必须编辑以恢复原始模样。因此，有第三种方法对文档进行签名，该方法创建一个可分离的签名，该签名是一个单独的文件。一个分离签名使用 --detach-sig选项来创建。
+
+alice% gpg --output doc.sig --detach-sig doc
+
+You need a passphrase to unlock the secret key for
+user: "Alice (Judge) "
+1024-bit DSA key, ID BB7576AC, created 1999-06-04
+
+Enter passphrase:
+
+要验证签名必须同时使用文档和分离签名。选项--verify可以用来检查签名。
+
+blake% gpg --verify doc.sig doc
+gpg: Signature made Fri Jun 4 12:38:46 1999 CDT using DSA key ID BB7576AC
+gpg: Good signature from "Alice (Judge) "
+
+% vim:ft=txt

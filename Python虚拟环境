@@ -1,0 +1,4 @@
+1、安装virtualenv
+2、virtualenv --no-site-packages [proj_name] 安装一个虚拟环境
+3、在创建的proj_name目录中运行虚拟环境
+4、easy_install安装工具

@@ -1,0 +1,291 @@
+安装、定制、使用Viki 以及Deplate
+
+Rongjun Mu
+
+03. Sep 2004
+目录
+
+    * 1 说明
+          o 1.1 关于本文档
+          o 1.2 版本历史
+    * 2 安装Viki
+    * 3 定制Viki
+          o 3.1 Viki 使用到的一些变量
+          o 3.2 设置filetype
+    * 4 使用Viki
+    * 5 Viki 的语法
+    * 6 安装Deplate
+    * 7 使用Deplate
+          o 7.1 Deplate 的配置文件
+          o 7.2 Deplate 支持的命令
+                + 7.2.1 命令详解
+                + 7.2.2 命令举例说明
+    * 8 Viki + Deplate 实例分析
+          o 8.1 本Viki 的组织结构及说明
+          o 8.2 下载、使用makefile/Makefile
+                + 8.2.1 使用方法
+    * 9 Deplate 进阶
+          o 9.1 再议Deplate 的配置文档
+          o 9.2 Deplate 用户选项
+          o 9.3 Deplate 模板变量
+          o 9.4 Deplate 模板文件
+
+说明
+关于本文档
+
+本文档主要讲如何应用Viki 插件在Vim 中搭建一个本地Wiki 环境，以及如何使用配套工具Deplate 把Viki 格式的文本文件发布成其它格式(主要是html)的文档。
+
+本文档由Rongjun Mu 撰写，授权协议为GNU Free Documentation License 。
+
+您可于http://nic-nac-project.de/~murj/viki/vim/VimViki.html 获取本文档最新版本。
+
+    注意：下面的描述，如不特别说明，将适用于GNU/Linux 环境。Viki 的版本是1.4, Deplate 的版本是0.5. 
+
+版本历史
+
+    * 09/03/04: 初步完工。
+
+安装Viki
+
+参考Jjgod 的Viki 上手指南。
+定制Viki
+Viki 使用到的一些变量
+
+vikiUseParentSuffix :: 当设置为非0时，如果您使用<c-cr>1在VikiName 间跳转时，如果目标VikiName 页不存在，新建该页时将使用同当前所在的页相同的文件后缀。所以，在您的~/.vimrc 里加上一行：
+
+let g:vikiUseParentSuffix = 1
+
+设置filetype
+
+设置filetype 的目的是为了让Vim 识别需要解析为Viki 文件，支持高亮Viki 定义的语法、折叠等。可以手工设置，比如使用Viki 命令：:VikiMode，或者使用Vim 的set 命令：:set ft=viki，或者在源文件里添加vim: ft=viki 字样。因为Viki 默认以% 开头的行为注释，所以可以在文件中加上类似于如下的一行：
+
+% Vim: ft=viki
+
+为了方便，我们自动把以viki 为后缀的文件的filetype 设置为Viki 文件。把下面的代码添加到~/.vim/filetype.vim (如果没有此文件，则新建之) 里：
+
+augroup filetypedetect
+	au! BufRead,BufNewFile *.viki setfiletype viki
+augroup END
+
+然后以viki 为文件后缀开始编辑您的Viki 吧。
+使用Viki
+
+使用<c-cr> 在VikiName 间跳转，使用<LocalLeader>vb 回到上一页，LocalLeader 通常是\，所以一般情况下使用\vb 回到跳转前的页面。使用<c-tab> <s-c-tab> 移动到同一页面的下一个/前一个VikiName。
+
+Viki 支持折叠功能，请使用:h folding 来获取Vim 关于折叠的帮助。
+Viki 的语法
+
+在任何时候您都可以通过:h viki, :h viki-names, :h viki-headings 等命令来查看在线帮助。阅读Deplate 的帮助文件将有助于您编辑Viki 并发布成html 或其它格式的文档。Deplate 网站也是由Viki 写成后编译输出成html 格式的网页的，作者还提供了源文件，这是一份非常好的学习材料。
+安装Deplate
+
+下载，安装的过程不详述。Deplate 源码包里的README.txt 里有安装说明。Deplate 需要Ruby，所以请确保您机器上安装了Ruby。下面是一个安装步骤简易说明：
+
+   1. 下载deplate 源码包，解压，进入deplate 源码目录。
+   2. $ ruby setup.rb config
+   3. $ ruby setup.rb setup
+   4. # ruby setup.rb install，这一步一般来说需要root 权限。
+
+在本人的Debian GNU/Linux 上，默认安装于/usr/local/lib/site_ruby/1.8/ 下。
+使用Deplate
+
+Deplate 可将Viki 文件输出为html/xhtml 格式的网页，html 幻灯片，甚至是Latex 源文件。
+
+在命令行输入deplate -h，可以看到Deplate 的用法及其接受的参数。比较常用的几个参数为：
+
+   1. -d, --dir DIR 指定输出目录
+   2. -f, --format FORMAT 指定输出格式(默认为html)
+   3. -m, --module MODULE 加载一个模块，使用-m zh-cn 来支持中文输出。
+   4. --css NAME 如果目标目录还没有NAME.css，则拷贝到目标目录。
+
+例如，deplate -d html -f html -m zh-cn --css deplate MyViki.viki 将把MyViki.viki 输出到html 目录下，文件名为MyWiki.html，Charset 为gb2312，同时把deplate.css 拷贝到html 目录(关于CSS 后面还会涉及)。
+Deplate 的配置文件
+
+Deplate 的本地配置文件位于~/.deplate/ 目录下。目录结构如下：
+
+	- ~/.deplate/
+	    - config.rb    通用的用户配置文件
+	    - after/
+	        - fmt/FORMATTER.rb    在相应的 formatter 之后加载
+	        - mod/MODULE.rb       在相应的 module 之后加载
+	    - css/         用户自定义的 css 文件
+	    - fmt/         用户自定义的 formatter(格式化工具)
+	    - mod/         用户自定义的 modules(模块)
+	    - templates/   用户自定义的模板
+
+您不妨把deplate 自带的css 文件拷贝到~/.deplate/css/ 目录下，修改为适合自己的样式。
+Deplate 支持的命令
+命令详解
+
+命令的格式为：
+
+#COMMAND [OPTIONS]: ARGS
+
+其中OPTIONS 具有如下形式：
+
+    * OPTION!
+          o 定义option 为真，注意这里的! 不是取反的意思。
+    * OPTION=VALUE
+          o 定义option 值为VALUE
+    * ! 以及= 需要使用\ 转义
+
+比较常用的命令有：
+
+INCLUDE：FILENAME
+    包含一个文件，可简写为INC。 
+IMG [here!][top!][bottom!][bw=N|bh=N|w=N|h=N]: FILENAME
+    插入图象文件。
+
+        * 也可使用IMAGE, FIG, FIGURE
+        * bw, bh 定义Latex 中用到的边界框
+        * h, w 定义显示图象的高和宽。
+
+CAPTION [above!|below!]: TEXT
+    给前一个元素添加题注。
+
+        * 可简写为CAP
+        * 与前一个元素关联
+        * 可用于Table, Figure, Heading
+
+TITLE: TEXT
+    定义文件标题，如果输出成html，会出现在title 标签中。可简写为TI，也相当于#DOC: title=TEXT 
+AUTHOR: TEXT
+    定义文档作者，可简写为AU。 
+DATE: [TEXT|now|today]
+    定义文档的创建时间。now 指当前时间，today 指当前日期。 
+LIST [page!]: [contents|toc|minitoc|tables|figures|index]
+    插入内容(contents)，表格索引(tables)，图片索引(figures)，目录(toc)或者index 索引。注意LIST: index 应放在最后一个INCLUDE 命令之后，以建立完整的索引。 
+MAKETITLE [page!]
+    插入标题或标题页。包括命令TITLE, AUTHOR, DATE 等定义的部分。 
+DOC
+    文档选项，例如如下的几个命令定义输出格式为html 时的css 文件名。
+
+        * #DOC fmt=html: css=moon.css
+        * #DOC fmt=html: css=FILE1 FILE2|MEDIA2 …
+        * #DOC fmt=html: class=CLASS 相当于#DOC css=CLASS+”.css”
+
+命令举例说明
+
+本篇文档定义了如下命令，
+
+#TITLE: 安装、定制、使用 Viki 以及 Deplate
+#DOC fmt=html: css=moon.css|screen
+% heading 不带数字
+#DOC fmt=html: headings=plain    
+#AU: Rongjun Mu
+#DATE: today
+
+% 输出标题部分
+#MAKETITLE 
+% 输出table of contents
+#LIST: toc 
+
+效果参见本页开头部分，你可以参照本页的html 源文件来学习Deplate 把上面的命令转换为什么样的html 代码。
+Viki + Deplate 实例分析
+
+本部分以本人建构此Viki 为实例，介绍如何使用子目录组织您的Viki、如何使用Makefile 来有效的协助您发布Viki。
+
+目前主要关注的是html 格式的发布，其它格式的发布有待完善。
+本Viki 的组织结构及说明
+
+本Viki 的源文件目录具有如下的层次结构：
+
+    - viki/
+        - index.viki
+        - makefile
+        - Makefile
+    	- vim/
+            - index.viki
+            - VimViki.viki
+    	- lpi/
+            - LpiHome.viki
+            - LpiI101.viki
+            - ...
+        - ...
+
+这里使用makefile/Makefile 来维护整个“Viki 站点”的发布工作。其中makefile 用于顶层目录，负责编译顶层目录的Viki 源文件并将递归到所有的子目录，在递归之前，首先把负责子目录发布工作的Makefile 拷贝到每个子目录里。但是，如果顶层的Makefile 并不比子目录里的Makefile “新”(也就是自从上次拷贝以后没有更新过顶层目录的Makefile)。这样，只需要统一维护一个通用的Makefile 模板。
+
+这里使用的技巧是make 会优先使用makefile，如果没有makefile 再查找Makefile。
+
+makefile 里有定义SUBDIRS = vim lpi，也就是定义需要递归的子目录。需要添加一个子目录，只需相应的修改SUBDIRS 的定义，像SUBDIRS = vim lpi another 就增加了一个名为another 的子目录。
+
+使用本例Viki 的结构有两点要求(或限制)：
+
+   1. 必须在顶层目录调用make。本人一般在顶层目录使用像 gvim vim/index.viki 这样的命令编辑源文件，然后直接在 gvim 中使用: make
+   2. 所有的Viki 源文件都有相同的后缀，不然makefile/Makefile 里的通配符匹配 无法穷尽所有的Viki 源文件，如果要使用另外的后缀(通常您并不必这么做)，需要 修改makefile/Makefile 以适用于修改后的后缀。
+
+下载、使用makefile/Makefile
+
+您可以随意下载、使用这些文件：makefile 以及Makefile。
+使用方法
+
+参照上面给出的目录结构，把makefile 以及Makefile 放在顶层目录。根据自己的情况，您可能需要修改makefile 的最初几行用户配置。包括：
+
+    * HTMLDIR : 设置输出html 的目标目录
+    * SUBDIRS : 在这里写下所有的子目录，以空格分开。
+    * CSS_NAME : css 文件名，注意必须包含于~/.deplate/css/ 下。
+    * 其它一些设置，如果您了解make 的工作机制，这些设置不在话下:)
+
+您可以在顶层目录使用如下一些命令：
+
+    * make : 将编译顶层目录里所有的源文件并递归到所有子目录
+    * make html : 仅编译顶层目录里的源文件
+    * make clean_all : 删除所有输出的html 网页。
+    * make tgz : 把所有的源文件打包成一个tar.gz 文件。
+
+Deplate 进阶
+
+Deplate 是由Ruby 语言 写就的。实话说，我完完全全是个Ruby 盲，好在Deplate 的文档还比较完善。下面的这些完全是根据Deplate 的文档，结合本人的实际使用总结而来。如果您细心阅读Deplate 文档，了解得肯定比我还多。说“进阶”完全是唬人，让高手们见笑了。
+再议Deplate 的配置文档
+
+Deplate 的配置文档要使用Ruby 语法来写:( 根据其文档及示例，似乎具有这样的一般框架：
+
+class Deplate
+    def self.user_setup(options)
+		# 这里是用户设置
+    end
+end
+
+Deplate 用户选项
+
+Deplate 使用的大部分命令行参数都可以在配置文件中使用相应的选项来设置。
+
+TODO ###
+Deplate 模板变量
+
+Deplate 定义了两种类型的模板变量：
+
+    * 其一是一组字符串数组，可在其中包含一些显示于每个文件(或页面)的*格式化的输出*。所谓格式化，就是说加入的字符串可包含一些输出格式允许的标签，命令等。比如说当输出格式为html 时，可于这些变量中加一些html 标签。
+          o @@pre_matter_template
+          o @@body_template
+          o @@post_matter_template
+    * 其二是一个字符串数组，可在其中包含一些标记，这些标记将在Deplate 解析源文件时被添加到每个文件的开头。
+          o @@deplate_template
+
+下面几行摘自本人的config.rb：
+
+class Deplate
+	def self.user_setup(options)
+		if Deplate::Formatter.matches?("html")
+			@@post_matter_template[9] = ["<div class='footer'>"]
+			@@post_matter_template[10] = ["<p class='footer'>
+			Edited with <a href='http://www.vim.org'>Vim</a> and 
+   			<a href='http://www.vim.org/scripts/script.php?script_id=861'>Viki</a>, 
+			created with <a href='http://deplate.sourceforge.net'>Deplate</a>.
+			Copyleft &copy; 2004 <a href='http://nic-nac-project.de/~murj/'>Rongjun Mu</a>
+			</p>"]
+			@@post_matter_template[11] = ["</div>"] 
+		end
+		@@deplate_template << "#DOC fmt=html: css=moon.css|screen"
+		@@deplate_template << "#DOC fmt=html: headings=plain"
+		@@deplate_template << "#AU: Rongjun Mu"
+		@@deplate_template << "#DATE: today"
+	end
+end
+
+Deplate 模板文件
+
+使用-t 或--template 命令行参数可指定Deplate 编译源文件时使用的模板。
+
+TODO ###
+
+1 <c-cr> 表示Ctrl+Enter。 

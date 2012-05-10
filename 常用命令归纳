@@ -1,0 +1,538 @@
+1. 网络相关
+1.1. 连接samba服务器
+sudo mount -t smbfs|cifs //server//fold /dir -o user=user,passwd=passwd,iocharset=utf8
+
+1.2. 下载整个网站
+wget -r -p -k -np --accept=iso,tgz --reject=avi,rmvb url
+-nd 不生成目录结构
+-np 不下载父链接
+-r  递归下载
+-c  断点续传
+-i  根据文件中的列表进行下载
+-m  镜像站点
+
+1.3. 获取网页内容
+curl
+
+1.4. TCP/IP命令交互程序
+nc
+nc -l -p port
+nc ip port
+
+1.5. 网络端口查看程序
+nmap -A -T4 xxx.xxx.xxx.xxx-xxx -p port xxx-xxx
+nmap -PN xxx.xxx.xxx.xxx-xxx
+
+1.6. 网站镜像工具
+httrack
+httrack http://blog.sina.com.cn/s/articlelist_1495855837_0_1.html +s/* -r2
+
+1.7. 查看网络状态信息
+1.7.1 netstat查看网络状态
+netstat --tcp -l
+netstat --udp
+netstat -n
+netstat -r
+netstat -atunp
+netstat -ltunp
+
+1.7.2 iftop、iptraf
+命令行下的网络监控
+
+1.7.3 tcpdump
+tcptrace
+网络数据抓取与分析
+
+1.7.4 dstat
+netperf
+
+1.8. 网络流量分析的Web端服务
+ntop
+使用http://localhost:3000进行访问
+
+1.9. 修改MAC地址、包伪装
+ifconfig eth0 hw ether 00:23:ae:b4:3d:49 
+
+iptables -t nat -I POSTROUTING -j MASQUERADE
+echo "1" > /proc/sys/net/ipv4/ip_forward
+
+1.10. 查询域名服务器
+dig
+dig -x host
+
+1.11. ssh翻墙
+ssh -qTfnN -D 8080 root@192.168.108.10
+使用代理访问本地端口8080
+
+1.12. 带路径的Ping程序
+mtr google.com
+
+1.13. BT下载
+mldonkey
+
+1.14. 简单的HTTP server
+python -m SimpleHTTPServer
+
+1.15. 基于文本的网页浏览器
+w3m
+ls | w3m
+cat foo.html | w3m -T text/html
+
+1.16. firefox的插件
+Vimperator                  --- vim插件
+Adblock Plus                --- 广告阻止
+Download StatusBar          --- 下载状态栏
+DownThemAll                 --- 批量下载工具
+Easy DragToGo               --- 拖拽手势
+Firebug                     --- web调试工具
+FireFTP                     --- FTP客户端
+Flashblock                  --- flash开关器
+FoxyProxy Standard          --- 代理服务器
+New Tab King                --- 缓存浏览
+Read It Later               --- 页面保存
+SQLite Manager              --- SQL查看器
+
+1.17 暴力破解工具
+medusa
+medusa -d 列出模块支持
+medusa -h host -u user -p password -M module
+
+1.18 获取IP地址
+* ifconfig eth0 |head -2|tail -1 |awk {'print $2'} |cut -d : -f 2
+
+2. 系统相关
+2.1. 查看硬件信息
+dmidecode
+hwinfo
+
+2.2. 分区备份
+partimage -z1 save /dev/sda1 save.img
+
+2.3. 查看x86平台的CPU信息
+x86info
+
+2.4. 查看系统运行状态
+htop
+atop
+
+2.5. 温度检测
+sensors
+cpu温度
+
+2.6. 杀死与文件相关的进程
+fuser -km [文件]
+
+2.7. 远程桌面客户端
+remmina
+KDE的远程桌面客户端
+krdc
+
+2.8. 系统启动设置
+sysv-rc-conf
+
+2.9. 打开文件和端口的进程信息
+lsof
+lsof -i 4:80
+lsof /home/zenki
+kill -HUP `lsof -t /u/abe/bar`
+
+2.10. 系统配置web界面
+webmin
+使用https://localhost:10000进行访问
+
+2.11. pkg-config
+* pkg-config --list-all   列出所有可使用的包，即所有能找到.pc的包
+* pkg-config --cflags libpng 得到libpng包的头文件 -I/usr/include/libpng12
+* pkg-config --libs libpng 得到libpng包的库文件 -lpng12
+
+可以用在编译条件中：
+* gcc `pkg-config --cflags --libs libpng` main.c
+
+pkg-config路径：
+* 设置环境变量LD_LIBRARY_PATH，如
+export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
+* /etc/ld.so.conf配置文件
+
+.pc存放路径：
+* 设置环境变量PKG_CONFIG_PATH，如
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig:$PKG_CONFIG_PATH
+
+2.12. 系统状态监测应用
+conky
+
+2.13. 查看非自由软件
+vrms
+vrms -e
+
+2.14. 制作U盘系统
+unetbootin
+
+2.15. Ubuntu注册表管理
+gconf-editor
+
+2.16. 打包和解包系统镜像
+mkyaffs2image --- 打包
+mkyaffs2image dir image
+unyaffs --- 解包
+unyaffs image
+
+2.17. 更新软件版本链接
+update-alternatives --config
+
+2.18. 更新各种配置
+update-*
+
+2.19. 添加swap分区
+dd if=/dev/zero of=swapfile bs=1024 count=512000
+mkswap swapfile
+swapon swapfile  开启
+swapoff swapfile  关闭
+
+编辑自动挂载
+vi /etc/fstab
+/root/swapfile    swap     swap    defaults   0  0
+mount -a
+
+2.20. 动态改变硬盘分区
+gparted
+
+2.21. 病毒扫描工具
+clamscan
+
+2.22. 终端录制工具
+ttyrec  生成录制的文件
+ttyplay 播放录制的文件
+
+3. 文件管理
+3.1. 批量utf8转换和修改文件名
+find  -type f -exec iconv -f GBK -t UTF-8 '{}' -o utf/'{}' \;
+convmv 文件名编码转换
+
+find . -iname *.rst -exec mv '{}' '{}'.html \;
+
+3.2. 根据用户名查找文件
+find . -user zenki
+
+3.3. chm查看及解压
+chmsee
+archmage
+
+3.4. pdf转换html
+pdftohtml
+
+3.5. ppm图片格式转换
+ppm
+ppmto*
+
+3.6. 平铺式终端管理器
+dvtm
+dvtm -m mod
+默认ctrl+g 后再按其他键作为操作方法
+
+ranger
+python写的vi风格的管理器
+
+3.7. 平铺式桌面管理器
+awesome
+
+3.8. pdf阅读器
+3.8.1 apvlv  
+vim形式的阅读器
+
+3.8.2 kpdf   
+kde下的阅读器
+
+3.8.3 evince 
+gnome下的阅读器
+
+3.9. 将word文档转换成各种格式文件
+wv
+
+3.10. scrot 命令行的截图工具
+scrot [options] file
+* -h, –help–显示帮助并且退出
+* -v, –version–显示版本信息并且退出
+* -b, –border–当选择一个窗口时，同时包含窗口边框。
+* -c, –count–延时时的显示倒计时
+* -d, –delay NUM–延时 NUM 秒
+* -e, –exec APP–对保存的图像执行程序 APP
+* -q, –quality NUM–图像质量 (1-100) 值大意味着文件大， 压缩率低。
+* -m, –multidisp–对多个显示设备分别截图并且连接在一起。
+* -s, –select–用鼠标交互式的选择一个窗口或者区域。
+* -t, –thumb NUM–同时生成缩略图。 NUM 是缩略图的百分比。
+
+3.11. 图片查看程序
+gpicview和gqview
+
+3.12. 压缩管理工具
+xarchiver
+
+3.13. kde与gnome下的两款文件管理器
+3.13.1 dolphin
+3.13.2 nautilus
+
+3.14. 音乐播放器
+mpd
+mpc
+amarok2
+banshee
+minitube
+
+3.15. 歌词显示插件
+OSD lyrics
+
+3.16. 小熊猫软件安装工具
+sudo add-apt-repository ppa:ailurus
+sudo apt-get update
+sudo apt-get install ailurus
+
+3.17. 批量文件重命名
+gprename
+
+3.18. ack-grep搜索工具
+ack-grep --type PATTERN
+
+type列表
+--[no]actionscript .as .mxml
+--[no]ada          .ada .adb .ads
+--[no]asm          .asm .s
+--[no]batch        .bat .cmd
+--[no]binary       Binary files, as defined by Perl's -B op (default: off)
+--[no]cc           .c .h .xs
+--[no]cfmx         .cfc .cfm .cfml
+--[no]clojure      .clj
+--[no]cpp          .cpp .cc .cxx .m .hpp .hh .h .hxx
+--[no]csharp       .cs
+--[no]css          .css
+--[no]delphi       .pas .int .dfm .nfm .dof .dpk .dproj .groupproj .bdsgroup .bdsproj
+--[no]elisp        .el
+--[no]erlang       .erl .hrl
+--[no]fortran      .f .f77 .f90 .f95 .f03 .for .ftn .fpp
+--[no]go           .go
+--[no]haskell      .hs .lhs
+--[no]hh           .h
+--[no]html         .htm .html .shtml .xhtml
+--[no]java         .java .properties
+--[no]js           .js
+--[no]jsp          .jsp .jspx .jhtm .jhtml
+--[no]lisp         .lisp .lsp
+--[no]lua          .lua
+--[no]make         Makefiles (including *.mk and *.mak)
+--[no]mason        .mas .mhtml .mpl .mtxt
+--[no]objc         .m .h
+--[no]objcpp       .mm .h
+--[no]ocaml        .ml .mli
+--[no]parrot       .pir .pasm .pmc .ops .pod .pg .tg
+--[no]perl         .pl .pm .pod .t
+--[no]php          .php .phpt .php3 .php4 .php5 .phtml
+--[no]plone        .pt .cpt .metadata .cpy .py
+--[no]python       .py
+--[no]rake         Rakefiles
+--[no]ruby         .rb .rhtml .rjs .rxml .erb .rake .spec
+--[no]scala        .scala
+--[no]scheme       .scm .ss
+--[no]shell        .sh .bash .csh .tcsh .ksh .zsh
+--[no]skipped      Files, but not directories, normally skipped by ack (default: off)
+--[no]smalltalk    .st
+--[no]sql          .sql .ctl
+--[no]tcl          .tcl .itcl .itk
+--[no]tex          .tex .cls .sty
+--[no]text         Text files, as defined by Perl's -T op (default: off)
+--[no]tt           .tt .tt2 .ttml
+--[no]vb           .bas .cls .frm .ctl .vb .resx
+--[no]verilog      .v .vh .sv
+--[no]vhdl         .vhd .vhdl
+--[no]vim          .vim
+--[no]xml          .xml .dtd .xsl .xslt .ent
+--[no]yaml         .yaml .yml
+
+3.19. tmux多shell集成
+screen的替代品
+
+3.20 tree
+显示目录树
+
+3.21 文档批量转换unoconv
+unoconv —— 基于OpenOffice的命令行工具
+
+3.22 文件比较工具
+meld
+FreeFileSync
+FreeFileSync 10.04源
+deb http://ppa.launchpad.net/freefilesync/ffs/ubuntu lucid main 
+deb-src http://ppa.launchpad.net/freefilesync/ffs/ubuntu lucid main
+FreeFileSync 11.04源
+deb http://ppa.launchpad.net/freefilesync/ffs/ubuntu natty main 
+deb-src http://ppa.launchpad.net/freefilesync/ffs/ubuntu natty main
+
+$ unoconv -f pdf myDOc.doc
+
+3.23 图形界面SVN客户端
+3.23.1 首先添加源：
+sudo add-apt-repository ppa:rabbitvcs/ppa
+sudo vi /etc/apt/sources.list
+添加源
+deb http://ppa.launchpad.net/rabbitvcs/ppa/ubuntu karmic main
+
+3.23.2 安装：
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 34EF4A35
+sudo apt-get update
+sudo apt-get install rabbitvcs-cli rabbitvcs-core rabbitvcs-gedit rabbitvcs-nautilus rabbitvcs-thunar thunarx-python
+
+3.24 less、cat高亮显示
+3.24.1 安装source-hilight
+3.24.2 拷贝src-hilite-lesspipe.sh脚本到/usr/bin/文件夹下
+3.24.3 运行脚本添加默认高亮语法
+
+脚本如下查看tools/add_lang_to_source_hilight.sh
+
+4. 开发工具
+4.1. agave配色方案生成器
+agave
+
+4.2. 正则表达式测试软件
+kodos
+
+4.3. 代码查找程序
+cg PATTERN files 
+vg number
+
+4.4. 类似vim的二进制编辑器
+bvi
+
+4.5. 类似vim的gdb调试工具cgdb
+cgdb
+<ESC>   切换到源码窗口
+i       切换到调试窗口
+o       在源码窗口打开文件目录
+空格    设置断点
+F5      运行程序
+F6      continue命令
+F7      finish命令
+F8      next命令
+F10     step命令
+
+4.6. 代码对齐工具
+indent
+
+4.7. 内存泄漏检查工具
+valgrind
+
+4.8. makefile生成工具
+cmake
+
+4.9. 文件差异生成
+diff
+diff -rc org_dir modify_dir > c
+diff -uNr org_dir modify_dir > c
+
+4.10. 补丁工具
+patch
+4.10.1. patch文件：
+patch -o outfile origfile < patchfile
+
+4.10.2. patch目录：
+cd org_dir && patch -p0 --binary < ../patchfile
+
+4.11. 代码索引
+cscope
+cscope -Rbkq 生成数据库文件
+
+ctags
+ctags -R
+
+4.12. ascii字体
+figlet -w 字宽 -f 字体文件 -c 字体居中
+
+4.13. 将tex格式文件转换成html
+tex2html
+
+4.14. 软件安装版本控制
+bzr 
+
+4.15. sphinx-全文检索
+sphinx
+
+4.16. 代码行数统计
+sloccount
+
+4.17. dia UML图构建工具
+dia
+
+4.18. CSS模板网站
+http://www.oswd.org/
+http://www.openwebdesign.org/
+http://www.solucija.com/
+
+4.19. deplate文档转换工具
+deplate -m utf8 -d htmldir -f html -t ~/.deplate/template.html --css html-css -X html.viki
+
+    * -m表示使用的模块
+    * -t表示使用的模板文件
+    * --css表示使用的css文件注意不加后缀
+    * -f表示格式
+    * -d表示生成html的目标目录
+
+4.20. ruby包安装
+gem
+
+4.21. 轻量级的代码编辑器
+geany
+
+4.22. colorgcc和colormake
+
+4.23. RPM包安装
+alien
+
+4.24. 十六进制编辑器
+radare
+
+4.25. MySQL的客户端工具
+4.25.1 mysql-workbench
+4.25.2 mysql-navigator
+4.25.3 mysql-query-browser
+
+4.26. Sqlite的客户端工具
+sqlitebrowser
+
+4.27. eclim
+很好的将vim和eclips结合起来的插件
+
+4.28. python代码片断管理
+acire
+
+安装方法：
+sudo apt-get install bzr
+bzr branch lp:python-snippets
+export SNIPPETS_DIR=/home/zenki/python-snippets
+网址：http://aciresnippets.wordpress.com/contribute/
+
+4.29. Latex工具
+kile 编辑器
+lyx  所见即所得的IDE
+
+4.30. 可执行文件信息查看
+readelf
+nm
+ldd
+
+4.31. shutter屏幕截图
+shutter
+
+4.32. 计算器
+extcalc
+
+4.33. 黄金词典
+goldendict
+
+4.34. awk使用
+* cat /proc/devices|grep usb |awk '{print $1;}'
+
+4.35. cut使用
+* ifconfig eth0 |head -2|tail -1 |awk {'print $2'} |cut -d : -f 2
+
+4.36. ack搜索
+下载ack：
+curl http://betterthangrep.com/ack-standalone > /usr/bin/ack && chmod 0755
+
+% vim:ft=txt

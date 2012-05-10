@@ -1,0 +1,73 @@
+Console Logging 函数
+
+FireBug 为所有 Web 页面提供了一个 console 对象。这个对象有以下函数：
+Logging 基础
+console.log("message" [,objects]) - 将一个字符串打印到控制台。字符串可以包含任何“String Formatting”小节描述的模式。字符串后面的对象应该用来取代之前字符串中的模式。（译者注：大家用过C里面 printf 吧，效果基本是一样的。）
+Logging 等级
+
+通常根据不同的等级来区分Logging的严重程度是很有帮助的。FireBug 提供了4个等级。为了达到视觉分离的效果，这些函数与 log 不同的地方就是它们在被调用的时候会自动包含一个指向代码行数的链接。
+console.debug("message" [,objects]) - 记录一个 debug 消息。
+console.info("message" [,objects]) - 记录一个信息.
+console.warn("message" [,objects]) - 记录一个警告.
+console.error("message" [,objects]) - 记录一个错误.
+断言
+
+断言是一条确保代码规则的非常好的途径。console 对象包含了一系列各种类型的断言函数，并且允许你编写自己的断言函数。
+console.assert(a, "message" [,objects]) - Asserts that an a is true.
+console.assertEquals(a, b, "message" [,objects]) - Asserts that a is equal to b.
+console.assertNotEquals(a, b, "message" [,objects]) - Asserts that a is not equal to b.
+console.assertGreater(a, b, "message" [,objects]) - Asserts that a is greater than b.
+console.assertNotGreater(a, b, "message" [,objects]) - Asserts that a is not greater than b.
+console.assertLess(a, b, "message" [,objects]) - Asserts that a is less than b.
+console.assertNotLess(a, b, "message" [,objects]) - Asserts that a is not less than b.
+console.assertContains(a, b, "message" [,objects]) - Asserts that a is in the array b.
+console.assertNotContains(a, b, "message" [,objects]) - Asserts that a is not in the array b.
+console.assertTrue(a, "message" [,objects]) - Asserts that a is equal to true.
+console.assertFalse(a, "message" [,objects]) - Asserts that a is equal to false.
+console.assertNull(a, "message" [,objects]) - Asserts that a is equal to null.
+console.assertNotNull(a, "message" [,objects]) - Asserts that a is not equal to null.
+console.assertUndefined(a, "message" [,objects]) - Asserts that a is equal to undefined.
+console.assertNotUndefined(a, "message" [,objects]) - Asserts that a is not equal to undefined.
+console.assertInstanceOf(a, b, "message" [,objects]) - Asserts that a is an instance of type b.
+console.assertNotInstanceOf(a, b, "message" [,objects]) - Asserts that a is not an instance of type b.
+console.assertTypeOf(a, b, "message" [,objects]) - Asserts that the type of a is equal to the string b.
+console.assertNotTypeOf(a, b, "message" [,objects]) - Asserts that the type of a is not equal to the string b.
+测量（Measurement）
+
+下面的一些函数可以让你方便的测量你的一些代码。
+console.trace() - 记录执行点的堆栈信息。
+console.time("name") - 根据 name 创建一个唯一的计时器。
+console.timeEnd("name") - 根据 name 停止计时器，并且记录消耗的时间，以毫秒为单位。
+console.count("name") - 记录该行代码执行的次数。
+String Formatting
+
+所有 console 的 logging 函数都可以通过以下模式格式化字符串：
+%s - 将对象格式化为字符串。
+%d, %i, %l, %f - 将对象格式化为数字。
+%o - 将对象格式化成一个指向 inspector 的超链接。
+%1.o, %2.0, etc.. - 将对象格式化成包含自己属性的可交互的表格。
+%.o - 将对象格式化成具有自身属性的一个数组。
+%x - 将对象格式化成一个可交互的 XML 树形结构。
+%1.x, %2.x, etc.. - 将对象格式化成一个可交互的 XML 数型结构，并且展开 n 层节点。
+
+如果你需要一个真实的 % 符号，你可以通过一个转移符号就像这样 "\%"。
+命令行函数
+
+内建的命令行函数可以通过以下命令行使用：
+$("id") - document.getElementById() 的简写。（译者注：跟 prototype.js 学来的吧？）
+$$("css") - 返回一个符合 CSS 选择器的元素数组。
+$x("xpath") - 返回一个符合 XPath 选择器的元素数组。
+$0 - 返回最近被检查（inspected）的对象。
+$1 - 返回最近被检查（inspected）的下一个对象。
+$n(5) - 返回最近被检查的第n个对象。
+inspect(object) - 将对象显示在 Inspector 中。
+dir(object) - 返回一个对象的属性名数组。（译者注：跟 Python 学的？）
+clear() - 清除控制台信息。
+
+console.dir(anyObject) - 直接输出对象的结构
+
+console.dirxml(anyDOMNode) - 类似上例，按缩进格式输出一段HTML结点的内容
+
+console.time(slugName) - console.timeEnd(slugName) - 记录某一个时间戳的执行时间，可用于优化循环语句
+
+console.group() – console.groupEnd() - 查看

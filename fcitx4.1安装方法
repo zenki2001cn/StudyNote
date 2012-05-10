@@ -1,0 +1,20 @@
+sudo apt-get install libunique-dev
+sudo apt-get install intltool
+
+安装
+下载源码包：
+代码:
+wget -c http://fcitx.googlecode.com/files/fcitx-4.1.1_all.tar.bz2
+
+解压并进入目录：
+tar xvf fcitx-4.1.1_all.tar.bz2
+cd fcitx-4.1.1
+
+编译
+mkdir build
+cd build
+
+支持GTK3可设置ENABLE_GTK3_IM_MODULE=On
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr  -DENABLE_GTK3_IM_MODULE=Off
+make
+sudo make install

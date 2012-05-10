@@ -1,0 +1,475 @@
+----------------------------------------------------------------------------------------------------------------------+
+#1.vim小技巧 {{{1                                                                                                     |
++---------------------------------------------------------------------------------------------------------------------+
+***空格和tab之间转换***
+举例：将第一行到文件尾的tab转换成space，每个tab用4个space替代。
+:set expandtab
+:%ret! 4
+如果没有给定4，则用当前的tab宽度设定替换为space。
+
+其它相关命令：
+:set tabstop=4        设定tab宽度为4个字符
+:set shiftwidth=4     设定自动缩进为4个字符
+:set expandtab        用space替代tab的输入
+:set noexpandtab      不用space替代tab的输入
+
+***查看十六进制***
+\xx
+%!xxd 		查看十六进制
+\xr
+%!xxd -r 	还原文本
+
+
+***折叠***
+zo 打开
+zc 折叠
+zn 打开全部
+zM 折叠全部
+
+***拷贝代码***
+:set paste
+
+***窗口切换***
+Ctrl+w w --- 分割窗口间切换
+Ctrl+w q --- 关闭其中一个分割窗口
+Ctrl+w i --- 打开一个水平分割窗口
+Ctrl+w v --- 打开一个垂直分割窗口
+Ctrl+w e --- 全屏显示某个窗口
+Ctrl+w r --- 与下一个窗口交换位置
+Ctrl+w ^ --- 在另一个水平窗口中打开另一个文件
+Ctrl+w v --- 以当前文件内容打开一个垂直窗口
+
+***大小写转换***
+gu -- 小写转换
+gU -- 大写转换
+
+***:make进行编译***
+cl 显示错误信息
+cn 跳转下一个错误代码行
+cN 跳转前一个错误代码行
+
+***括号之间跳转***
+%
+
+***安装和卸载vba插件***
+vim打开vba文件
+:source %
+卸载vba文件
+:RmVimball xxx
+
+***转换为HTML文件***
+:TOhtml
+:FormatCommand format
+
+#}}}
+---------------------------------------------------------------------------------------------------------------
++---------------------------------------------------------------------------------------------------------------+
+#VIM,插件使用 {{{1                                                                                              |      
++---------------------------------------------------------------------------------------------------------------+
+目前安装的vim插件如下:
+1. NERD_tree 树形文件夹浏览插件
+:NERDTree
+快捷键F1，打开关闭文件浏览器
+快捷键F2，关联打开文件和浏览器
+m，打开菜单项
+
+2. taglist 函数功能列表
+:Tlist       打开list
+:TlistUpdate 更新
+快捷键F4
+
+3. DirDiff 文件夹比较
+:DirDiff dir1 dir2
+\dg - Diff get: maps to :diffget<CR>
+\dp - Diff put: maps to :diffput<CR>
+\dj - Diff next: (think j for down)
+\dk - Diff previous: (think k for up)
+
+4. mru 最近打开文件列表
+:MRU <文件名> 可以用TAB键补全
+:MRU or 快捷键F10 直接打开文件列表缓冲区窗口
+在文件列表中按T键,可以在新窗口中打开文件
+
+5. dbext 数据库操作支持
+\se 操作当前SQL语句
+
+6. calendar 日历插件
+:Calendar
+:CalendarH
+
+7. mark 多个高亮显示
+\m 高亮显示
+\r 手动输入需要高亮显示内容
+
+8. matrix 黑客帝国游戏
+:Matrix
+
+9. nextfile 打开前一个 后一个文件
+\n 打开后一个文件
+\p 打开前一个文件
+
+10. supertab tab补全
+tab键补全
+tab键python补全
+python pydiction.py [python模块] --- 加入新的python模块
+
+11. powiki wiki文件
+\wh 打开主题
+\wi 打开索引
+\we 编辑新文件
+\\  关闭文件
+
+12. translateit 翻译
+\ts 使用sdcv翻译
+<Space> 使用trans插件翻译,使用google翻译引擎
+
+13. SearchComplete 搜索补全
+/ 进行搜索是 tab键进行补全
+
+14. python_ifold python文件支持
+f 打开折叠的代码
+
+15. buffer 浏览
+\be 浏览打开的文件buffer
+\bv 垂直切分一个窗口来打开缓冲区中的文件
+\bs 水平切分一个窗口来打开缓冲区中的文件
+d键 删除buffer
+
+16. pydoc
+\pw key_word
+
+17. NERDCommenter注释
+,ca 切换单行注释的类型
+,cc 注释单行格式比较好看 
+,cs 注释多行格式比较好看
+,cu -- 取消注释
+,cf 为函数添加doxygen格式的注释
+
+18. 列出所有打开文件的函数列表
+快捷键F1 ---- 打开函数列表窗口
+改变快捷键
+For example to change the <F1> mapping to <F7>
+map  <F7> <Plug>ShowFunc
+map! <F7> <Plug>ShowFunc
+
+ShowFunc Window commands:
+c       Close cwindow.
+h       Display help dialog.
+r       Refresh.
+s       Change file sort, results will appear in either alphabetical or file order.  (Default: file order)
+t       Change scan type, results will be from either the current file, all open windows or all open buffers.  (Default: all open buffers)
+
+19. 中文支持
+直接输入拼音,然后按Ctrl+\,即可输入中文。
+按Ctrl+^键，直接输入拼音,就可出现中文。
+
+20. C语言支持
+\hp --- 显示帮助信息
+:A --- 头文件之间切换
+gf --- 跳转到相应的头文件
+gd --- 变量定义
+shift+k --- MAN帮助
+\hm --- MAN帮助,打开另一个文件显示
+-----------------------------------
+\cfr --- 块注释
+\ccl --- 类注释
+\cme --- 方法注释
+\cd --- 日期
+\ct --- 日期和时间
+\cl --- 在文件尾加入一条注释
+-----------------------------------
+\nr --- 读取代码片断
+\nw --- 写如代码片断
+\ne --- 编辑代码片断
+-----------------------------------
+\rh --- 保存另一个缓存
+
+21. 项目管理
+:Project <filename>
+\c --- 创建一个项目
+\C --- 创建一个项目,并加载其中的子目录
+\r --- 刷新项目
+\L --- 加载全部文件到缓存中
+\w --- 从缓存中移除全部文件
+\g --- 在当前层的文件中查找
+\G --- 在所有层的文件中查找
+zm,zn 来回切换窗口可以解决花屏问题
+
+22.1 ctags支持
+Ctrl+F12 对当前目录进行扫描,并生成ctags文件
+Ctrl+] --- 跳转定义的函数
+Ctrl+t --- 跳转返回
+Ctrl+o --- 返回上一次光标位置
+:tn --- 下一个tag位置
+:tp --- 上一个tag位置
+:tag func_name --- 跳到指定方法名的定义处
+:tselect --- 选择ctags缓存中的函数
+:tjump func_name --- 从指定方法名的列表中选择
+
+22.1.1 查找关键字
+:cd ~/src/                      --- 切换文件夹
+:vimgrep /\<main\>/ src/*.c
+:cw                             --- 显示结果列表
+
+22.2 cscope支持
+cscope -Rbkq --- 生成索引
+用法：
+ cs find c|d|e|f|g|i|s|t name
+ 0 或 s    查找本 C 符号(可以跳过注释)
+ 1 或 g    查找本定义
+ 2 或 d    查找本函数调用的函数
+ 3 或 c    查找调用本函数的函数
+ 4 或 t    查找本字符串
+ 6 或 e    查找本 egrep 模式
+ 7 或 f    查找本文件
+ 8 或 i    查找包含本文件的文件
+
+23. xml语言支持
+% --- 在<>符号之间切换
+shift+> --- 自动完成tag标示
+shift+>两次 --- 自动完成tag标示,并换行
+
+24. ShowMarks标记
+<Leader>mt  --- 打开/关闭ShowMarks插件
+<Leader>mo  --- 强制打开ShowMarks插件
+<Leader>mh  --- 清除当前行的标记
+<Leader>ma  --- 清除当前缓冲区中所有的标记
+<Leader>mm  --- 在当前行打一个标记，使用下一个可用的标记名
+cm          --- 手动指定一个标记符号,并进入插入模式
+m+?         --- 手动指定一个标记符号
+
+25. md5 sha1
+:echo md5#md5("hello, world") 
+:echo sha1#sha1("hello, world") 
+
+26. tasklist
+<Leader>tl --- 查看TODO,FIXME等信息
+
+27. 画图工具
+\di --- 开始画图
+\ds --- 停止画图
+
+<left>       move and draw left
+<right>      move and draw right, inserting lines/space as needed
+<up>         move and draw up, inserting lines/space as needed
+<down>       move and draw down, inserting lines/space as needed
+<s-left>     move left
+<s-right>    move right, inserting lines/space as needed
+<s-up>       move up, inserting lines/space as needed
+<s-down>     move down, inserting lines/space as needed
+<space>      toggle into and out of erase mode
+>            draw -> arrow
+<            draw <- arrow
+^            draw ^  arrow
+v            draw v  arrow
+<pgdn>       replace with a \, move down and right, and insert a \
+<end>        replace with a /, move down and left,  and insert a /
+<pgup>       replace with a /, move up   and right, and insert a /
+<home>       replace with a \, move up   and left,  and insert a \
+\>           draw fat -> arrow
+\<           draw fat <- arrow
+\^           draw fat ^  arrow
+\v           draw fat v  arrow
+\a           draw arrow based on corners of visual-block
+\b           draw box using visual-block selected region
+\e           draw an ellipse inside visual-block
+\f           fill a figure with some character
+\h           create a canvas for \a \b \e \l
+\l           draw line based on corners of visual block
+\s           adds spaces to canvas
+<leftmouse>  select visual block
+<s-leftmouse>  drag and draw with current brush (register)
+\ra ... \rz  replace text with given brush/register
+\pa ...      like \ra ... \rz, except that blanks are considered to be transparent 
+
+28. LustyExplorer使用
+\lf 打开用户目录
+\lr 打开当前文件目录
+\lb 打开缓冲区
+
+29. 调色板插件
+:PickHEX 
+:PickHSL 
+:PickRGB 
+:PickRAW
+
+30. snippets
+30.1. snipMate(当前使用的版本)
+补全的配置文件目录：/home/zenki/.vim/snippets
+
+30.2. UltiSnip(新版本有BUG)
+配置文件目录在UltiSnips中
+utils/convert_snipmate_snippets.py为旧格式的转换文件
+toolsuit/snippets.zip为旧格式配置文件的备份
+plugin/backup/snipMate.zip为旧版本备份
+
+for, if等关键字后面按tab即可补全
+
+31. histwin查看文件修改记录
+:UB 打开窗口
+
+32. gui色彩文件转换到term
+进入color目录
+将rgb.txt文件拷贝到color下
+python gui2term.py source.vim des.vim
+将"set t_Co=256"加入.vimrc配置文件中
+
+33. 查找文件
+:Find <arg> 搜索当前文件夹下匹配arg的文件
+:Find *.py -maxdepth 2
+
+34. table页
+:te 新建table页
+:tc 关闭table页
+:Ctrl+PageUp | Ctrl+PageDown table页间切换
+
+35. session管理
+\sl 列出session列表
+\sv 保存session
+\sq 退出session
+
+36. vimViki
+\ww 打开viki首页
+\wt 在tab中打开viki首页
+\wd 删除该页
+\w\t 在tab中打开今天日记
+\w\w 在本页打开今天日记
+:VimwikiAll2Html 转换成html文件
+:VimwikiTable 插入表格
+:h vimwiki 查看帮助文档
+
+<注意>vimwiki与snipMate有冲突的地方，修改ftpluin/vimwiki.vim内容如下:
+inoremap <expr> <buffer> <Tab> vimwiki_tbl#kbd_tab()
+                           \
+                            \----------> <C-Tab>
+37. exvim
+官方主页:http://code.google.com/p/exvim/
+
+1,在工程目录中编辑*.vimentry文件，即可获得默认配置
+运行 zsh *.sh 生成各种配置文件
+
+2,工程窗口
+\C  创建工程
+\r  重新装载文件
+\cf 文件过滤
+o   在当前文件夹下加入文件
+o   在当前文件夹下加入文件夹
+\ss 查找变量定义
+
+3,文件窗口
+\tg 查找函数或变量
+\tt 查看查找堆栈
+\ve 打开配置文件
+\bk 加入书签
+\bm 打开书签
+\ff 跳转到工程窗口
+\fc 跳转到工程窗口当前文件下
+\gg 全局查找
+\shift+f 全局自定义查找
+
+38. 配色浏览
+:COLORSCROLL
+
+39. 树状文本管理器
+:Voom
+在写文本文件时根据"{{{1..."来进行层次分割
+
+40. gvim色彩转换为term-vim色彩
+:CSApproxSnapshot new_color_file
+
+41. txtfmt
+:set ft=txtfmt
+
+\vi 进入设置模式
+fb 加粗字体
+fu 下划线
+cb 蓝色前景色
+cg 绿色前景色
+cr 红色前景色
+kg 绿色背景色
+kb 蓝色背景色
+kr 红色背景色
+f- 取消格式
+c- 取消颜色
+k- 取消背景色
+
+42. TxtBrowser文本浏览插件
+空格figure 位图表标识
+空格table 表格标识
+
+43. ctags highlighting 文件高亮
+:UpdateTypesFile 生成高亮vim文件
+
+44. easytags 自动生成tags且文本高亮
+
+45. renamer文件改名插件
+:Renamer --- 进入文件改名模式
+:Ren     --- 完成文件改名 
+
+46. vimcommander
+F3 - view
+F4 - edit
+F5 - copy
+F6 - move
+F7 - create dir
+F8 - del
+Others: C-U, C-Left/C-Right, C-R, BS, DEL, C-H, etc.
+Selection of files/dirs also works: INS, +, -. Then copy/move/del selected files.
+
+Suggested binding is
+noremap <silent> <F11> :cal VimCommanderToggle()<CR>
+
+47. JavaBrowser
+浏览Java类
+:JavaBrowser
+
+48. filtering
+搜索结果列表
+,f - 查看搜索结果
+,F - 手动输入搜索关键字
+,g - 跳转搜索页
+
+在搜索结果界面中
+o - 跳转结果而不切换窗口
+enter - 跳转到结果
+esc - 退出结果窗口
+
+49. Figlet
+生成艺术字体
+:Figlet [text]
+
+50. NERD_tree_ACK
+下载ack：curl http://betterthangrep.com/ack-standalone > /usr/bin/ack && chmod 0755
+在NERDTree浏览器中输入ms，可以进行搜索
+
+51. listfile
+文本记录
+命令：
+:Lcreate    创建list类型文件
+:Lmark arg  标记
+:Ltag       加入tag
+:Lsearch    搜索
+
+格式:
+    - text
+    = text
+    1 text
+    2 text
+    o text
+    x text
+    ? text
+    [text]
+    :text:
+
+52. vimdiff
+52.1. 定位不同点
+[c 跳到前一个不同点
+]c 跳到后一个不同点
+
+52.2. 合并文档
+dp 将当前文档合并到另一个文档(diff push)
+do 将另一个文档合并到当前文档(diff get)
+
+#end here}}}
+
+% vim:ft=txt

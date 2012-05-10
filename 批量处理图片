@@ -1,0 +1,54 @@
+1. 制作索引图和动画
+
+!/bin/bash
+montage -bordercolor red -borderwidth 3 -label "%f" -tile 5x3 *.JPG montage.jpg
+mogrify -format gif *.JPG
+display montage.jpg
+animate *.JPG
+
+2. 缩放 convert -sample 80×40 input.jpg output.jpg #注意：缩放后图像保持原来的长宽比例 convert -sample 25%x25% input.jpg output.jpg
+3. 为当前目录的所有图像生成缩略图
+
+for img in `ls *.jpg`
+do
+convert -sample 25%x25% $img thumb-$img
+done
+
+4. 获取文件信息 libtiff
+
+tiffinfo filename.tiff
+pnginfo filename.png
+
+5. 可以使用 ImageMagick 的 identify
+
+identify -verbose sample.png
+identify -format “%wx%h” sample.png
+
+6. 旋转图像
+
+convert -rotate 90 input.jpg output.jpg
+
+7. 更改文件类型
+
+convert input.jpg output.png
+
+8. 为图像增加注释文字
+
+convert -font helvetica -fill white -pointsize 36 \
+-draw 'text 10,50 "Floriade 2002, Canberra, Australia"' \
+floriade.jpg comment.jpg
+convert -font fonts/1900805.ttf -fill white -pointsize 36 \
+-draw 'text 10,475 "stillhq.com"' \
+floriade.jpg stillhq.jpg
+
+9. 特殊效果
+
+convert -charcoal 2 input.jpg output.jpg #炭笔
+convert -colorize 255 input.jpg output.jpg #着色 可以指定三种颜色 red/green/blue
+convert -implode 4 input.jpg output.jpg #内爆效果
+convert -solarize 42 input.jpg output.jpg #曝光，模拟胶片曝光
+convert -spread 5 input.jpg output.jpg #随机移动，参数是位移大小
+
+10. 一次执行多个操作
+
+convert -sample 25%x25% -spread 4 -charcoal 4 input.jpg output.jpg

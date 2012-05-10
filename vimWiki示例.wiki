@@ -1,0 +1,106 @@
+= My knowledge base = 
+# 9
+    - [] [[Msdfasjdljasljdf]] -- aksjdfjasdj;~
+        * [] MyUrgentTasks -- things to be done _yesterday_!!!
+    - ProjectGutenberg -- good books are power.
+        * [[asdfaf]] -- asdf
+    - [ ] jalkdjlajsldf
+    _asdjaf_
+    *aksjdlajsd*
+    ~~hello~~
+    `code text`
+    super^script^
+    super,,script,,
+# 8
+
+== My knowledge base ==
+| Year     | Temperature (low) | Temperature (high) |
+|----------+-------------------+--------------------|
+| 1900     | -10               | 25                 |
+| 1910     | -15               | 30                 |
+| [[1920]] | -10               | 32                 |
+| 1930     | _N/A_             | _N/A_              |
+| 1940     | -2                | 40                 |
+
+
+| zenki  | jasdjf | adjfa | asdfaf | asdfadf |
+|--------+--------+-------+--------+---------|
+|        | adsf   | sdfaf | dsafsf | asdfaf  |
+| asdfaf |        |       |        |         |
+|        | asdf   | adsfa | adsfa  | adfa    |
+|        |        |       |        |         |
+|        |        |       |        |         |
+
+=== My knowledge base ===
+# 10
+    # 11
+{{{ >
+  Tyger! Tyger! burning bright
+   In the forests of the night,
+    What immortal hand or eye
+     Could frame thy fearful symmetry?
+  In what distant deeps or skies
+   Burnt the fire of thine eyes?
+    On what wings dare he aspire?
+     What the hand dare sieze the fire?
+}}}
+
+
+=========================================================================================================================
+语法
+这里有许多不同的 wiki， 许多情况下它们有自己的语法，vimwiki 也不例外。默认的 vimwiki 语法是 google 的 wiki 语法标记的子集。
+字型
+修饰文本字型
+
+*粗体文本*
+_斜体文本_
+~~删除线~~
+`代码 (无语法) 文本`
+上标^脚本^
+下标,,脚本,,
+
+链接
+WikiWords
+[[链接源地址|链接描述]]
+[[链接源地址][链接描述]]
+[http://habamax.ru/blog habamax 的主页]
+图片及图片链接
+[[images/pabloymoira.jpg]]
+
+标题
+= 1 级标题 =
+== 2 级标题 ==
+=== 3 级标题 ===
+==== 4 级标题 ====
+===== 5 级标题 =====
+====== 6 级标题 ======
+
+列表
+无序列表
+* 列表项 1 
+* 列表项 2
+
+有序列表
+# 编号列表项 1
+# 编号列表项 2
+
+定义列表
+术语 1 :: 定义 1
+术语 2 :: 定义 2
+
+表格
+| 表格 | 表格 | 表格 |
+| 表格 | 表格 | 表格 |
+| 表格 | 表格 | 表格 |
+
+预定于化文本
+{{{文本}}}
+
+块级引用
+四个以上空格开始的文本，就是一个应用块
+
+%toc 占位符
+添加目录到wiki页面 %toc 
+
+%title 自定义标题
+%nohtml 禁止输出为html
