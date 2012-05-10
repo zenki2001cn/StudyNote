@@ -43,28 +43,33 @@ $ ssh-agent
 1.5 配置文件示例
 # 以下是.gitconfig配置文件的示例：
 [color]
-    ui = auto
+	ui = auto
     status = auto
     branch = auto
 [http]
-    sslVerify = false
-    sslcainfo = /home/zenki/10.180.34.35.crt
+	sslVerify = false
+	sslcainfo = /home/zenki/10.180.34.35.crt
 [user]
-    name = Zenki.J.Zha
-    email = Zenki.J.Zha@foxconn.com
-    ;name = git@127.0.0.1
+	name = Zenki.J.Zha
+	email = Zenki.J.Zha@foxconn.com
+	;name = git@127.0.0.1
     ;signingkey = <gpg-key-id>
 [core]
-    editor = vim
+	editor = vim
 [merge]
-    tool = vimdiff
+	tool = vimdiff
 [alias]
+    au = add -u
+    aa = add -A
     co = checkout
+    ci = commit -m 
+    st = status
     oneline = log --pretty=oneline
     oneline2 = log --pretty=oneline --since='2 days ago'
     onelog = log -p -1
     diffl = diff --stat
     graph = log --oneline --decorate --graph
+
 
 2. Git 一分钟上手
 
@@ -282,6 +287,19 @@ foo.txt
 !foo.html
 # 忽略所有.o和.a文件.
 *.[oa]
+
+3.6 标签管理
+3.6.1 添加标签
+$ git tag -a v1.0 -m "tag v1.0"
+
+3.6.2 分享标签
+$ git push origin v1.0
+
+3.6.3 列出所有标签
+$ git tag -l
+
+3.6.4 上传标签
+$ git push --tags
 
 3.5.2 编辑.git/info/exclude
 # 将需要忽略的文件加入到exlcude文件中
