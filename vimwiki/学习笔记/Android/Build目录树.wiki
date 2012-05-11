@@ -1,0 +1,85 @@
+= Build目录树 =
+
+== Android 2.3 build/core目录树 ==
+{{{class="brush:bash"
+build/core
+|-- apicheck_msg_current.txt
+|-- apicheck_msg_last.txt
+|-- armelflib.x
+|-- armelf.x
+|-- armelf.xsc
+|-- base_rules.mk
+|-- binary.mk
+|-- build_id.mk
+|-- build-system.html
+|-- checktree
+|-- cleanbuild.mk
+|-- cleanspec.mk
+|-- clear_vars.mk
+|-- combo
+|   |-- arch
+|   |   `-- arm
+|   |       |-- armv4t.mk
+|   |       |-- armv5te.mk
+|   |       |-- armv5te-vfp.mk
+|   |       |-- armv7-a.mk
+|   |       `-- armv7-a-neon.mk
+|   |-- HOST_darwin-x86.mk
+|   |-- HOST_linux-x86.mk
+|   |-- HOST_windows-x86.mk
+|   |-- javac.mk
+|   |-- select.mk
+|   |-- TARGET_linux-arm.mk
+|   |-- TARGET_linux-sh.mk
+|   `-- TARGET_linux-x86.mk
+|-- config.mk
+|-- copy_headers.mk
+|-- definitions.mk
+|-- device.mk
+|-- dex_preopt.mk
+|-- distdir.mk
+|-- droiddoc.mk
+|-- dynamic_binary.mk
+|-- envsetup.mk
+|-- executable.mk
+|-- filter_symbols.sh
+|-- find-jdk-tools-jar.sh
+|-- host_executable.mk
+|-- host_java_library.mk
+|-- host_prebuilt.mk
+|-- host_shared_library.mk
+|-- host_static_library.mk
+|-- java_library.mk
+|-- java.mk
+|-- key_char_map.mk
+|-- main.mk
+|-- Makefile
+|-- multi_prebuilt.mk
+|-- node_fns.mk
+|-- notice_files.mk
+|-- package.mk
+|-- pathmap.mk
+|-- prebuilt.mk
+|-- prelink-linux-arm.map
+|-- process_wrapper_gdb.cmds
+|-- process_wrapper_gdb.sh
+|-- process_wrapper.sh
+|-- product_config.mk
+|-- product.mk
+|-- proguard.flags
+|-- proguard_tests.flags
+|-- raw_executable.mk
+|-- raw_static_library.mk
+|-- root.mk
+|-- shared_library.mk
+|-- static_java_library.mk
+|-- static_library.mk
+|-- tasks
+|   |-- apicheck.mk
+|   |-- cts.mk
+|   |-- ide.mk
+|   |-- product-graph.mk
+|   `-- sdk-addon.mk
+|-- user_tags.mk
+`-- version_defaults.mk
+}}}

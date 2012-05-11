@@ -1,0 +1,126 @@
+= GPS辅助数据下载工具 =
+
+%toc
+
+== 辅助数据下载实现 ==
+- 在GPS内容提供者一节，我们分析了对于辅助信息的处理是通过GpsXtraDownloader类来完成，该类需要从gps.conf的配置文件中得到下载地址，并通过AndroidHttpClient实现数据的下载功能。
+- 该类也可作为Http协议下载的范例来学习。
+
+=== GpsXtraDownloader ===
+{{{class="brush:java"
+GpsXtraDownloader(Context context, Properties properties) {
+    mContext = context;
+
+    // 读取服务器地址
+    int count = 0;
+    String server1 = properties.getProperty("XTRA_SERVER_1");
+    String server2 = properties.getProperty("XTRA_SERVER_2");
+    String server3 = properties.getProperty("XTRA_SERVER_3");
+    if (server1 != null) count++;
+    if (server2 != null) count++;
+    if (server3 != null) count++;
+    
+    if (count == 0) {
+        return;
+    } else {
+        mXtraServers = new String[count];
+        count = 0;
+        if (server1 != null) mXtraServers[count++] = server1;
+        if (server2 != null) mXtraServers[count++] = server2;
+        if (server3 != null) mXtraServers[count++] = server3;
+
+        // randomize first server
+        Random random = new Random();
+        mNextServerIndex = random.nextInt(count);
+    }       
+}
+}}}
+
+=== downloadXtraData ===
+{{{class="brush:java"
+byte[] downloadXtraData() {
+    String proxyHost = Proxy.getHost(mContext);
+    int proxyPort = Proxy.getPort(mContext);
+    byte[] result = null;
+    ...... 
+
+    while (result == null) {
+        // 调用doDownload处理下载任务
+        result = doDownload(mXtraServers[mNextServerIndex], useProxy, proxyHost, proxyPort);
+        ......    
+    }
+
+    return result;
+}
+}}}
+
+=== doDownload ===
+{{{class="brush:java"
+protected static byte[] doDownload(String url, boolean isProxySet, 
+                                   String proxyHost, int proxyPort) {
+    AndroidHttpClient client = null;
+    try {
+        // 创建AndroidHttpClient实例
+        client = AndroidHttpClient.newInstance("Android");
+        // 创建请求对象
+        HttpUriRequest req = new HttpGet(url);
+
+        // 如果需要，创建代理服务
+        if (isProxySet) {
+            HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+            ConnRouteParams.setDefaultProxy(req.getParams(), proxy);
+        }
+
+        // 添加请求头信息
+        req.addHeader(
+                "Accept",
+                "*/*, application/vnd.wap.mms-message, application/vnd.wap.sic");
+
+        req.addHeader(
+                "x-wap-profile",
+                "http://www.openmobilealliance.org/tech/profiles/UAPROF/ccppschema-20021212#");
+
+        // 执行请求，并获取HttpResponse对象
+        HttpResponse response = client.execute(req);
+        // 获取状态码
+        StatusLine status = response.getStatusLine();
+        if (status.getStatusCode() != 200) { // HTTP 200 is success.
+            if (DEBUG) Log.d(TAG, "HTTP error: " + status.getReasonPhrase());
+            return null;
+        }
+
+        // 获取HttpEntity对象，并读取返回信息
+        HttpEntity entity = response.getEntity();
+        byte[] body = null;
+        if (entity != null) {
+            try {
+                if (entity.getContentLength() > 0) {
+                    body = new byte[(int) entity.getContentLength()];
+                    DataInputStream dis = new DataInputStream(entity.getContent());
+                    try {
+                        dis.readFully(body);
+                    } finally {
+                        try {
+                            dis.close();
+                        } catch (IOException e) {
+                            Log.e(TAG, "Unexpected IOException.", e);
+                        }
+                    }
+                }
+            } finally {
+                if (entity != null) {
+                    entity.consumeContent();
+                }
+            }
+        }
+        return body;
+    } catch (Exception e) {
+        if (DEBUG) Log.d(TAG, "error " + e);
+    } finally {
+        if (client != null) {
+            client.close();
+        }
+    }
+    return null;
+}
+}}}

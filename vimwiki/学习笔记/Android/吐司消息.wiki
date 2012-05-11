@@ -1,0 +1,36 @@
+= 吐司消息 =
+
+[pic/toast.png]
+
+== 相关类 ==
+{{{class="brush:java"
+import android.widget.Toast;
+import android.widget.ImageView;
+}}}
+
+=== 文字的Toast ===
+- 新建Toast实例，调用Toast.makeText()方法。
+    # 第1个参数 Context
+    # 第2个参数 要表示的字符串
+    # 第3个参数 表示期间 （LENGTH_SHORT，LENGTH_LONG）。
+- Toast的表示，调用show()方法。
+
+例程源码(Java)
+{{{class="brush: java"
+Toast.makeText(this, "Test", Toast.LENGTH_LONG).show();
+}}}
+
+=== 带图片的Toast ===
+- 新建Toast实例和ImageView实例
+- 调用Toast.setView()方法
+- 调用Toast.show()方法
+
+例程源码(JAVA)
+{{{class="brush:java"
+Toast toast = new Toast(this); 
+ImageView view = new ImageView(this); 
+
+view.setImageResource(R.drawable.icon); 
+toast.setView(view); 
+toast.show();
+}}}

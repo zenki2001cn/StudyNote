@@ -1,0 +1,33 @@
+= Service =
+
+== 什么是Service ==
+- Local Service不是单独的进程，也不是一个单独的线程，它与主程序在同一个线程中。
+- Remote Service是一个单独的进程，并且受系统控制，主进程停止而Service进程不一定停止。
+- 通过Context.startService()方法，运行一个Service，告知应用程序某些逻辑需要在后台处理。
+- 通过Context.bindService()方法，可以将某些功能暴露给外部应用程序，并提供一些交互和服务。
+
+== Service生命周期 ==
+- Service从startService调用开始，直到stopService调用结束，也可以通过自身调用Service.stopSelf()或者Service.stopSelfResult()停止。
+- 客户端通过bindService绑定到一个Service，通过unbindService关闭，传递给bindService的Intent对象会传递给onBind，传递给unbindService的Intent对象会传递给onUnbind。
+- 如果有一个客户绑定到Service，stopService不会立即停止这个Service，必须要等待客户取消绑定。
+- 在严重的内存压力下，service会被系统kill,并在稍后重新启动。
+
+[pic/service_lifecycle.png]
+
+== Service调用 ==
+- `Context.startService()`用来启动一个Service，
+
+{{{class="brush:text"
+先调用onCreate()，再调用onStart()，如果Service已经运行，只调用onStart()，所以onStart可以调用多次。
+stopService()直接调用onDestroy()，如果没有调用，Service会一直运行。
+}}}
+
+- `Context.bindService()`
+
+{{{class="brush:text"
+先调用onCreate()，再调用onBind()，onBind将返回给客户端一个IBind接口，并允许客户端回调服务的方法，
+这时调用者和Service绑定在一起，退出时调用onUnbind()，再调用onDestroy()。
+}}}
+
+- Service在每次开启和关闭时，只有onStart()可被调用多次。
+- BroadcastReceiver只能通过startService启动Service

@@ -1,0 +1,26 @@
+= 自定义View的步骤 =
+
+== 基本流程 ==
+- 设置属性：XML中添加属性
+- 设置焦点：`requestFocus()`强制获取焦点
+- 设置事件监听
+- 设置是否可见：`setVisibility(int)`设置是否可见
+
+== 重载方法 ==
+| 周期     | 调用方法                              | 描述                                        |
+|----------+---------------------------------------+---------------------------------------------|
+| 初始化   | Constructors                          | 从代码创建视图或是从XML文件创建             |
+|          | onFinishInflate()                     | 当本视图和它的子视图从XML中解压后调用该方法 |
+| 布局     | onMeasure(int, int)                   | 设置本视图和它的子视图时调用                |
+|          | onLayout(boolean, int, int, int, int) | 本视图为它的子视图设置大小和位置时调用      |
+|          | onSizeChanged(int, int, int, int)     | 本视图大小改变时调用                        |
+| 绘图     | onDraw(Canvas)                        | 本视图渲染内容时调用                        |
+| 事件处理 | onKeyDown(int, KeyEvent)              | 键盘按下时触发                              |
+|          | onKeyUp(int, KeyEvent)                | 键盘按键弹起时调用                          |
+|          | onTrackballEvent(MotionEvent)         | 轨迹球事件响应                              |
+|          | onTouchEvent(MotionEvent)             | 触摸事件响应                                |
+| 焦点     | onFocusChanged(boolean, int, Rect)    | 焦点变化时调用                              |
+|          | onWindowFocusChanged(boolean)         | 包含该该图的窗口焦点发生变化时调用          |
+| 附着     | onAttachedToWindow()                  | 当视图附着到一个窗口时调用                  |
+|          | onDetachedFromWindow()                | 当视图离开窗口时调用                        |
+|          | onWindowVisibilityChanged(int)        | 当包含该视图的窗口可见性变化时调用          |

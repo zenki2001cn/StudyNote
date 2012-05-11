@@ -1,0 +1,266 @@
+= Event事件的实现(Android 2.3) =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// Java相关
+framework/base/core/java/android/view/IWindowManager.aidl
+framework/base/core/java/android/view/KeyCharacterMap.java
+framework/base/services/java/com/android/server/WindowManagerService.java
+framework/base/services/java/com/android/server/KeyInputQueue.java
+framework/base/services/java/com/android/server/InputDevice.java
+frameworks/base/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+
+// JNI接口
+framework/base/services/jni/com_android_server_InputManager.cpp
+framework/base/core/jni/android_view_InputQueue.cpp
+framework/base/core/jni/android_view_InputChannel.cpp
+
+// C++相关
+framework/base/libs/ui/Input.cpp
+framework/base/libs/ui/InputDispatcher.cpp
+framework/base/libs/ui/InputManager.cpp
+framework/base/libs/ui/InputReader.cpp
+framework/base/libs/ui/InputTransport.cpp
+framework/base/libs/ui/EventHub.cpp
+framework/base/libs/ui/KeyLayoutMap.cpp
+framework/base/libs/ui/KeyCharacterMap.cpp
+framework/base/libs/utils/Looper.cpp
+framework/base/libs/utils/Threads.cpp
+}}}
+
+== Event事件处理概述 ==
+{{{class="brush:text"
+    首先我们要明确一个概念，keyboard或者touch事件最先由底层硬件接收，再通过驱动一层一层向上传递。
+中间经过了JNI调用，进程间通信等过程。而Java层主要是根据不同的事件类型，调用用户自定义的回调方法，
+从而做出不同事件的响应处理。无论是哪种类型的事件，都是经过统一的处理流程来实现。
+    其次，我们还需要知道Event事件是通过Service获取，目前Android是通过创建Java层的
+WindowManagerService，该服务通过JNI调用C/C++代码来实现Event事件的接收，最后传递给当前焦点的Activity。
+    第三，输入事件由Service捕获，再通过ashem的机制传递给其他需要处理的应用程序。
+    第四，所有事件都会经过主窗口进行预处理再分发给用户窗口。
+    我们的分析从Service开始。
+}}}
+
+== Java层的service实现 ==
+{{{class="brush:text"
+    Java层会在SystemServer启动时加载WindownManagerService的服务，该类继承自IWindowManager.Stub。
+与Andriod 2.1不同的是，输入事件由一个InputManager管理类来处理，它主要通过native的方法来初始化C++
+层的InputManager管理类，并开启输入事件的监听线程，此外还提供了调用其他native方法的接口。那么我们
+关心的事件接收和事件分发的处理在哪里呢？答案是native层，下面我们将详细分析C++层的InputManager类。
+}}}
+
+== JNI层的接口实现 ==
+{{{class="brush:text"
+    Java层InputManager对应的native代码在文件com_android_server_InputManager.cpp中，它包含
+NativeInputManager用来作C++层InputManager的初始化。该类主要有三个作用：
+    1. 对C++层方法作封装，让native代码更清晰。
+    2. 实现InputReaderPolicyInterface和InputDispatcherPolicyInterface的接口。
+    3. 初始化时接收来自Java层InputManager.Callbacks作为回调。
+    
+    Java层InputChannel对应的native代码在android_view_InputChannel.cpp中，它用来初始化Server端和Client
+端的InputChannel对象(C++层)。具体的实现是通过InputChannel(C++层)完成。
+
+    Java层的InputQueue对应的native代码在android_view_InputQueue.cpp中，它用来注册Client端的
+InputChannel，实现处理事件消息的callback方法。
+}}}
+
+== C++层的事件处理模块 ==
+- 同Android 2.1一样，输入事件处理的代码在ui库中，不同的是Android 2.3对这些代码结构进行了划分。主要是以下几个模块：
+    - 数据结构类
+        - 输入事件的抽象：AInputEvent、InputEvent、KeyEvent、MotionEvent
+        - 事件设备的抽象：InputDevice
+        - 传递过程中的事件信息抽象：InputMessage
+    - 功能实现类
+        - 获取输入事件的实现：EventHub
+        - 分发输入事件的实现：InputChannel、InputPublisher、InputConsumer、Connection
+    - 管理类
+        - 管理按键映射：InputMapper、SwitchInputMapper、KeyboardInputMapper、TrackballInputMapper、TouchInputMapper、SingleTouchInputMapper、MultiTouchInputMapper
+        - 管理Event输入：InputReaderPolicyInterface、InputReaderInterface、InputReaderContext、InputReader、InputReaderThread
+        - 管理Event分发：InputDispatcherPolicyInter、InputDispatcherInterface、InputDispatcher、InputDispatcherThread、Looper、InputTarget
+        - C++层管理输入事件的入口：InputManager
+
+== 各模块的简要描述 ==
+=== 数据结构类 ===
+- 输入事件的抽象：这部分将不同类型的输入行为抽象出来。比如键盘输入需要知道scancode、keycode、按下时间，而touch事件则需要知道触摸点的X和Y坐标。
+- 输入设备的抽象：对输入设备的抽象，包含设备ID、设备名称等信息。还包含InputMapper的对象，InputReader在读到输入事件后需要经过InputMapper处理再进行分发。
+- 输入信息的抽象：分发模块将InputEvent封装成InputMessage对象再发送给ashem，该对象充当传输介质的作用。
+
+=== 功能实现类 ===
+- 获取输入事件的实现：该功能由EventHub类实现，这部分内容主要是打开设备节点，读取*.kl和*.kcm文件，循环监听输入事件的到来。可参考[[Event事件的实现2_1]]对EventHub类的解析。
+
+- 分发输入事件的实现：这部分内容有两个抽象概念：第一个是将对ashem机制的访问抽象出InputChannel，表示数据传输的通道。第二个是对数据发送者和接收者的抽象，发送者为InputPublisher，接收者为InputConsumer。这三个类都是处理数据的实现类。
+
+=== 管理类 ===
+- 管理按键映射：InputMapper及其子类实现了按键映射的抽象，比如键盘输入需要读取*.kl和*.kcm文件，而这些映射功能由KeyboardInputMapper完成。之所以称之为管理类，是因为具体的实现代码在EventHub中，该类是对按键映射功能的抽象。
+
+- 管理Event输入：InputReader通过调用EventHub类的方法来获取按键事件，InputReaderThread是线程类，包含InputReader对象，按键事件的获取是在线程中完成。
+
+- 管理Event分发：事件分发的功能在上面提到的实现类中完成，而InputDispatcher需要将这些事件发送到相应的InputTarget，并且还需要考虑来自Java层的回调(InputDispatcherPolicyInterface)。InputDispatcherThread是事件分发的线程类，输入事件的分发在线程中完成。
+
+- C++层管理输入事件的入口：InputManager是提供给JNI接口调用的管理类，处于输入事件的最高层。它包含了上面提到的大多数管理类，主要负责这些管理类的初始化、线程的开启和停止等功能。
+
+== Event处理流程 ==
+=== 启动事件监听服务 ===
+- Java层的WindowManagerService是高阶层的窗口管理服务类，它的构造方法会做如下初始化(只描述与Event事件相关的实现，见参考代码)：
+    - 创建InputManager对象(Java层)。
+    - 调用InputManager.start()进入事件管理服务状态。
+- Java层的InputManager是对C++层的封装，具体功能通过native代码实现。
+- InputManager的native代码在com_android_server_InputManager.cpp中，其中有一个NativeInputManager的管理类，该类主要有以下作用：
+    - 对InputManager(C++层)进行了封装。
+    - 该类的构造方法中创建了EventHub对象。
+    - 该类继承了InputReaderPolicyInterface和InputDispatcherPolicyInterface两个接口，用来初始化InputManager(C++层)。
+- C++层的InputManager会开启两个线程InputDispatcherThread和InputReaderThread，分别管理InputDispatcher和InputReader。
+    - 通过构造方法的参数readerPolicy和dispatcherPolicy构造InputReader和InputDispatcher。由此可见，C++层与Java层沟通的方式之一是通过Policy回调。
+    - native代码调用C++层InputManager.start()开启两个管理线程。
+    - InputManager还提供getDispatcher()和getReader()两个方法来获取InputDispatcher和InputReader。
+- 以上即为Event事件服务初始化的大概流程，最终我们看到了两个线程在运行，一个用来分发事件，一个用来读取事件。下面我们来分析这两个线程如何运行。
+
+=== 如何实现事件的读取 ===
+- InputReaderThread是事件读取线程的抽象，它包含InputReader对象，具体的线程实现是InputReader。
+- InputReader继承自InputReaderInterface和InputReaderContext，loopOnce()方法是事件处理的主循环，它调用EventHub.getEvent()方法来打开事件设备节点，并将信息保存在KeyedVector结构中，再使用poll方法轮询各节点状态，读取事件信息。getEvent()接收RawEvent对象作为参数，当有事件到来时返回给该对象。RawEvent是指没有经过InputMapper处理的原始事件。接下来在process()方法中处理该对象(见参考代码InputReader::loopOnce)。
+- process()处理添加设备、移除设备、输入事件等这些消息。我们着重分析对输入事件的处理：它会调用InputReader::consumeEvent()方法，该方法在之前保存的设备节点容器中找到对应的InputDevice对象，便调用该对象的process()方法。
+    - InputDevice::process()继续调用相应InputMapper实现类的process()方法，以键盘事件为例则调用KeyboardInputMapper::process()，再调用KeyboardInputMapper::processKey()。
+    - KeyboardInputMapper::processKey()会先初步处理一下keyDown和keyUp事件，比如在很短事件内同一按键是否被按下多次。之后轮到我们的另一个主角登场—`InputDispatcher`。getDispatcher()->notifyKey()会通知分发线程有事件到来。(以键盘事件为例是通过KeyboardInputMapper处理，其他的事件由各自InputMapper的实现类处理)
+
+=== 如何实现事件的分发一 ===
+- 事件的分发线程是InputDispatcherThread，它会调用InputDispatcher.dispatchOnce()进入事件处理循环。这里提到一个新的工具类Looper(C++)，它是线程循环的抽象类，dispatchOnce()会调用该Looper.pollOnce()。后面做详细分析。
+- InputDispatcher的构造方法中需要注意一点，即变量`maxEventsPerSecond`的初始化，它会从InputManager.getMaxEventsPerSecond方法(Java层)获取每秒分发的最大事件数。可以通过修改属性windowsmgr.max_events_per_sec来设置该变量。
+- 事件的分发从InputDispatcher.notifyKey()方法开始(以键盘事件为例，其他如touch事件，调用的是notifyMotion())。notifyKey()的作用是在将事件发送给应用程序前，先通知系统进行预处理，它主要做以下几件事情(见参考代码InputDispatcher::notifyKey)：
+    - 判断事件是否合法，通过validateKeyEvent()方法，不合法则return。
+    - 通过Policy做事件预处理，这里的Policy是`PhoneWindowManager`，后面做详细分析。
+    - 将事件信息加入队列，唤醒线程处理分发事件。
+
+==== Looper类 ====
+- Looper类是线程循环的抽象，它继承自ALooper和RefBase。包含内部类Request(请求)和Response(应答)。
+- Looper类通过管道机制来完成唤醒的过程：它创建一个匿名管道，监听管道一端，通过从另一端发送数据到监听端实现唤醒功能。
+- Looper类使用addFd()添加描述符，并在循环中监听这些描述符来处理消息。可以使用epoll模式来处理。
+- Looper循环抽象有两种模式：
+    - 单次循环模式：pollOnce()
+    - 无限循环模式：pollAll()
+
+==== Thread类 ====
+- 事件读取和事件分发线程的基类，run()方法会创建内部线程，该线程本身运行在一个循环模式，并调用子类的threadLoop()方法。
+- 由于InputReader和InputDispatcher实现都是单次模式，因此`InputReader::pollOnce()和InputDispatcher::pollOnce()会被多次调用`。
+
+==== CommandEntry(预处理队列) ====
+- 该类是预处理命令的抽象，用来保存分发前的预处理命令。
+
+==== DispatchEntry(分发队列) ====
+- 该类是分发命令的抽象，用来保存分发命令。
+
+==== 加入队列之前做预处理 ====
+- 在分发线程接收到事件之前，系统需要对该事件做预先处理动作。回到InputDispatcher.notifyKey()方法，这个动作是通过mPolicy->interceptKeyBeforeQueueing()来实现。回忆之前InputManager(C++层)初始化时会传递一个InputDispatcherPolicyInterface对象作为参数，而这个接口的实现者是native层的NativeInputManager，NativeInputManager.interceptKeyBeforeQueueing()又会调用mCallbacksObj.interceptKeyBeforeQueueing()，mCallbacksObj是初始化时传进来的InputManager.Callbacks对象(Java层)，再查看InputManager.Callbacks.interceptKeyBeforeQueueing()，最终调用了WindowManagerService.InputMonitor类。
+- InputMonitor的作用是监测所有应用程序窗口，并更新它们的输入事件状态。我们继续跟进InputMonitor.interceptKeyBeforeQueueing()方法，它会调用mPolicy.interceptKeyBeforeQueueing()。mPolicy是通过PolicyManager.makeNewWindowManager()初始化得到的，它实际上是PhoneWindowManager对象。到此我们找到了系统预处理的实现代码是在PhoneWindowManager.interceptKeyBeforeQueueing()方法中。该方法主要做以下处理(见参考代码PhoneWindowManager.interceptKeyBeforeQueueing)：
+    - 针对屏幕状态和解锁状态的特殊处理
+    - 针对音量键的特殊处理
+    - 针对挂机(cancel call)键的特殊处理
+    - 针对电源键的特殊处理
+    - 针对耳机、多媒体键的特殊处理
+    - 针对拨号键的特殊处理
+
+==== 分发给用户之前做预处理 ====
+- 随后我们再看InputDispatcher.dispatchOnce()，该方法会被循环调用，这里要注意的是`分发和预处理命令会被加入到队列中`。以下为调用流程：
+    - 调用内部dispatch方法：InputDispatcher::dispatchOnceInnerLocked()
+        - 处理重复按键
+        - 将需要传递给用户的事件加入预处理队列：InputDispatcher::pokeUserActivityLocked()
+        - 处理是否需要分发给用户
+        - 根据事件类型分为如下操作：
+            - 处理配置变更：InputDispatcher::dispatchConfigurationChangedLocked()
+                - 将配置变更命令加入分发队列：InputDispatcher::doNotifyConfigurationChangedInterruptible()
+            - 处理按键事件：InputDispatcher::dispatchKeyLocked()
+                - 将分发前预处理加入预处理队列：InputDispatcher::doInterceptKeyBeforeDispatchingLockedInterruptible()
+                - 检查是否需要丢弃事件
+                - 查找目标窗口：InputDispatcher::findFocusedWindowTargetsLocked()
+                - 将按键事件加入分发队列：InputDispatcher::dispatchEventToCurrentInputTargetsLocked()
+            - 处理touch事件：InputDispatcher::dispatchMotionLocked()
+                - 进行一些预处理
+                - 检查是否需要丢弃事件
+                - 查找目标窗口：InputDispatcher::findTouchedWindowTargetsLocked()
+                - 将touch事件加入分发队列：InputDispatcher::dispatchEventToCurrentInputTargetsLocked()
+        - 以上标识的预处理命令被加入CommandEntry的队列中，然后调用`runCommandsLockedInterruptible()`统一处理。而分发消息被加入到DispatchEntry的队列中，需要分发时再从队列中取出。
+        - 唤醒线程：mLooper->wake();
+- 需要注意的是分发事件在处理过程中会不时调用来自上层窗口的回调，主要是WindowManagerService.InputMonitor类中的方法。主窗口PhoneWindowManager的几个重要方法也会被该类调用，如：
+    - PhoneWindowManager.`interceptKeyBeforeDispatching()`
+    - PhoneWindowManager.`interceptKeyBeforeQueueing()`
+
+
+=== 如何实现事件的分发二 ===
+- 事件分发处理还没有结束，分发消息被加入到队列中后是如何处理的？回到事件的分发线程，mLooper->wake()将Looper唤醒，进入pollInner()方法，epoll_wait()监听所有描述符，其中包括Looper的管道描述符和其他描述符，此时出现两个处理分支(见参考代码Looper::pollInner)：
+    - 如果Looper管道描述符有数据到来，则调用awoken()来处理管道请求。
+    - 如果是其他请求到来，则调用pushResponse()方法将Request对象加入应答列表。
+- pollInner()方法在最后会依次查询Response列表，找到并调用对应的callback处理。
+- 从目前的分析来看，事件的分发处理是在Looper.pollInner()中，但是我们只看到了管道描述符的创建，其他应用程序的描述符是怎样加入到这个监听队列中的？它们使用的通讯机制又是什么？线索是Looper.addFd()方法，该方法将其他请求的描述符加入到了监听循环中以便将事件发送给它们。现在我们要解决的几个问题是：
+    - 加入监听循环的描述符是什么，它们通讯的机制是什么。
+    - 描述符如何加入到监听循环中。
+
+==== 请求加入Looper的监听循环 ====
+- 我们回头再看PhoneWindowManager，以该窗口为例，查看updateSetting()方法，它会通过`WindowManagerService.monitorInput()`方法(Java层)返回一个本地InputChannel对象，再通过`InputQueue.registerInputChannel()`方法(Java层)注册该Channel对象。这两个方法其实是完成创建通讯通道的功能，两端通过各自的InputChannel进行通讯。
+    - monitorInput()做了什么：它会调用InputManager.monitorInput()方法(Java层)，该方法首先通过InputChannel.openInputChannelPair()方法(Java层)，再透过JNI(android_view_InputChannel.cpp)调用InputChannel::openInputChannelPair()方法(C++层)，最终通过打开ashem设备节点并返回两对描述符分别代表客户端和服务端，返回给上层的是封装了这些描述符的InputChannel对象。在这里，WindowManagerService作为Server端，而PhoneWindowManager作为Client端。
+    - 仔细分析InputChannel::openInputChannelPair()方法，它首先打开ashem节点，返回给Server端的描述符，之后使用dup()复制另一个描述符给Client端。然后调用两次pipe()方法创建了两对管道描述符，一对用来从Server端传递信息给Client端，另一对从Client端传递信息给Server端。最后使用这些描述符初始化InputChannel对象。
+    - `这里得出的结论是事件数据通过ashem机制传输，而控制数据从两个管道传输`，这样不仅在结构上清晰，在性能上也能够得到保证。
+- 两端得到了各自的InputChannel对象，到此还没有结束，还需要加入到监听队列中。Server端通过NativeInputManager::registerInputChannel()方法(com_android_server_InputManager.cpp)，再调用mInputManager->getDispatcher()->registerInputChannel()注册。最终会调用Looper.addFd()方法加入到Services的监听队列。Client端通过InputQueue.registerInputChannel()方法(Java层)，再透过JNI(android_view_InputQueue.cpp)调用NativeInputQueue::registerInputChannel()方法注册。该方法首先通过android_os_MessageQueue_getLooper()方法获取应用程序相关的Looper对象，再通过Looper.addFd()加入到当前应用程序的监听队列中。至此两端的线程都在监听这对描述符，等待命令数据的到来(注意，addFd()只是加入了双方的管道描述符)。
+
+==== 两个回调函数 ====
+- 之前我们分析过在pollInner()方法中，事件分发处理采用callback方式向上传递。那么callback是什么，又是如何注册到Looper中的？我们再看addFd()方法的声明，它接收一个ALooper_callbackFunc类型的回调方法作为参数(定义在looper.h中)。而Server端和Client端的回调必然是不同的，它们分别是`InputDispatcher::handleReceiveCallback()`和`NativeInputQueue::handleReceiveCallback()`。我们重点看NativeInputQueue::handleReceiveCallback()方法(Client端回调)，后面会发现惊喜！
+    - 作为Client端的回调，当然首先需要与Server端通讯，该回调通过Connection获取InputConsumer对象(封装了InputChannel作为Client端Channel的抽象)，在与Server端同步之后，InputConsumer.consume()会处理传递过来的事件信息InputEvent，接下来的switch语句会根据事件类型，调用Java层的InputQueue.dispatch*()方法，再调用InputHandler.handle*()方法(见android_view_InputQueue.cpp)。
+    - InputHandler是一个接口类，在ViewRoot中会有该接口的实现类，通常它会通过Handler发送Message将事件信息向上传递。
+- 到此我们完整分析了事件消息的产生和传递直到被InputHandler类处理的流程。
+
+==== 发布者和消费者的抽象 ====
+- 这段内容算是额外的补充，主要是说明两个callback方法中的细节。这里涉及到几个类：Connection、InputPublisher、InputConsumer、InputMessage。Connection是表示连接状态的类，它本身包含InputPublisher对象，每当注册InputChannel时，该对象会被生成，并加入到对应描述符的容器中(见InputDispatcher::registerInputChannel())，当需要该对象时再从容器中取。InputPublisher是消息发送者的抽象类，代表Server端，它封装了InputChannel对象，并且对于不同类型的事件分离出了不同的方法(如publishKeyEvent()和publicshMotionEvent())。InputConsumer是消息消费者的抽象类，代表Client端，它同样封装了InputChannel对象，consume()方法用来处理消息。InputMessage是事件在传输过程中的抽象，它实际上就是一个包含各种事件描述的struct对象。了解了这些类的作用，我们就来分析这两个回调处理：
+    - InputDispatcher::handleReceiveCallback回调是Server端的处理函数，它首先查找到Connection对象，之后调用以下方法完成消息的发送：
+        - 与对端同步：InputPublisher.receiveFinishedSignal()
+        - 消息分发开始：InputDispatcher::finishDispatchCycleLocked()
+            - 循环处理DispatchEntry队列：InputDispatcher::startNextDispatchCycleLocked()
+            - 开始消息分发：InputDispatcher::startDispatchCycleLocked()
+                - 如果是KeyEvent：connection->inputPublisher.`publishKeyEvent()`
+                - 如果是MotionEvent：connection->inputPublisher.`publishMotionEvent()`
+        - 通知对端消息分发完毕：connection->inputPublisher.sendDispatchSignal()
+    - NativeInputQueue::handleReceiveCallback回调是Client端的处理函数，它同样取得Connection对象，之后调用以下方法完成消息的接收：
+        - 与对端同步：InputConsumer.receiveDispatchSignal()
+        - 处理接收数据开始：connection->inputConsumer.`consume()`runCommandsLockedInterruptible
+            - 如果是KeyEvent：inputConsumer.populateKeyEvent()
+            - 如果是MotionEvent：inputConsumer.populateMotionEvent()
+        - 通知对端消息接收完毕：connection->inputConsumer.sendFinishedSignal()
+        - 通过switch语句判断事件type类型：
+            - 如果是KeyEvent：dispatchMethodId = gInputQueueClassInfo.`dispatchKeyEvent`;
+            - 如果是MotionEvent：dispatchMethodId = gInputQueueClassInfo.`dispatchMotionEvent`;
+
+== Event处理总结 ==
+- Android中的Event事件使用Linux标准的event设备驱动，事件由后台Service接收，再发送到焦点窗口。分发处理类似C/S模式。
+- Service中包含事件读取线程和事件分发线程。事件读取线程监听/dev/input/event*设备节点。事件分发线程会打开ashem设备节点，用来传输数据，并生成两个管道用于传输Server端与Client端的控制指令。
+- 预处理命令和事件分发命令先被分别加入到两个队列中，再通过统一的方法进行处理。
+- 系统预处理事件主窗口类为PhoneWindowManager，可根据需要修改相关拦截事件处理的方法。
+- 官方event处理流程描述(android_app_NativeActivity.h)：
+
+{{{class="brush:c++"
+/*
+ * NDK input queue API.
+ *
+ * Here is the event flow:
+ * 1. Event arrives in input consumer, and is returned by getEvent().
+ * 2. Application calls preDispatchEvent():
+ *    a. Event is assigned a sequence ID and enqueued in mPreDispatchingKeys.
+ *    b. Main thread picks up event, hands to input method.
+ *    c. Input method eventually returns sequence # and whether it was handled.
+ *    d. finishPreDispatch() is called to enqueue the information.
+ *    e. next getEvent() call will:
+ *       - finish any pre-dispatch events that the input method handled
+ *       - return the next pre-dispatched event that the input method didn't handle.
+ *    f. (A preDispatchEvent() call on this event will now return false).
+ * 3. Application calls finishEvent() with whether it was handled.
+ *    - If handled is true, the event is finished.
+ *    - If handled is false, the event is put on mUnhandledKeys, and:
+ *      a. Main thread receives event from consumeUnhandledEvent().
+ *      b. Java sends event through default key handler.
+ *      c. event is finished.
+ */
+}}}
+
+== Event处理类图 ==
+[[pic/Event处理类.png]]
+
+= 参考代码 =
+- [[Event处理参考代码2_3]]
+

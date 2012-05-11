@@ -1,0 +1,191 @@
+= socket通讯 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:c++"
+// C++层
+#include <cutils/sockets.h>
+
+// Java层
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
+import java.io.OutputStream;
+}}}
+
+== 创建socket节点 ==
+- Android提供了一个方便socket通讯的机制，通过创建一个命名的socket节点为通讯两端架设通道。
+- 通常在init.rc中创建相关的socket节点。如下例创建的demo节点。
+
+{{{class="brush:bash"
+# vold：socket名称
+# stream：socket类型
+# 0660：读取权限
+service socketDemo /system/bin/myserver
+    socket demo stream 0666 system system
+}}}
+
+- 当系统运行后会创建/dev/socket/demo的设备节点。
+
+{{{class="brush:bash"
+$ ls /dev/socket/demo
+srw-rw-rw-  1 system system     1,5  2011-12-06 08:21 demo
+}}}
+
+== native层的服务端 ==
+- 通过<cutils/sockets.h>中的android_get_control_socket方法获取命名的demo设备节点描述符。
+
+{{{class="brush:c++"
+// 与init.rc中创建的socket节点命名一致
+#define socketName "demo"
+
+int initSocket() 
+{
+    int fd;
+
+    // 获取描述符
+    if ((fd = android_get_control_socket(socketName)) < 0) {
+        LOGD("demo socket error");
+        return -1;
+    }
+
+    // 开启监听
+    if (listen(fd, 4) < 0) {
+        LOGD("demo listen error");
+        return -1;
+    }
+
+    return fd;
+}
+}}}
+
+== Java层的客户端 ==
+- 客户端同样需要打开demo节点，使用LocalSocket和LocalSocketAddress完成该功能。
+- LocalSocketAddress.Namespace决定了如何查找指定名字的socket节点。
+
+{{{class="brush:java"
+void sendMsgToServer() 
+{
+    LocalSocket s = null;
+    LocalSocketAddress l;
+    byte[] buf = new byte[1];
+    buf[0] = '1';
+
+    try {
+        s = new LocalSocket();
+        l = new LocalSocketAddress("demo",LocalSocketAddress.Namespace.RESERVED);
+        s.connect(l);
+
+        OutputStream os = s.getOutputStream();
+        if (os != null) {
+            os.write(buf);
+            os.flush();
+            os.close();
+        }
+    } catch (Exception e) {
+        Log.d(TAG, "sendMsgToServer error " + e);
+    }
+}
+}}}
+
+=== 本地socket名字空间 ===
+| 标识                                    | 描述                | 备注 |
+|-----------------------------------------+---------------------+------|
+| LocalSocketAddress.Namespace.ABSTRACT   | abstract名字空间    |      |
+| LocalSocketAddress.Namespace.FILESYSTEM | filesystem名字空间  |      |
+| LocalSocketAddress.Namespace.RESERVED   | /dev/socket名字空间 |      |
+
+== 代码示例(Java) ==
+{{{class="brush:c"
+private void listenToSocket() throws IOException {
+    LocalSocket socket = null;
+    
+    try {
+        // 初始化socket
+        socket = new LocalSocket();
+        LocalSocketAddress address = new LocalSocketAddress(mSocket,
+                LocalSocketAddress.Namespace.RESERVED);
+        socket.connect(address);
+        
+        // 获取输入输出流
+        InputStream inputStream = socket.getInputStream();
+        mOutputStream = socket.getOutputStream();
+
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int start = 0;
+
+        while (true) {
+            int count = inputStream.read(buffer, start, BUFFER_SIZE - start);
+            if (count < 0) break;
+
+            // 更新读取的字节数，并重置起始标志
+            count += start;
+            start = 0;
+
+            for (int i = 0; i < count; i++) {
+                // 以0结尾的标识，标识读到正确的数据
+                if (buffer[i] == 0) {
+                    String event = new String(buffer, start, i - start);
+                    // 解析获取的字符串信息
+                    // ......
+                     
+                    // 更新起始标志
+                    start = i + 1;
+                }
+            }
+
+            // 如果没有找到正确的字符串，则重新读取
+            if (start != count) {
+                final int remaining = BUFFER_SIZE - start;
+                System.arraycopy(buffer, start, buffer, 0, remaining);
+                start = remaining;
+            } else {
+                start = 0;
+            }
+        }
+    } catch (IOException ex) {
+        throw ex;
+    } finally {
+        synchronized (this) {
+            if (mOutputStream != null) {
+                try {
+                    mOutputStream.close();
+                } catch (IOException e) {
+                }
+                mOutputStream = null;
+            }
+        }
+
+        try {
+            if (socket != null) {
+                socket.close();
+            }
+        } catch (IOException ex) {
+        }
+    }
+}
+}}}
+
+== 代码示例(C++) ==
+{{{class="brush:c"
+bool FrameworkListener::onDataAvailable(SocketClient *c) {
+    char buffer[255];
+    int len;
+
+    if ((len = read(c->getSocket(), buffer, sizeof(buffer) - 1)) < 0) {
+        return false;
+    } else if (!len)
+        return false;
+
+    int offset = 0;
+    int i;
+
+    for (i = 0; i < len; i++) {
+        if (buffer[i] == '\0') {
+            dispatchCommand(c, buffer + offset);
+            offset = i + 1;
+        }
+    }
+    return true;
+}
+}}}

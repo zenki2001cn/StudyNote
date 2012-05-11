@@ -1,0 +1,166 @@
+= 使用org.apache.http =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import org.apache.http.HttpEntity; 
+import org.apache.http.HttpHost;   
+import org.apache.http.HttpResponse;   
+import org.apache.http.auth.AuthScope;   
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;   
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;   
+import org.apache.http.client.methods.HttpPost;   
+import org.apache.http.client.params.HttpClientParams;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.params. HttpConnectionParams;   
+import org.apache.http.entity.StringEntity;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.params.ConnRoutePNames;   
+}}}
+
+== 基本处理流程 ==
+- 创建`HttpClient`、`HttpGet`、`HttpPost`等对象
+- 通过HttpClient.execute()方法返回`HttpResponse`结果
+- `HttpEntity`是对发送或接收信息的包裹，可通过`HttpResponse.setEntity`或`HttpResponse.getEntity`方法获取
+
+== 示例代码 ==
+=== GET方法 ===
+{{{class="brush:java"
+try {   
+    // 创建HttpParams以用来设置HTTP参数
+    HttpParams params = new BasicHttpParams();   
+
+    // 设置连接超时和Socket超时，以及Socket缓存大小   
+    HttpConnectionParams.setConnectionTimeout(params, 20 * 1000);   
+    HttpConnectionParams.setSoTimeout(params, 20 * 1000);   
+    HttpConnectionParams.setSocketBufferSize(params, 8192);   
+
+    // 设置重定向，缺省为true   
+    HttpClientParams.setRedirecting(params, true);   
+
+    // 设置useragent   
+    HttpProtocolParams.setUserAgent(params, userAgent);   
+
+    // 创建一个HttpClient实例   
+    HttpClient httpClient = new DefaultHttpClient(params);   
+
+    // 创建HttpGet方法，该方法会自动处理URL地址的重定向   
+    HttpGet httpGet = new HttpGet("http://www.test_test.com/");   
+
+    HttpResponse response = httpClient.execute(httpGet);   
+    if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {   
+      // 错误处理，例如可以在该请求正常结束前将其中断   
+      httpGet.abort();   
+    }   
+
+    // 读取更多信息   
+    Header[] headers = response.getHeaders();   
+    HttpEntity entity = response.getEntity();   
+    Header header = response.getFirstHeader("Content-Type");   
+    ......
+    ......
+} catch (Exception ee) {   
+  //   
+} finally {   
+  // 释放连接   
+  httpClient.getConnectionManager().shutdown();    
+}
+}}}
+
+=== POST方法 ===
+{{{class="brush:java"
+try {
+    // 创建一个HttpClient实例   
+    HttpClient httpClient = new DefaultHttpClient(params);   
+    HttpParams httpParams = httpClient.getParams();
+    
+    //设置网络超时参数  
+    HttpConnectionParams.setConnectionTimeout(httpParams, 3000);  
+    HttpConnectionParams.setSoTimeout(httpParams, 5000);       
+
+    // 创建HttpPost方法
+    HttpPost request = new HttpPost(url);
+
+    // 封装一个JSON对象
+    JSONObject param = new JSONObject();
+    param.put("name", "rarnu");
+    param.put("password", "123456");
+
+    // 绑定到请求Entry
+    StringEntity se = new StringEntity(param.toString());
+    request.setEntity(se);
+
+    // 发送请求
+    HttpResponse httpResponse = httpClient.execute(request);
+    HttpEntity entity = httpResponse.getEntity();
+
+    // 方法一，使用EntityUtils工具获取字符串信息
+    // 得到应答的字符串，这也是一个 JSON 格式保存的数据
+    String retSrc = EntityUtils.toString(entity);
+    
+    // 方法二，通过BufferedReader读取
+    // if( entity != null ) {  
+    //     BufferedReader reader = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"), 8192);  
+    //     StringBuilder sb = new StringBuilder();
+    //     String line = null;  
+    //     
+    //     while( (line = reader.readLine()) != null ) {
+    //         sb.append(line + "\n");
+    //     }
+    //     
+    //     reader.close();
+    //     retSrc = sb.toString();
+    // }
+
+    // 生成JSON对象
+    JSONObject result = new JSONObject(retSrc);
+} catch (Exception ee) { 
+    // 
+} finally {   
+    // 释放连接   
+    httpClient.getConnectionManager().shutdown();    
+}
+}}}
+
+=== 访问HTTPS ===
+{{{class="brush:java"
+try {   
+    // 创建HttpClient实例
+    HttpClient httpClient = new DefaultHttpClient();
+
+    // 设置认证的数据
+    httpClient.getCredentialsProvider().setCredentials(new AuthScope("your_auth_host", 80, "your_realm"),
+                                                       new UsernamePasswordCredentials("username", "password"));   
+
+    // 设置服务器地址，端口，访问协议   
+    HttpHost targetHost = new HttpHost("www.test_test.com", 443, "https");   
+
+    // 设置代理   
+    HttpHost proxy = new HttpHost("192.168.1.1", 80);   
+    httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);      
+
+    // 创建一个HttpGet实例   
+    HttpGet httpGet = new HttpGet("/a/b/c");   
+
+    // 连接服务器并获取应答数据   
+    HttpResponse response = httpClient.execute(targetHost, httpGet);   
+
+    // 读取应答数据   
+    int statusCode = response.getStatusLine().getStatusCode();   
+    Header[] headers = response.getHeaders();   
+    HttpEntity entity = response.getEntity();   
+    ......
+    ......
+} 
+catch (Exception ee) {   
+    // 
+}
+finally {   
+    // 释放连接   
+    httpClient.getConnectionManager().shutdown();    
+}
+}}}
+

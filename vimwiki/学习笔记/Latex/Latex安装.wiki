@@ -1,0 +1,8 @@
+= 安装Latex的注意事项 =
+
+== 中文解决方法 ==
+{{{class="brush: text"
+sudo apt-get install latex-cjk-chinese ttf-arphic-*
+}}}
+
+>>[[Latex学习笔记]]

@@ -1,0 +1,178 @@
+= 字符设备 =
+
+%toc
+
+== 头文件 ==
+{{{class="brush:c"
+#include <linux/fs.h>
+#include <linux/cdev.h>
+}}}
+
+== 分配设备编号 ==
+=== 注册设备编号 ===
+{{{class="brush:c"
+/**
+ * register_chrdev_region() - register a range of device numbers
+ * @from: the first in the desired range of device numbers; must include
+ *        the major number.
+ * @count: the number of consecutive device numbers required
+ * @name: the name of the device or driver.
+ *
+ * Return value is zero on success, a negative error code on failure.
+ */
+int register_chrdev_region(dev_t, unsigned, const char *);
+}}}
+
+=== 释放设备编号 ===
+{{{class="brush:c"
+/**
+ * unregister_chrdev_region() - return a range of device numbers
+ * @from: the first in the range of numbers to unregister
+ * @count: the number of device numbers to unregister
+ *
+ * This function will unregister a range of @count device numbers,
+ * starting with @from.  The caller should normally be the one who
+ * allocated those numbers in the first place...
+ */
+void unregister_chrdev_region(dev_t, unsigned);
+}}}
+
+=== 动态分配设备编号 ===
+{{{class="brush:c"
+/**
+ * alloc_chrdev_region() - register a range of char device numbers
+ * @dev: output parameter for first assigned number
+ * @baseminor: first of the requested range of minor numbers
+ * @count: the number of minor numbers required
+ * @name: the name of the associated device or driver
+ *
+ * Allocates a range of char device numbers.  The major number will be
+ * chosen dynamically, and returned (along with the first minor number)
+ * in @dev.  Returns zero or a negative error code.
+ */
+int alloc_chrdev_region(dev_t *, unsigned, unsigned, const char *);
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+if (scull_major) {
+    dev = MKDEV(scull_major, scull_minor);
+    result = register_chrdev_region(dev, scull_nr_devs, "scull");
+} else {
+    result = alloc_chrdev_region(&dev, scull_minor, scull_nr_devs, "scull");
+    scull_major = MAJOR(dev);
+}
+if (result < 0) {
+    printk(KERN_WARNING "scull: can't get major %d\n", scull_major);
+    return result;
+}
+}}}
+
+== 初始化字符设备 ==
+
+=== cdev结构 ===
+{{{class="brush:c"
+struct cdev {
+	struct kobject kobj;
+	struct module *owner;
+	const struct file_operations *ops;
+	struct list_head list;
+	dev_t dev;
+	unsigned int count;
+};
+}}}
+
+=== 初始化cdev ===
+{{{class="brush:c"
+void cdev_init(struct cdev *, const struct file_operations *);
+// 或
+struct cdev *cdev_alloc(void);
+}}}
+
+=== 注册cdev ===
+{{{class="brush:c"
+int cdev_add(struct cdev *, dev_t, unsigned);
+}}}
+
+=== 删除cdev ===
+{{{class="brush:c"
+void cdev_del(struct cdev *);
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+// 自定义的设备结构scull_dev，其中包含struct cdev
+struct scull_dev { 
+    struct scull_qset *data;    /* Pointer to first quantum set */ 
+    int quantum;                /* the current quantum size */ 
+    int qset;                   /* the current array size */ 
+    unsigned long size;         /* amount of data stored here */ 
+    unsigned int access_key;    /* used by sculluid and scullpriv */ 
+    struct semaphore sem;       /* mutual exclusion semaphore  */ 
+
+    struct cdev cdev;           /* Char device structure */
+};
+
+// 初始化scull_dev
+static void scull_setup_cdev(struct scull_dev *dev, int index)
+{
+    // 分配设备号
+    int err, devno = MKDEV(scull_major, scull_minor + index);
+
+    // 初始化cdev
+    cdev_init(&dev->cdev, &scull_fops);
+    // 设置模块指针
+    dev->cdev.owner = THIS_MODULE;
+    // 设置文件操作指针
+    dev->cdev.ops = &scull_fops;
+    // 注册cdev
+    err = cdev_add (&dev->cdev, devno, 1);
+    
+    if (err)
+        printk(KERN_NOTICE "Error %d adding scull%d", err, index);
+} 
+}}}
+
+== 查看设备编号 ==
+- 可以在/proc/devices中查看设备所对应的主设备号。
+
+{{{class="brush:bash"
+$ cat /proc/devices
+Character devices:
+  1 mem
+  4 /dev/vc/0
+  4 tty
+  5 /dev/tty
+  5 /dev/console
+  5 /dev/ptmx
+  7 vcs
+ 10 misc
+ 13 input
+ 14 sound
+ 29 fb
+......
+
+Block devices:
+  1 ramdisk
+259 blkext
+  7 loop
+  8 sd
+179 mmc
+254 device-mapper
+.......
+}}}
+
+== 创建设备节点 ==
+- 使用mknod创建设备节点：mknod [OPTION]... NAME TYPE [MAJOR MINOR]
+    - NAME：设备名称
+    - TYPE：b、c、u、p
+    - MAJOR：主设备号
+    - MINOR：次设备号
+
+{{{class="brush:bash"
+# 创建字符设备
+$ mknod /dev/${device}0 c $major 0
+
+# 创建块设备
+$ mknod /dev/${device}0 b $major 1
+}}}

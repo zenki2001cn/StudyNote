@@ -1,0 +1,41 @@
+= 控制休眠 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
+import android.os.SystemClock;
+}}}
+
+== Flag标识 ==
+| 标识类型 | 标识名称                | 描述                                                   | CPU | Screen | Keyboard |
+|----------+-------------------------+--------------------------------------------------------+-----+--------+----------|
+| int      | PARTIAL_WAKE_LOCK       | 可与ACQUIRE_CAUSES_WAKEUP和ON_AFTER_RELEASE组合使用    | On* | Off    | Off      |
+| int      | SCREEN_DIM_WAKE_LOCK    |                                                        | On  | Dim    | Off      |
+| int      | SCREEN_BRIGHT_WAKE_LOCK |                                                        | On  | Bright | Off      |
+| int      | FULL_WAKE_LOCK          |                                                        | On  | Bright | Bright   |
+| int      | ACQUIRE_CAUSES_WAKEUP   | 唤醒时强制屏幕和键盘灯亮                               |     |        |          |
+| int      | ON_AFTER_RELEASE        | 当WakeLock被released，背景灯仍然亮一段时间，以避免闪烁 |     |        |          |
+
+== 示例代码 ==
+=== 保持唤醒 ===
+{{{class="brush:java"
+PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
+wl.acquire();
+    // 在此阶段，屏幕不会处于休眠状态
+wl.release();
+}}}
+
+=== 强制进入睡眠 ===
+{{{class="brush:java"
+PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+// 必须以系统启动后的时间作为基准
+pm.goToSleep(SystemClock.uptimeMillis() + 1000);
+}}}
+
+=== XML权限设置 ===
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.DEVICE_POWER" />
+}}}

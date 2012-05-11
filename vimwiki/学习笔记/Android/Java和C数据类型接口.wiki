@@ -1,0 +1,208 @@
+= 常用的Java接口 =
+
+%toc
+
+== 包含头文件 ==
+{{{class="brush:c"
+/usr/lib/jvm/jdk1.5.0_22/include 
+/usr/lib/jvm/jdk1.5.0_22/include/linux
+}}}
+
+- [[jni头文件]]
+
+== 数据类型定义 ==
+=== 基本数据类型 ===
+| Java     | C        | 符号类型 | 字节   | 对应签名字母 |
+|----------+----------+----------+--------+--------------|
+| boolean  | jboolean | 无符号   | 8  位  | Z            |
+| byte     | jbyte    | 无符号   | 8  位  | B            |
+| char     | jchar    | 无符号   | 16  位 | C            |
+| short    | jshort   | 有符号   | 16  位 | S            |
+| int      | jint     | 有符号   | 32  位 | I            |
+| long     | jlong    | 有符号   | 64  位 | J            |
+| float    | jfloat   | 有符号   | 32  位 | F            |
+| double   | jdouble  | 有符号   | 64  位 | D            |
+| 无返回值 | void     |          |        | V            |
+
+=== 引用数据类型 ===
+| Java                | C             | 符号类型 | 字节 | 对应签名字母          |
+|---------------------+---------------+----------+------+-----------------------|
+| all objects         | jobjects      |          |      | L/java/lang/object;   |
+| java.lang.Class     | jcalss        |          |      | L/java/lang/Class     |
+| java.lang.String    | jstring       |          |      | L/java/lang/String    |
+| Object[]            | jobjectArray  |          |      | [L/java/lang/Object;  |
+| boolean[]           | jbooleanArray |          |      | [Z                    |
+| byte[]              | jbyteArray    |          |      | [B                    |
+| java.lang.Throwable | jthrowable    |          |      | L/java/lang/Throwable |
+| char[]              | jcharArray    |          |      | [C                    |
+| short[]             | jshortArray   |          |      | [S                    |
+| int[]               | jintArray     |          |      | [I                    |
+| long[]              | jlongArray    |          |      | [J                    |
+| float[]             | jfloatArray   |          |      | [F                    |
+| double[]            | jdoubleArray  |          |      | [D                    |
+
+== 获取和设置Java类对象和成员 ==
+{{{class="brush:c"
+// 类
+jclass FindClass(const char *name);
+jclass GetObjectClass(jobject obj);
+jclass GetSuperclass(jclass sub);
+jboolean IsInstanceOf(jobject obj, jclass clazz);
+
+// 获取成员变量ID
+jfieldID GetFieldID(jclass clazz, const char *name, const char *sig);
+
+// 获取对象类型成员
+jobject GetObjectField(jobject obj, jfieldID fieldID);
+void SetObjectField(jobject obj, jfieldID fieldID, jobject val);
+
+// 获取boolean类型成员
+jboolean GetBooleanField(jobject obj, jfieldID fieldID);
+void SetBooleanField(jobject obj, jfieldID fieldID, jboolean val);
+
+// 获取byte类型成员
+jbyte GetByteField(jobject obj, jfieldID fieldID);
+void SetByteField(jobject obj, jfieldID fieldID, jbyte val);
+
+// 获取char类型成员
+jchar GetCharField(jobject obj, jfieldID fieldID);
+void SetCharField(jobject obj, jfieldID fieldID, jchar val);
+
+// 获取short类型成员
+jshort GetShortField(jobject obj, jfieldID fieldID);
+void SetShortField(jobject obj, jfieldID fieldID, jshort val);
+
+// 获取int类型成员
+jint GetIntField(jobject obj, jfieldID fieldID);
+void SetIntField(jobject obj, jfieldID fieldID, jint val);
+
+// 获取long类型成员
+jlong GetLongField(jobject obj, jfieldID fieldID);
+void SetLongField(jobject obj, jfieldID fieldID, jlong val);
+
+// 获取float类型成员
+jfloat GetFloatField(jobject obj, jfieldID fieldID);
+void SetFloatField(jobject obj, jfieldID fieldID, jfloat val);
+
+// 获取double类型成员
+jdouble GetDoubleField(jobject obj, jfieldID fieldID);
+void SetDoubleField(jobject obj, jfieldID fieldID, jdouble val);
+}}}
+
+== 调用Java类的方法 ==
+{{{class="brush:c"
+// 获取方法ID
+jmethodID GetMethodID(jclass clazz, const char *name, const char *sig);
+// 通过构造方法返回对象
+jobject NewObject(jclass clazz, jmethodID methodID, ...);
+
+// 返回值为object的方法调用
+jobject CallObjectMethod(jobject obj, jmethodID methodID, ...); 
+jobject CallObjectMethodV(jobject obj, jmethodID methodID, va_list args);
+jobject CallObjectMethodA(jobject obj, jmethodID methodID, const jvalue * args);
+
+// 返回值为boolean的方法调用
+jboolean CallBooleanMethod(jobject obj, jmethodID methodID, ...); 
+jboolean CallBooleanMethodV(jobject obj, jmethodID methodID, va_list args);
+jboolean CallBooleanMethodA(jobject obj, jmethodID methodID, const jvalue * args);
+
+// 返回值为byte的方法调用
+jbyte CallByteMethod(jobject obj, jmethodID methodID, ...);
+jbyte CallByteMethodV(jobject obj, jmethodID methodID, va_list args);
+jbyte CallByteMethodA(jobject obj, jmethodID methodID, const jvalue * args);
+
+// 返回值为char的方法调用
+jchar CallCharMethod(jobject obj, jmethodID methodID, ...); 
+jchar CallCharMethodV(jobject obj, jmethodID methodID, va_list args);
+jchar CallCharMethodA(jobject obj, jmethodID methodID, const jvalue * args);
+
+// 返回值为short的方法调用
+jshort CallShortMethod(jobject obj, jmethodID methodID, ...);
+jshort CallShortMethodV(jobject obj, jmethodID methodID, va_list args);
+jshort CallShortMethodA(jobject obj, jmethodID methodID, const jvalue * args);
+
+// 返回值为int的方法调用
+jint CallIntMethod(jobject obj, jmethodID methodID, ...);
+jint CallIntMethodV(jobject obj, jmethodID methodID, va_list args);
+jint CallIntMethodA(jobject obj, jmethodID methodID, const jvalue * args);
+}}}
+
+== 获取和设置java数组类型数据 ==
+{{{class="brush:c"
+// 获取数组大小
+jsize GetArrayLength(jarray array); 
+
+// 对象数组
+jobjectArray NewObjectArray(jsize len, jclass clazz, jobject init);
+jobject GetObjectArrayElement(jobjectArray array, jsize index);
+void SetObjectArrayElement(jobjectArray array, jsize index, jobject val);
+
+// boolean数组
+jbooleanArray NewBooleanArray(jsize len);
+jboolean * GetBooleanArrayElements(jbooleanArray array, jboolean *isCopy); 
+void GetBooleanArrayRegion(jbooleanArray array, jsize start, jsize len, jboolean *buf); 
+void SetBooleanArrayRegion(jbooleanArray array, jsize start, jsize len, const jboolean *buf);
+void ReleaseBooleanArrayElements(jbooleanArray array, jboolean *elems, jint mode); 
+
+// byte数组
+jbyteArray NewByteArray(jsize len);
+jbyte * GetByteArrayElements(jbyteArray array, jboolean *isCopy); 
+void GetByteArrayRegion(jbyteArray array, jsize start, jsize len, jbyte *buf); 
+void SetByteArrayRegion(jbyteArray array, jsize start, jsize len, const jbyte *buf);
+void ReleaseByteArrayElements(jbyteArray array, jbyte *elems, jint mode); 
+
+// char数组
+jcharArray NewCharArray(jsize len);
+jchar * GetCharArrayElements(jcharArray array, jboolean *isCopy);
+void GetCharArrayRegion(jcharArray array, jsize start, jsize len, jchar *buf); 
+void SetCharArrayRegion(jcharArray array, jsize start, jsize len, const jchar *buf);
+void ReleaseCharArrayElements(jcharArray array, jchar *elems, jint mode); 
+
+// short数组
+jshortArray NewShortArray(jsize len);
+jshort * GetShortArrayElements(jshortArray array, jboolean *isCopy); 
+void GetShortArrayRegion(jshortArray array, jsize start, jsize len, jshort *buf); 
+void SetShortArrayRegion(jshortArray array, jsize start, jsize len, const jshort *buf);
+void ReleaseShortArrayElements(jshortArray array, jshort *elems, jint mode);
+
+// int数组
+jintArray NewIntArray(jsize len);
+jint * GetIntArrayElements(jintArray array, jboolean *isCopy); 
+void GetIntArrayRegion(jintArray array, jsize start, jsize len, jint *buf); 
+void SetIntArrayRegion(jintArray array, jsize start, jsize len, const jint *buf);
+void ReleaseIntArrayElements(jintArray array, jint *elems, jint mode);
+
+// long数组
+jlongArray NewLongArray(jsize len);
+jlong * GetLongArrayElements(jlongArray array, jboolean *isCopy); 
+void GetLongArrayRegion(jlongArray array, jsize start, jsize len, jlong *buf); 
+void SetLongArrayRegion(jlongArray array, jsize start, jsize len, const jlong *buf);
+void ReleaseLongArrayElements(jlongArray array, jlong *elems, jint mode); 
+
+// float数组
+jfloatArray NewFloatArray(jsize len);
+jfloat * GetFloatArrayElements(jfloatArray array, jboolean *isCopy); 
+void GetFloatArrayRegion(jfloatArray array, jsize start, jsize len, jfloat *buf); 
+void SetFloatArrayRegion(jfloatArray array, jsize start, jsize len, const jfloat *buf);
+void ReleaseFloatArrayElements(jfloatArray array, jfloat *elems, jint mode);
+
+// double数组
+jdoubleArray NewDoubleArray(jsize len);
+jdouble * GetDoubleArrayElements(jdoubleArray array, jboolean *isCopy); 
+void GetDoubleArrayRegion(jdoubleArray array, jsize start, jsize len, jdouble *buf); 
+void SetDoubleArrayRegion(jdoubleArray array, jsize start, jsize len, const jdouble *buf);
+void ReleaseDoubleArrayElements(jdoubleArray array, jdouble *elems, jint mode); 
+}}}
+
+== String相关方法 ==
+{{{class="brush:c"
+jstring NewString(const jchar *unicode, jsize len);
+jsize GetStringLength(jstring str); 
+const jchar *GetStringChars(jstring str, jboolean *isCopy); 
+void ReleaseStringChars(jstring str, const jchar *chars); 
+
+jstring NewStringUTF(const char *utf); 
+jsize GetStringUTFLength(jstring str); 
+const char* GetStringUTFChars(jstring str, jboolean *isCopy); 
+void ReleaseStringUTFChars(jstring str, const char* chars); 
+}}}

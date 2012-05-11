@@ -1,0 +1,35 @@
+= sftp配置 =
+
+== 什么是sftp ==
+- sftp是基于ssh协议的安全ftp
+- sftp的端口默认使用22
+
+== 配置表 ==
+- 编辑/etc/ssh/sshd.config，添加以下几行
+
+{{{class="brush:text"
+# 内部服务器
+Subsystem sftp internal-sftp
+
+# 设置匹配的用户组
+Match Group ftpgroup
+
+# 进入FTP的文件夹限制在用户目录中
+ChrootDirectory /home/%u
+}}}
+
+- 上面一步会根据匹配的用户组来设置权限，因此需要在/etc/group中加入对应的用户
+
+{{{class="brush:bash"
+# 可加入多个匹配的用户
+ftpgroup:x:1002:zenki
+ftpgroup:x:1002:test
+}}}
+
+- 进入的当前目录可能没有可写权限，需要把文件夹改为root:root组
+
+{{{class="brush:bash"
+sudo chown root:root /home/zenki/
+sudo chmod 777 /home/zenki
+}}}
+

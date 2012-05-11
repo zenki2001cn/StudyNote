@@ -1,0 +1,70 @@
+= BluetoothAdapter =
+
+%toc
+
+== 功能描述 ==
+{{{class="brush:text"
+    本地的蓝牙适配器。该类主要用来操作蓝牙的基本服务。比如：初始化设备的可见、查询可匹配的设备集、使用一个已知的MAC地址来初始化
+一个BluetoothDevice类、创建一个BluetoothServerSocket类以监听其它设备对本机的连接请求等。如果要获得本地蓝牙适配器，只有一个唯一的
+方式就是调用getDefaultAdapter()函数，同时也只有获得了蓝牙适配器之后才能进一步的操作。
+}}}
+
+== 相关方法说明 ==
+=== 常量说明 ===
+| 类型   | 名称                               | 描述                                                              |
+|--------+------------------------------------+-------------------------------------------------------------------|
+| String | ACTION_DISCOVERY_FINISHED          | 广播事件：本地蓝牙适配器已完成设备的搜寻过程                      |
+| String | ACTION_DISCOVERY_STARTED           | 广播事件：本地蓝牙适配器已开始设备的搜寻过程                      |
+| String | ACTION_LOCAL_NAME_CHANGED          | 广播事件：本地蓝牙适配器已更改了它的名称                          |
+| String | ACTION_REQUEST_DISCOVERABLE        | 活动事件：显示一个请求被搜寻模式的系统活动                        |
+| String | ACTION_REQUEST_ENABLE              | 活动事件：显示一个允许用户打开蓝牙模块的系统活动                  |
+| String | ACTION_SCAN_MODE_CHANGED           | 广播事件：指明蓝牙扫描模块或者本地适配器已经发生变化              |
+| String | ACTION_STATE_CHANGED               | 广播事件：本地的蓝牙适配器状态发生变化                            |
+| int    | ERROR                              | 错误信息标识                                                      |
+| String | EXTRA_DISCOVERABLE_DURATION        | ACTION_REQUEST_DISCOVERABLE的附加常量，标识发现请求设备的持续时间 |
+| String | EXTRA_LOCAL_NAME                   | ACTION_LOCAL_NAME_CHANGED的附加常量，标识本地蓝牙变更的名称       |
+| String | EXTRA_PREVIOUS_SCAN_MODE           | ACTION_SCAN_MODE_CHANGED的附加常量，标识请求以前的扫描模式        |
+| String | EXTRA_PREVIOUS_STATE               | ACTION_STATE_CHANGED的附加常量，标识以前蓝牙的电源状态            |
+| String | EXTRA_SCAN_MODE                    | ACTION_SCAN_MODE_CHANGED的附加常量，标识请求当前的扫描模式        |
+| String | EXTRA_STATE                        | ACTION_STATE_CHANGED的附加常量，标识当前蓝牙的电源状态            |
+| int    | SCAN_MODE_CONNECTABLE              | 指明在本地蓝牙适配器中，查询扫描功能失效，但页面扫描功能有效      |
+| int    | SCAN_MODE_CONNECTABLE_DISCOVERABLE | 指明在本地蓝牙适配器中，查询扫描功能和页面扫描功能都有效          |
+| int    | SCAN_MODE_NONE                     | 指明在本地蓝牙适配器中，查询扫描功能和页面扫描功能都无效          |
+| int    | STATE_OFF                          | 本地蓝牙适配器模块已关闭                                          |
+| int    | STATE_ON                           | 本地蓝牙适配器模块已打开                                          |
+| int    | STATE_TURNING_OFF                  | 本地蓝牙适配器模块正在关闭                                        |
+| int    | STATE_TURNING_ON                   | 本地蓝牙适配器模块正在打开                                        |
+
+=== 方法说明 ===
+| 类型                                 | 名称                                                       | 描述                                                       |
+|--------------------------------------+------------------------------------------------------------+------------------------------------------------------------|
+| boolean                              | cancelDiscovery()                                          | 取消当前设备的可见进程                                     |
+| static boolean                       | checkBluetoothAddress(String address)                      | 验证设备地址是否有效                                       |
+| boolean                              | disable()                                                  | 关闭本地蓝牙适配器                                         |
+| boolean                              | enable()                                                   | 打开本地蓝牙适配器                                         |
+| String                               | getAddress()                                               | 返回本地蓝牙适配器的硬件地址                               |
+| Set<BluetoothDevice>                 | getBondedDevices()                                         | 返回已经匹配到本地适配器的BluetoothDevice类的对象集合      |
+| synchronized static BluetoothAdapter | getDefaultAdapter()                                        | 获取本地蓝牙适配器                                         |
+| String                               | getName()                                                  | 获取本地蓝牙适配器名称                                     |
+| BluetoothDevice                      | getRemoteDevice(String address)                            | 获取一个BluetoothDevice对象                                |
+| int                                  | getScanMode()                                              | 获取本地蓝牙适配器的当前扫描模式                           |
+| int                                  | getState()                                                 | 获取本地蓝牙适配器的当前状态                               |
+| boolean                              | isDiscovering()                                            | 判断是否处于可见状态                                       |
+| boolean                              | isEnabled()                                                | 判断是否被打开                                             |
+| BluetoothServerSocket                | listenUsingRfcommWithServiceRecord(String name, UUID uuid) | 创建一个正在监听的安全的带有服务记录的无线射频通信蓝牙端口 |
+| boolean                              | setName(String name)                                       | 设置蓝牙适配器的名称                                       |
+| boolean                              | startDiscovery()                                           | 查找可见设备                                               |
+
+== 示例代码 ==
+=== 打开蓝牙 ===
+{{{class="brush:java"
+Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);  
+startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT); 
+}}}
+
+=== 请求蓝牙可见状态 ===
+{{{class="brush:java"
+Intent discoverableIntent = new  Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);  
+discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);  
+startActivity(discoverableIntent);  
+}}}

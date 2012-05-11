@@ -1,0 +1,82 @@
+= 数据压缩和对象序列化 =
+
+== 数据压缩 ==
+- 从InputStream和OutputStream衍生来的压缩类
+
+{{{class="brush:java"
+// 压缩输出类
+BufferedOutputStream out = new BufferedOutputStream(
+                           new GZIPOutputStream(
+                           new FileOutputStream("test.gz")));
+
+// 压缩输入类
+BufferedReader in = new BufferedReader(
+                    new InputStreamReader(new GZIPInputStream(
+                    new FileInputStream("test.gz"))));
+}}}
+
+== JAR文件 ==
+- 典型用法
+
+{{{class="brush:shell"
+// 创建jar文件
+jar cvf myJarFile.jar *.class
+// 包含所有目录及文件清单
+jar cmf myJarFile.jar myManifestFile.mf *.class
+// 显示详细信息
+jar tvf myJarFile.jar
+// 解压文件
+jar xvf myJarFile.jar
+// 环境变量
+CLASSPATH="lib1.jar;lib2.jar;"
+}}}
+
+== 对象序列化 ==
+- 对象需要实现java.io.Serializable接口
+- 调用ObjectOutputStream.writeObject()方法序列化对象
+- 调用ObjectInputStream.readObject()方法反序列化对象
+- 对象序列化是面向字节的
+
+{{{class="brush:java"
+ObjectOutput out = new ObjectOutputStream(
+                   new FileOutputStream("X.file"));
+Alien zorcon = new Alien();
+out.writeObject(zorcon);
+
+ObjectInputStream in = new ObjectInputStream(
+                       new FileInputStream(new File("..", "X.file")));
+Object mystery = in.readObject();
+}}}
+
+=== 序列化的控制 ===
+- 通过readExternal()和writeExternal()方法显示的序列化需要的部分。
+
+{{{class="brush:java"
+public void writeExternal(ObjectOutput out)
+throws IOException {
+    // You must do this:
+    out.writeObject(s);
+    out.writeInt(i);
+}
+public void readExternal(ObjectInput in)
+throws IOException, ClassNotFoundException {
+    // You must do this:
+    s = (String)in.readObject();
+    i = in.readInt();
+}
+}}}
+
+=== transient关键字 ===
+- 该关键字可以用来变量声明，指定该变量关闭序列化功能
+
+{{{class="brush:java"
+private transient String password;
+}}}
+
+=== readObject和writeObject ===
+- 声明和实现私有方法readObject和writeObject，来实现Serializable接口
+
+=== Preferences ===
+- 使用java.util.prefs.Preferences类进行首选项设置
+- 静态方法userNodeForPackage()用来保存用户首选项，systemNodeForPackage()用来保存系统首选项
+

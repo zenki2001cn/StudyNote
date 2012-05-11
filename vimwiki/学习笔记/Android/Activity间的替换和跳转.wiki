@@ -1,0 +1,28 @@
+= 替换Activity =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Activity;
+import android.os.Bundle;
+import android.content.Intent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+}}}
+
+- 生成Intent实例,设置新Intent实例的class,最后启动Activity
+
+{{{class="brush:java"
+public void onClick(View v)
+{
+    // Here we start the next activity, and then call finish()
+    // so that our own will stop running and be removed from the
+    // history stack.
+    Intent intent = new Intent();
+    intent.setClass(this, ForwardTarget.class);
+    startActivity(intent);
+    
+    // 如果销毁当前activity，则调用finish()，否则跳转到ForwardTarget
+    finish();
+}
+}}}

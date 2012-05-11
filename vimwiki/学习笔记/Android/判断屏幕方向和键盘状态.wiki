@@ -1,0 +1,24 @@
+= 判断屏幕方向和键盘状态 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.res.Resources;
+import android.content.res.Configuration;
+}}}
+
+{{{class="brush:java"
+Configuration config = getResources().getConfiguration(); 
+
+if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {  
+        //横屏，比如 480x320
+}
+else if(config.orientation == Configuration.ORIENTATION_PORTRAIT) {
+        //竖屏 ，标准模式 320x480
+}
+else if(config.hardKeyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
+        //横屏，Android123提示物理键盘滑出了
+}
+else if(config.hardKeyboardHidden == Configuration.KEYBOARDHIDDEN_YES) {
+        //竖屏，键盘隐藏了   
+}
+}}}

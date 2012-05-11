@@ -1,0 +1,48 @@
+= View属性集合 =
+
+| 标识                                       | 描述                                             |
+|--------------------------------------------+--------------------------------------------------|
+| android:background                         | 设置背景色/背景图片                              |
+| android:clickable                          | 是否响应点击事件                                 |
+| android:contentDescription                 | 设置View的备注说明，作为一种辅助功能提供         |
+| android:drawingCacheQuality                | 设置绘图时半透明质量                             |
+| android:duplicateParentState               | 如果设置此属性，将直接从父容器中获取绘图状态     |
+| android:fadingEdge                         | 设置拉滚动条时 ，边框渐变的方向                  |
+| android:fadingEdgeLength                   | 设置 边框渐变的长度                              |
+| android:fitsSystemWindows                  | 设置布局调整时是否考虑系统窗口(如状态栏)         |
+| android:focusable                          | 设置是否获得焦点                                 |
+| android:focusableInTouchMode               | 设置在Touch模式下View是否能取得焦点              |
+| android:hapticFeedbackEnabled              | 设置长按时是否接受其他触摸反馈事件               |
+| android:id                                 | 给当前View设置一个在当前layout.xml中的唯一编号   |
+| android:isScrollContainer                  | 设置当前View为滚动容器                           |
+| android:keepScreenOn                       | View在可见的情况下是否保持唤醒状态               |
+| android:longClickable                      | 设置是否响应长按事件                             |
+| android:minHeight                          | 设置视图最小高度                                 |
+| android:minWidth                           | 设置视图最小宽度度                               |
+| android:nextFocusDown                      | 设置下方指定视图获得下一个焦点                   |
+| android:nextFocusLeft                      | 设置左边指定视图获得下一个焦点                   |
+| android:nextFocusRight                     | 设置右边指定视图获得下一个焦点                   |
+| android:nextFocusUp                        | 设置上方指定视图获得下一个焦点                   |
+| android:onClick                            | 点击时从上下文中调用指定的方法                   |
+| android:padding                            | 设置上下左右的边距，以像素为单位填充空白         |
+| android:paddingBottom                      | 设置底部的边距，以像素为单位填充空白             |
+| android:paddingLeft                        | 设置左边的边距，以像素为单位填充空白             |
+| android:paddingRight                       | 设置右边的边距，以像素为单位填充空白             |
+| android:paddingTop                         | 设置上方的边距，以像素为单位填充空白             |
+| android:saveEnabled                        | 设置是否在窗口冻结时（如旋转屏幕）保存View的数据 |
+| android:scrollX                            | 以像素为单位设置水平方向滚动的的偏移值           |
+| android:scrollY                            | 以像素为单位设置垂直方向滚动的的偏移值           |
+| android:scrollbarAlwaysDrawHorizontalTrack | 设置是否始终显示垂直滚动条                       |
+| android:scrollbarAlwaysDrawVerticalTrack   | 设置是否始终显示垂直滚动条                       |
+| android:scrollbarDefaultDelayBeforeFade    | 设置N毫秒后开始淡化，以毫秒为单位                |
+| android:scrollbarFadeDuration              | 设置滚动条淡出效果（从有到慢慢的变淡直至消失）   |
+| android:scrollbarSize                      | 设置滚动条的宽度                                 |
+| android:scrollbarStyle                     | 设置滚动条的风格和位置                           |
+| android:scrollbarThumbHorizontal           | 设置水平滚动条的drawable                         |
+| android:scrollbarThumbVertical             | 设置垂直滚动条的drawable                         |
+| android:scrollbarTrackHorizontal           | 设置水平滚动条背景                               |
+| android:scrollbarTrackVertical             | 设置垂直滚动条背景                               |
+| android:scrollbars                         | 设置滚动条显示                                   |
+| android:soundEffectsEnabled                | 设置点击或触摸时是否有声音效果                   |
+| android:tag                                | 设置一个文本标签                                 |
+| android:visibility                         | 设置是否显示View                                 |

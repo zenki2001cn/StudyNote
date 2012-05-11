@@ -1,0 +1,34 @@
+= BluetoothSocket =
+
+== 功能描述 ==
+{{{class="brush:text"
+    上面说过蓝牙端口监听接口和TCP端口类似：Socket和ServerSocket类。在服务器端，使用BluetoothServerSocket类
+来创建一个监听服务端口。当一个连接被BluetoothServerSocket所接受，它会返回一个新的BluetoothSocket来管理该连接。
+在客户端，使用一个单独的BluetoothSocket类去初始化一个外接连接和管理该连接。最通常使用的蓝牙端口是RFCOMM，
+它是被 Android API支持的类型。RFCOMM是一个面向连接，通过蓝牙模块进行的数据流传输方式，它也被称为串行端口规范（Serial Port Profile，SPP）。
+为了创建一个BluetoothSocket去连接到一个已知设备，使用方法 BluetoothDevice.createRfcommSocketToServiceRecord()。
+然后调用connect()方法去尝试一个面向远程设备的连接。这个调用将被阻塞指导一个连接已经建立或者该链接失效。
+为了创建一个BluetoothSocket作为服务端（或者"主机"），查看BluetoothServerSocket文档。每当该端口连接成功，
+无论它初始化为客户端，或者被接受作为服务器端，通过 getInputStream()和getOutputStream()来打开IO流，
+从而获得各自的InputStream和OutputStream 对象BluetoothSocket类线程安全。特别的，close()方法总会马上放弃外界操作并关闭服务器端口。
+如果使用需要BLUETOOTH权限的许可。
+}}}
+
+== 相关方法说明 ==
+=== 方法说明 ===
+| 类型            | 名称              | 描述                                     |
+|-----------------+-------------------+------------------------------------------|
+| void            | close()           | 关闭端口并释放资源                       |
+| void            | connect()         | 连接到远程设备                           |
+| InputStream     | getInputStream()  | 通过连接的端口获得输入流                 |
+| OutputStream    | getOutputStream() | 通过连接的端口获得输出流                 |
+| BluetoothDevice | getRemoteDevice() | 获得该端口正在连接或者已经连接的远程设备 |
+
+    connect()函数链接到远程设备时，该方法将阻塞，直到一个连接建立或者失效。如果该方法没有返回异常值，
+    则该端口现在已经建立。当设备查找正在进行的时候，创建对远程蓝牙设备的新连接不可被尝试。在蓝牙适配器上，
+    设备查找是一个重量级过程，并且肯定会降低一个设备的连接。使用 cancelDiscovery()方法去取消一个外界的查询。
+    查询并不由活动所管理，而作为一个系统服务来运行，所以即使它不能直接请求一个查询，应用程序也总会调用cancelDiscovery()
+    方法。close()方法可以用来放弃从另一线程而来的调用。getInputStream()函数通过连接的端口获得输入数据流，
+    即使该端口未连接，该输入数据流也会返回。不过在该数据流上的操作将抛出异常，直到相关的连接已经建立,当然在聊天实例中，
+    也是我们用来读取获得数据流。而getOutputStream()函数通过连接的端口获得输出数据流，即使该端口未连接，该输出数据流也会返回。
+    不过在该数据流上的操作将抛出异常，直到相关的连接已经建立，同样用于聊天实例上的发送消息操作。

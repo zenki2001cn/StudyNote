@@ -1,0 +1,40 @@
+= 半透明背景 =
+
+- res/values文件夹下建立styles.xml:
+
+{{{class="brush:xml"
+<?xml version=“1.0″ encoding=“utf-8″?>  
+<RESOURCES>  
+    <STYLE name=“translucent”>  
+        <item name=“android:windowBackground”>@color/translucent_background</item>  
+        <item name=“android:windowIsTranslucent”>true</item>  
+        <item name=“android:windowAnimationStyle”>@android:style/Animation.Translucent</item>  
+    </STYLE>  
+</RESOURCES>
+}}}
+
+- 创建colors.xml
+
+{{{class="brush:xml"
+<?xml version=“1.0″ encoding=“UTF-8″?>  
+<RESOURCES>  
+    <COLOR name=“translucent_background”>#60000000</COLOR>  
+</RESOURCES>
+}}}
+
+- Manifest设置透明属性
+
+{{{class="brush:xml"
+android:theme=”@style/translucent”
+}}}
+
+- 让子控件保持透明效果
+
+{{{class="brush:java"
+Window window=getWindow();
+WindowManager.LayoutParams wl = window.getAttributes();
+wl.flags=WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+wl.alpha=0.6f;      // 这句就是设置窗口里崆件的透明度的．０.０全透明．１.０不透明．
+window.setAttributes(wl);
+}}}
+

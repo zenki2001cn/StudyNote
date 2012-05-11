@@ -1,0 +1,75 @@
+= 从startActivity()方法开始 =
+
+%toc
+
+== 流程分析 ==
+- 该方法调用`Instrumentation.execStartActivity()`方法，并调用`ActivityManagerNative.getDefault().startActivity()`启动一个Activity。
+ 
+== 参考代码 ==
+=== Instrumentation类 ===
+==== 方法：execStartActivity ====
+{{{class="brush:java"
+public ActivityResult execStartActivity(
+    Context who, IBinder contextThread, IBinder token, Activity target,
+    Intent intent, int requestCode) {
+    ......
+    ......
+
+    try {
+        // 实际调用了ActivityManagerNative.getDefault().startActivity()方法
+        int result = ActivityManagerNative.getDefault()
+            .startActivity(whoThread, intent,
+                    intent.resolveTypeIfNeeded(who.getContentResolver()),
+                    null, 0, token, target != null ? target.mEmbeddedID : null,
+                    requestCode, false, false);
+        checkStartActivityResult(result, intent);
+    } catch (RemoteException e) {
+    }
+    return null;
+}
+}}}
+
+=== ActivityManagerNative类 ===
+- `ActivityManagerNative`类继承`Binder`并实现`IActivityManager`接口，它属于一个Stub类
+- `getDefault()`用来返回IActivityManager接口
+- IActivityManager接口的startActivity()方法用来启动一个Activity
+ 
+==== 类：ActivityManagerNative ====
+{{{class="brush:java"
+public abstract class ActivityManagerNative extends Binder implements IActivityManager
+}}}
+
+==== 方法：asInterface ====
+{{{class="brush:java"
+// 转换成接口
+static public IActivityManager asInterface(IBinder obj)
+{
+    if (obj == null) {
+        return null;
+    }
+    IActivityManager in =
+        (IActivityManager)obj.queryLocalInterface(descriptor);
+    if (in != null) {
+        return in;
+    }
+    
+    // 产生一个本地代理类
+    return new ActivityManagerProxy(obj);
+}
+}}}
+
+==== 方法：getDefault ====
+{{{class="brush:java"
+static public IActivityManager getDefault()
+{
+    if (gDefault != null) {
+        return gDefault;
+    }
+    // 获取Activity的Service
+    IBinder b = ServiceManager.getService("activity");
+    // 转换本地代理
+    gDefault = asInterface(b);
+    return gDefault;
+}
+}}}
+

@@ -1,0 +1,63 @@
+= Android启动性能分析 =
+
+%toc
+
+== bootchart简介 ==
+{{{class="brush:text"
+    BootChart是一个对Linux boot过程进行性能分析并把结果直观化的工具。BootChart包含数据收集
+和图像产生工具，Android中，数据收集工具被集成到了init程序中。
+}}}
+
+== bootchart使用步骤 ==
+=== 1.主机上安装bootchart ===
+{{{class="brush:bash"
+$ sudo apt-get install bootchart
+}}}
+
+=== 2.开启编译bootchart选项 ===
+{{{class="brush:bash"
+# 设置环境变量
+$ export INIT_BOOTCHART=true
+# 如果之前编译过，则需要clean，重新编译
+$ make clean
+$ make
+}}}
+
+=== 3.开启bootchart功能 ===
+{{{class="brush:bash"
+# 其中120是采集时间，设置后需要重启机器
+$ adb shell echo 120 > /data/bootchart-start
+}}}
+
+=== 4.收集bootchart数据 ===
+{{{class="brush:bash"
+# 创建tmp目录，导出数据
+$ mkdir tmp
+$ adb pull /data/bootchart ./tmp
+# 打包数据
+$ cd tmp && tar czf bootchart.tgz *
+}}}
+
+=== 5.产生图表 ===
+{{{class="brush:bash"
+# -f 选项可指定生成的格式，此处为png格式
+$ bootchart -f png bootchart.tgz
+}}}
+
+== 参考脚本 ==
+=== mkbootpng.sh ===
+{{{class="brush:bash"
+#!/bin/bash
+
+ZIP_NAME=bootchart.tgz
+TMP=tmp
+BOOTCHART_DIR=/data/bootchart
+
+rm -rf $ZIP_NAME $TMP
+mkdir $TMP
+adb pull $BOOTCHART_DIR $TMP/
+cd $TMP
+tar czf $ZIP_NAME *
+bootchart -f png $ZIP_NAME
+mv bootchart.png ..
+}}}

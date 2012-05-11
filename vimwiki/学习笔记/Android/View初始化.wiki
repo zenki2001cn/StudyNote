@@ -1,0 +1,58 @@
+= View初始化 =
+
+== 相关方法和变量 ==
+=== 与Activity相关方法 ===
+_void setContentView(int layoutResID)_ :: 根据资源ID设置视图
+
+_void setContentView(View  view)_ :: 根据View对象设置视图
+
+_View findViewById(int id)_ :: 通过资源ID查找View类对象
+
+== 布局设置 ==
+=== 通过XML绘制View ===
+{{{class="brush: xml"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="fill_parent" 
+              android:layout_height="fill_parent" 
+              android:orientation="vertical" >
+    <TextView android:id="@+id/text"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Hello, I am a TextView" />
+</LinearLayout>
+}}}
+
+=== 通过代码构造View对象 ===
+从android.view.View继承一个子类
+{{{class="brush: java"
+public class TestView extends View {
+    public TestView(Context context) {
+        super(context);
+    }
+}
+}}}
+
+=== 在Activity中创建View ===
+需要重写onCreate方法,通过setContentView来加载视图
+{{{class="brush: java"
+public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView.(R.layout.main_layout);
+}
+}}}
+
+=== 获取View对象 ===
+1.需要为对象添加一个id,通常在xml中定义,之后便可在Activity中通过findViewById方法来获取该id的对象
+{{{class="brush: xml"
+<Button android:id="@+id/my_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/my_button_text"/>
+}}}
+
+2.通过findViewById来获取一个View对象
+{{{class="brush: java"
+Button myButton = (Button) findViewById(R.id.my_button);
+}}}
+

@@ -1,0 +1,123 @@
+= FireFox优化 =
+
+%toc
+
+== CPU占用高的解决方法 ==
+{{{class="brush: text"
+首先解决CPU占用率高，打开网页停顿的问题。很简单，在“工具”/“选项”/“内容”里，
+
+找到“启用Java“这一项，去掉前面的勾，然后确认，重启即可解决问题。简单的很。
+
+然后呢，按上面的设置只可解决CPU占用率高的问题，但你打开任务管理器，
+
+会发现FIREFOX的内存占用率也很高，这样会使内存小的朋友抓襟见肘。
+
+这个也有解决办法。只因FIREFOX没有设置快速缓存和自动释放内存。下面开始：
+
+当你在长时间使用Firefox时，它所占用的内存量也会随时间不断增加。
+}}}
+
+== 为Firefox设置快速缓存 ==
+{{{class="brush: text"
+在默认情况下，Firefox只会使用系统内存而不会使用快速缓存，如果为其设置使用快速缓存，那么就可以减轻内存的负担。以下是具体操作步骤：
+
+1、打开Firefox浏览器。
+
+2、在地址栏中输入“about:config”。
+
+3、在“过滤器”中输入“browser.cache.memory.enable”。
+
+4、要先确保其值为“true”，如果不是的话，可以双击这个项目，之后它的值就会转变为“true”。
+
+5、在浏览器中右键点击后选择“新建”>“整数”。
+
+6、输入“browser.cache.memory.capacity”后点击“确定”。
+
+7、接着，你需要在此输入一个值，而这个值的大小则取决于你计算机物理内存的大小。
+
+8、如果你的内存大小为256MB，则输入“4096”；而如果你的内存大小为512MB的话，则输入“8192”。
+
+9、注意：如果你的内存还是128MB甚至更低的话，那么建议购买内存升级，内存现在并不是很昂贵。
+
+提示：如果你想要恢复默认设置的话，你可以将“browser.cache.memory.capacity”的值改为“-1”。
+}}}
+
+== 当Firefox最小化时释放内存 ==
+{{{class="brush: text"
+1、打开Firefox浏览器。
+
+2、在地址栏中输入“about:config”。
+
+3、在浏览器中右键点击，选择“新建”>“布尔”。
+
+4、在弹出的窗口中输入“config.trim_on_minimize”，接着点击“确定”。
+
+5、选中“true”，接着点击“确定”。
+
+6、重新启动Firefox即可。
+}}}
+
+== 1.基础设置 ==
+{{{class="brush: text"
+在Firefox地址栏中输入“about:config”回车，将image.animation_mode设置为“none”，再将browser.cache.memory.capacity设置为“16384”。
+}}}
+
+== 2.优化页面缓存 ==
+{{{class="brush: text"
+Firefox为了加快浏览速度，会缓存已经浏览过的页面，这样当我们使用前进、后退时速度更快，
+
+但这会占用很大的内存。这个页面数是根据机器内存的大小来设置的，有时候一个实际大小8MB的页面，
+
+要占120MB的内存。在地址栏中输入“about:config”，找到 browser.sessionhistory.max_total_viewers，
+
+将其值设置为更小的值。通常512MB内存缺省是全局8个页面，但你可以把它改得更小些，甚至可以修改为“0”。
+}}}
+
+== 3.禁止加载Flash广告 ==
+{{{class="brush: text"
+Flash是造成Firefox崩溃的最大可能原因，到下面的地址安装个扩展，
+
+https: //addons.mozilla.org/extensions/moreinfo.php?id=433。
+
+安装该扩展后，如果所访问网页中包含有 Flash，那么Firefox会在Flash处显示一个图标，
+
+而并不加载它，这样可以大大提高网页载入速度。在需要显示Flash的时候则点击图标即可。
+}}}
+
+== 4.取消烦人的页面元素 ==
+{{{class="brush: text"
+网站上的背景音乐，Java特效等页面元素也是导致FF速度慢的主要原因之一。
+
+http: //www.squarefree.com/bookmarklets/zap.html提供了多个JavaScript脚本来取消这些网页元素的解释。
+
+使用方法很简单，只需要根据你的需求，点击相应的JavaScrit脚本链接即可。
+}}}
+
+== 5.华而不实的扩展最好少装 ==
+{{{class="brush: text"
+扩展是造成Firefox内存急剧上升的关键，所以我们能不用的扩展尽量不用，尽量减少扩展的数量。
+
+选择"工具>附加软件"菜单打开Firefox的扩展管理器，选中某些并不是十分需要的扩展，禁用或者卸载。
+}}}
+
+== 6.将高速页面缓存设小一点 ==
+{{{class="brush: text"
+选择“编辑>首选项”菜单，切换到“高级”标签的“网络”分页，将缓存设置为更小的数字，建议设置为“36”。
+}}}
+
+== 7.让难缠脚本不再运行 ==
+{{{class="brush: text"
+有一些不规范的JavaScript脚本会让Firefox运行缓慢，也有些网站会僵住，比如《网易新闻》。
+
+我们可以使用NoScript扩展来禁用访问页面的JavaScript程序。
+}}}
+
+== 8.安装fasterfox扩展 ==
+{{{class="brush: text"
+地址http://addons.mozine.cn/firefox/88/
+}}}
+
+== 9.ff必装三样扩展。 ==
+{{{class="brush: text"
+adblock, noscript, flashblock… 
+}}}

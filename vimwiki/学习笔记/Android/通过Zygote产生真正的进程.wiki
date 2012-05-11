@@ -1,0 +1,137 @@
+= 通过Zygote产生真正的进程 =
+
+%toc
+
+== 流程分析 ==
+- 两个IPC之后，目标转移到`ActivityManagerService`类
+- ActivityManagerService调用startActivity()方法，该方法调用`startProcessLocked()`方法，并通过`Process.start()`与Zygote交互
+- Process.start()调用了`android.app.ActivityThread`类作为参数
+
+== 参考代码 ==
+=== ActivityManagerService类 ===
+{{{class="brush:java"
+public final class ActivityManagerService extends ActivityManagerNative implements Watchdog.Monitor 
+}}}
+
+==== 方法：startProcessLocked ====
+{{{class="brush:java"
+private final void startProcessLocked(ProcessRecord app,
+            String hostingType, String hostingNameStr) {
+        
+    ......
+
+    // 调用Process类的start方法，返回一个PID
+    int pid = Process.start("android.app.ActivityThread", mSimpleProcessManagement ? app.processName : null, uid, uid,
+                             gids, debugFlags, null);
+    ......
+} 
+}}}
+
+=== Process类 ===
+- `start()`方法为隐藏方法，framework没有对开发者开放，该方法启动Activity有两种模式，一个是进程模式，一个是线程模式
+- 首先通过调用JNI接口读取/proc/下进程信息，返回是否支持进程。如果是，则通过与zygote通信并由它产生进程，否则以线程模式运行
+- 当以进程模式运行时，start()调用`startViaZygote()`方法，继而调用`zygoteSendArgsAndGetPid()`方法与Zygote进行通信，Zygote通过fork()调用产生子进程
+
+==== 方法：start ====
+{{{class="brush:java"
+// 启动入口方法
+public static final int start(final String processClass,
+                                  final String niceName,
+                                  int uid, int gid, int[] gids,
+                                  int debugFlags,
+                                  String[] zygoteArgs) {
+    // 以进程模式运行
+    if (supportsProcesses()) {
+        try {
+            return startViaZygote(processClass, niceName, uid, gid, gids, debugFlags, zygoteArgs);
+        } catch (ZygoteStartFailedEx ex) {
+        }
+    } else {
+        // 以线程模式运行
+        Runnable runnable = new Runnable() {
+                    public void run() {
+                        Process.invokeStaticMain(processClass);
+                    }
+        };
+        
+        // Thread constructors must not be called with null names (see spec). 
+        if (niceName != null) {
+            new Thread(runnable, niceName).start();
+        } else {
+            new Thread(runnable).start();
+        }
+        
+        return 0;
+    }
+}
+}}}
+
+==== 方法：startViaZygote ====
+{{{class="brush:java"
+// 启动Zygote
+private static int startViaZygote(final String processClass,
+                                  final String niceName,
+                                  final int uid, final int gid,
+                                  final int[] gids,
+                                  int debugFlags,
+                                  String[] extraArgs)
+                                  throws ZygoteStartFailedEx {
+    int pid;
+
+    synchronized(Process.class) {
+        .....
+        pid = zygoteSendArgsAndGetPid(argsForZygote);
+    }
+}
+}}}
+
+==== 方法：zygoteSendArgsAndGetPid ====
+{{{class="brush:java"
+// socket通信阶段
+private static int zygoteSendArgsAndGetPid(ArrayList<String> args)
+            throws ZygoteStartFailedEx {
+
+    int pid;
+
+    // 检查是否需要建立socket连接
+    openZygoteSocketIfNeeded();
+
+    try {
+        /**
+         * 该注释详细描述了Zygote的通信规则
+         * See com.android.internal.os.ZygoteInit.readArgumentList()
+         * Presently the wire format to the zygote process is:
+         * a) a count of arguments (argc, in essence)
+         * b) a number of newline-separated argument strings equal to count
+         *
+         * After the zygote process reads these it will write the pid of
+         * the child or -1 on failure.
+         */
+
+        sZygoteWriter.write(Integer.toString(args.size()));
+        sZygoteWriter.newLine();
+
+        int sz = args.size();
+        for (int i = 0; i < sz; i++) {
+            String arg = args.get(i);
+            if (arg.indexOf('\n') >= 0) {
+                throw new ZygoteStartFailedEx(
+                        "embedded newlines not allowed");
+            }
+            sZygoteWriter.write(arg);
+            sZygoteWriter.newLine();
+        }
+
+        sZygoteWriter.flush();
+
+        // Should there be a timeout on this?
+        pid = sZygoteInputStream.readInt();
+
+        ......
+    } catch (IOException ex) {
+        ......
+    }
+
+    return pid;
+}
+}}}

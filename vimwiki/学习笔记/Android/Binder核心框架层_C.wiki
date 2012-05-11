@@ -1,0 +1,74 @@
+= Binder核心框架层(C/C++) =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+frameworks/base/include/utils/*
+frameworks/base/libs/utils/*
+frameworks/base/include/binder/*
+frameworks/base/libs/binder/*
+}}}
+
+== 主要类定义 ==
+[pic/Binder_core.jpg]
+
+- *RefBase.h* 引用计数，定义类RefBase、模板sp(强引用计数指针)和wp(弱引用计数指针)。
+- *Parcel.h* 在IPC中传输的数据容器，定义类Parcel。
+- *IBinder.h* Binder对象的抽象接口，定义类IBinder。
+- *Binder.h* Binder核心组件，定义服务器端基类BBinder和BpRefBase。
+- *BpBinder.h* Binder核心组件，定义客户端基类BpBinder。
+- *IInterface.h* 为Binder的接口定义通用类。定义类IInterface、类模板BnInterface、类模板BpInterface。
+- *ProcessState.h* 表示进程状态的类，定义类ProcessState。
+- *IPCThreadState.h* 表示IPC线程的类，定义类IPCThreadState。
+
+== 基本概念 ==
+- 这部分主要阐述C++层的Binder机制，因为Java层的类最终通过JNI接口调用C++层的实现。
+- *Native——本地:* 如BnABC，这是一个需要被继承和实现的类，通常是Server端的实现。
+- *Proxy——代理:* 例如BpABC，这是一个在接口框架中被实现的类，通常不被暴露出来，对于使用者来说是透明的。
+- *服务端:* 对应于BnABC，具体服务的提供者，通常是一个独立进程。
+- *客户端:* 对应于BpABC，服务的请求者。例如客户端查询到某个Binder对象，在使用的时候实际上被转换成BpABC，而BpABC则通过Binder驱动调用远程的相应方法。
+
+=== 引用计数 ===
+{{{class="brush:text"
+    从驱动层协议和Binder的模型，我们知道Binder在客户端、驱动、服务端之间传递，必须有一种机制标识
+Binder被哪些对象使用，什么时候销毁，就像Java对象，要维护一个对象的引用计数，在某种情况下自动销毁
+该对象。Android如何实现引用计数，首先要了解Binder的基类，以及它的工作原理。
+}}}
+
+- [[sp和wp]]
+
+=== 什么是Binder ===
+{{{class="brush:text"
+    这个问题不是真正意义上的Binder定义，而是指在代码实现中怎样定义Binder。Binder的本质是代理模式，
+因此需要提供一个基本的代理端和服务端实现。Android首先定义了IBinder这个接口，它包含了基本的通信方法，
+例如传输数据、判断Binder连接等等。从这个接口派生出两个子类：BpBinder和BBinder。这两个类分别完成代理
+端和服务端需要实现的基本功能。
+}}}
+
+- [[IBinder接口]]
+
+=== 传输介质Parcel ===
+{{{class="brush:text"
+    Binder在传输过程使用的可序列化对象称之为Parcel。它能够将一个类的对象实例保存在内存中，并在跨进程
+后能够还原成该类的对象实例，如同在同一个进程中一样。我们要讨论的重点是它能够充当Binder传输介质的角色，
+必须具备哪些特性？
+}}}
+
+- [[Parcel传输介质]]
+
+=== 权限管理 ===
+{{{class="brush:text"
+    权限管理也是作为Service加入到Android系统中，它同样通过Binder来实现。由于大多数情况下系统服务需要对
+客户端进行权限验证，因此我将它划分到核心框架层中。
+}}}
+
+- [[IPermissionController权限管理]]
+
+== 要点总结 ==
+- 了解以上概念，我们大概知道什么是RefBase，IBinder继承于RefBase是为了维护它在客户端的引用计数。
+- sp和wp用来管理引用计数，它提供了增加和减少引用计数的方法。并知道强引用和弱引用的差别。
+- Binder使用了代理模式，BBinder代表服务端，BpBinder代表代理端。两者完成了IBinder与驱动交互的过程。
+- 定义一个服务的同时，就定义了一个接口IInterface。BnInterface是实现服务端的基类，BpInterface是实现代理端的基类，它们都具备Binder通信的功能。
+- 了解Parcel的实现，它如何序列化一个对象并将之还原。它可以作为Binder的传输介质是因为它自身具有Binder通信的功能。
+

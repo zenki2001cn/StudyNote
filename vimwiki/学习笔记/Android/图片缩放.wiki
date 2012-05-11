@@ -1,0 +1,44 @@
+= 图片缩放 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Matrix;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+}}}
+
+例程源码(JAVA)
+{{{class="brush:java"
+/***
+ * 图片的缩放方法
+ *
+ * @param bgimage
+ *            ：源图片资源
+ * @param newWidth
+ *            ：缩放后宽度
+ * @param newHeight
+ *            ：缩放后高度
+ * @return
+ */
+public Bitmap zoomImage(Bitmap bgimage, int newWidth, int newHeight) {
+    // 获取这个图片的宽和高
+    int width = bgimage.getWidth();
+    int height = bgimage.getHeight();
+    
+    // 创建操作图片用的matrix对象
+    Matrix matrix = new Matrix();
+    
+    // 计算缩放率，新尺寸除原始尺寸
+    float scaleWidth = ((float) newWidth) / width;
+    float scaleHeight = ((float) newHeight) / height;
+    
+    // 缩放图片动作
+    matrix.postScale(scaleWidth, scaleHeight);
+    // 旋转图片动作90度
+    matrix.postRotate(90);
+    
+    Bitmap bitmap = Bitmap.createBitmap(bgimage, 0, 0, width, height,
+                    matrix, true);
+    return bitmap;
+}
+}}}

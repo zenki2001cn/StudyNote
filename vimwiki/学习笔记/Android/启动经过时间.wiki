@@ -1,0 +1,10 @@
+= 启动后经过时间 =
+
+调用android.os.SystemClock类。
+
+- 调用SystemClock.uptimeMillis()方法，可以取得起动后经过的毫秒数。
+
+例程源码(Java)
+{{{class="brush:java"
+Log.v("Test", String.valueOf(SystemClock.uptimeMillis()));
+}}}

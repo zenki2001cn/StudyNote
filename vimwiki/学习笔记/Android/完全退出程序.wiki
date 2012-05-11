@@ -1,0 +1,40 @@
+= 如何退出多个窗口 =
+
+%toc
+
+== Dalvik VM的本地方法 ==
+
+{{{class="brush:text"
+//获取PID，目前获取自己的也只有该API，否则从/proc中自己的枚举其他进程吧，
+// 不过要说明的是，结束其他进程不一定有权限，不然就乱套了。
+android.os.Process.killProcess(android.os.Process.myPid())    
+
+//常规java、c#的标准退出法，返回值为0代表正常退出
+System.exit(0);   
+}}}
+
+== 任务管理器方法 ==
+ 
+{{{class="brush:text"
+    首先要说明该方法运行在Android 1.5 API Level为3以上才可以，同时需要权限
+android.permission.RESTART_PACKAGES，我们直接结束自己的package即可，直接使用
+ActivityManager类的restartPackage方法即可，参数为package name，该类通过
+getSystemService(Context.ACTIVITY_SERVICE)来实例化ActivityManager对象，
+这种方法系统提供的，但需要显示声明权限，所以使用中需要综合考虑。
+}}}
+
+== 根据Activity的声明周期 ==
+
+{{{class="brush:text"
+    我们知道Android的窗口类提供了历史栈，我们可以通过stack的原理来巧妙的实现，这里我们在A窗口打开B窗口时，
+在Intent中直接加入标志Intent.FLAG_ACTIVITY_CLEAR_TOP，这样开启B时将会清除该进程空间的所有Activity。
+在A窗口中使用下面的代码调用B窗口接下来在B窗口中需要退出时直接使用finish方法即可全部退出。
+}}}
+
+=== 示例代码 ===
+{{{class="brush:text"
+Intent intent = new Intent();
+intent.setClass(Android123.this, CWJ.class);
+intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);  //注意本行的FLAG设置
+startActivity(intent);
+}}}

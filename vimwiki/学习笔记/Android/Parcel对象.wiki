@@ -1,0 +1,105 @@
+= Parcel详解 =
+_Parcel是基本数据和对象引用的容器，能够通过IBinder在进程间传递数据。_
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.os.Parcel;
+import android.os.Parcelable;
+}}}
+
+== 基本流程 ==
+- 通过`Parcel.obtain()`构造一个对象
+- 通过`create*`、`write*`、`read*`等系列方法对数据进行操作
+- `setDataPosition()`方法设置当前的偏移量，`dataPosition()`返回当前的偏移量，`dataSize()`返回数据大小，以偏移量为单位
+
+== 基本类型及计算原则 ==
+
+=== 基本数据类型的大小 ===
+| 数据类型 | 偏移量大小 |
+|----------+------------|
+| boolean  | 1bit       |
+| byte     | 8bit       |
+| char     | 16bit      |
+| short    | 16bit      |
+| int      | 32bit      |
+| float    | 32bit      |
+| long     | 64bit      |
+| double   | 64bit      |
+
+=== 偏移量 ===
+{{{class="brush:text"
+Parcel以32bit即4个字节为单位存储数据，因此偏移量总是为4的倍数，
+如：0,4,8,12,16,20,24,28,32,36,40,44,48......4*N
+}}}
+
+=== 示例代码 ===
+{{{class="brush:java"
+Parcel parcel = Parcel.obtain();
+
+parcel.writeFloat(10);
+parcel.writeString("hello");
+
+parcel.setDataPosition(0);
+int i = parcel.readInt();
+String s = parcel.readString();
+}}}
+
+= 实现Parcelable接口 =
+
+== 已知子类 ==
+| 类名         | 描述 |
+|--------------+------|
+| Bitmap       |      |
+| Bundle       |      |
+| Gesture      |      |
+| Intent       |      |
+| KeyEvent     |      |
+| Message      |      |
+| Notification |      |
+| Rect         |      |
+| ServiceInfo  |      |
+| Surface      |      |
+| Uri          |      |
+| WifiInfo     |      |
+
+== 基本流程 ==
+- 从Parcelable类继承，并实现`Parcelable.Creator接口`和`writeToParcel`方法
+
+== 示例代码 ==
+{{{class="brush:java"
+public class MyParcelable implements Parcelable {
+
+    private int mData;
+
+    // 构造方法
+    private MyParcelable(Parcel in) {
+        mData = in.readInt();
+    }
+
+    // 实现Creator接口，Creator<T>接收该类作为参数
+    public static final Parcelable.Creator<MyParcelable> CREATOR = new Parcelable.Creator<MyParcelable>() {
+    
+        // 在该方法中通过in读出数据，并返回该类对象实例
+        public MyParcelable createFromParcel(Parcel in) {
+            // int i = in.readInt();
+            return new MyParcelable(in);
+        }
+
+        // 创建数据类型
+        public MyParcelable[] newArray(int size) {
+            return new MyParcelable[size];
+        }
+    };
+    
+    public int describeContents() {
+        return 0;
+    }
+ 
+    // 在该方法中通过out写入数据
+    public void writeToParcel(Parcel out, int flags) {
+        out.writeInt(mData);
+    }
+}
+}}}

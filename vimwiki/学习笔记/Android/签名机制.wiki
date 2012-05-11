@@ -1,0 +1,448 @@
+= Android签名机制 =
+_所有的Android应用程序都要求开发人员用一个证书进行数字签名，Anroid系统不会安装没有进行签名的应用程序。_
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// 执行签名功能的jar包
+build/tools/signapk/*
+build/tools/zipalign/*
+
+// 编译脚本
+development/tools/make_key.sh
+build/target/product/security/mkkey.sh
+build/core/package.mk
+
+// 签名脚本
+build/tools/releasetools/*
+}}}
+
+== 签名机制的描述 ==
+=== 为什么要签名 ===
+- 发送者的身份认证：由于开发商可能通过使用相同的Package Name来混淆替换已经安装的程序，以此保证签名不同的包不被替换。
+- 不同的签名可以赋予不同的权限。
+- APK如果使用一个key签名，发布时另一个key签名的文件将无法安装或覆盖老的版本，这样可以防止你已安装的应用被恶意的第三方覆盖或替换掉。
+- 代码或者数据共享：Android提供了基于签名的权限机制，那么一个应用程序就可以为另一个以相同证书签名的应用程序公开自己的功能。以同一个证书对多个应用程序进行签名，利用基于签名的权限检查，你就可以在应用程序间以安全的方式共享代码和数据。
+- 应用程序模块化：Android系统可以允许同一个证书签名的多个应用程序在一个进程里运行，系统实际把他们作为一个单个的应用程序，此时就可以把我们的应用程序以模块的方式进行部署，而用户可以独立的升级其中的一个模块。
+
+=== Android签名类型 ===
+| 类型     | 功能                           | UID                                       |
+|----------+--------------------------------+-------------------------------------------|
+| testkey  | 通用的签名                     | 默认不需要设置                            |
+| platform | 作为核心系统的一部分           | android:sharedUserId="android.uid.system" |
+| shared   | 共享home/contacts进程签名      | android:sharedUserId="android.uid.shared" |
+| media    | 作为media/download系统的一部分 | android:sharedUserId="android.media"      |
+
+=== 已签名的文件组成 ===
+- 已签名的APK包中会由`META-INF`目录，该目录包含文件
+| 文件        | 描述                   |
+|-------------+------------------------|
+| CERT.SF     | 生成每个文件相对的密钥 |
+| CERT.RSA    | 私钥                   |
+| MANIFEST.MF | 数字签名信息           |
+
+== 如何生成key ==
+=== 制作签名的Key ===
+- 签名之前首先要准备key(公钥和私钥)，Android提供了制作key的脚本`(Android 2.3使用make_key.sh，之前版本使用mkkey.sh)`。
+
+=== mkkey.sh解析 ===
+{{{class="brush:bash"
+#!/bin/sh
+# sh mkkey.sh release '/C=CN/ST=GuangDong/L=ShenZen/O=Foxconn/OU=TMSBG/CN=tom/emailAddress=Jin-Yin He/CEN/FOXCONN@FOXCONN'
+
+# C   --->  Country Name (2 letter code)
+# ST  --->  State or Province Name (full name)
+# L   --->  Locality Name (eg, city)
+# O   --->  Organization Name (eg, company)
+# OU  --->  Organizational Unit Name (eg, section)
+# CN  --->  Common Name (eg, your name or your server’s hostname)
+# EmailAddress --->  Contact email address
+AUTH='/C=CN/ST=GuangDong/L=ShenZen/O=Foxconn/OU=TMSBG/CN=tom/emailAddress=hejinyin273@sina.com'
+
+if [ "$1" == "" ]; then
+        echo "Create a test certificate key."
+        echo "Usage: $0 NAME"
+        echo "Will generate NAME.pk8 and NAME.x509.pem"
+        echo "  $AUTH"
+        exit
+fi
+
+# 产生RSA私钥(private key)
+# -3 是算法的参数(public exponent)
+# 2048 是私钥长度
+# testkey.pem 是输出的文件
+openssl genrsa -3 -out $1.pem 2048
+
+# 产生PKCS#10格式的认证请求。所谓认证请求就是发给认证机构认证的一个请求，
+# 它主要包括一个公钥和一些相关信息(如组织名称和联系人邮件地址)
+openssl req -new -x509 -key $1.pem -out $1.x509.pem -days 10000 \
+    -subj "$AUTH"
+
+# 把私钥的格式转换成PKCS #8
+# 私钥是不能让别人知道的，否则就起不到保密的作用了。私钥通常是要加密保存的，但这里指定了-nocryp，表示不加密
+echo "Please enter the password for this key:"
+openssl pkcs8 -in $1.pem -topk8 -outform DER -out $1.pk8 -passout stdin
+}}}
+
+=== mkkey.sh的使用 ===
+- 要对Android系统进行签名，需要生成四种类型的key文件。
+    -  release
+    -  media
+    -  shared
+    -  platform
+
+{{{class="brush:bash"
+# 分别以不同类型的字符串作为参数生成key
+$ sh mkkey.sh release
+$ sh mkkey.sh media
+$ sh mkkey.sh shared
+$ sh mkkey.sh platform
+}}}
+
+- mkkey.sh生成了4组对应的(*.pk8*)私钥和(*.x509.pem*)公钥
+
+{{{class="brush:bash"
+$ ls
+media.pk8           platform.pk8       releasekey.pk8       shared.pk8      
+media.x509.pem      platform.x509.pem  releasekey.x509.pem  shared.x509.pem 
+}}}
+
+=== key的安装路径 ===
+- Android提供一套默认的签名key，目录为`build/target/product/security/`。
+- 每个产品的设备制造商的密钥必须存放在`vendor/<vendor_name>/security/<product_name>/`，其中<vendor_name>和<product_name>代表制造商和产品名称。
+
+== 签名package ==
+- 签名的过程需要用到我们上面生成的key。
+
+=== 为package签名 ===
+- 手工签名package
+
+{{{class="brush:bash"
+# 参数说明：
+# -Xmx1024m             对较大的zip包设置虚拟机的内存
+# -w                    为整包签名
+# testkey.x509.pem      公钥
+# testkey.pk8           私钥
+# update.zip            需要签名的文件。
+# update-signed.zip     签名后的文件。
+$ java -Xmx1024m -jar signapk.jar -w testkey.x509.pem testkey.pk8 update.zip update-signed.zip
+}}}
+
+- 优化(签名后需要做对齐优化处理)
+
+{{{class="brush:bash"
+# zipalign [-f] [-v] <align> infile.zip outfile.zip
+# zipalign -c [-v] <align> infile.zip
+# 参数说明：
+#  -c:          检查文件，不会修改文件
+#  -f:          覆盖已存在的文件
+#  -v:          详细输出
+#  <align>:     字节对齐，"4"表示32位对齐 
+#  infile.zip:  输入文件
+#  outfile.zip: 输出文件
+$ zipalign -v 4 your_project_name-unaligned.apk your_project_name.apk
+}}}
+
+== 签名发布系统 ==
+=== 如何生成发布系统 ===
+- 加入dist参数编译系统，表示以发布方式产生包。
+
+{{{class="brush:bash"
+# 在源码根目录下
+$ make -j4 PRODUCT-product-user dist
+}}}
+
+=== 签名工具的使用 ===
+- Android提供了release版本的工具，在build/tools/releasetools目录下：
+
+{{{class="brush:text"
+releasetools
+|-- check_target_files_signatures       检查目标文件是否签名
+|-- common.py                           脚本通用库
+|-- edify_generator.py                  edify格式生成器
+|-- img_from_target_files               将目标文件转换成img
+|-- ota_from_target_files               将目标文件转换成ota
+`-- sign_target_files_apks              签名所有目标文件的apk
+}}}
+
+- 使用签名脚本对zip包签名
+
+{{{class="brush:bash"
+# 参数说明
+# -e <apkname,apkname,apkname,...=key>      根据key过滤某些程序，key可以为空
+# -k <src_key=dest_key>                     设置key_mapping
+# -d <dir>                                  设置key_mapping的路径
+# -o                                        替换OTA包的key
+# -t <+tag>,<-tag>                          添加和移除tag，默认为"-test-keys,+release-keys"
+$ ./build/tools/releasetools/sign_target_files_apks                             \
+    -t +test-keys,-release-keys                                                 \
+    -d vendor/<vendor_name>/security/<product_name>                             \
+    -e a.apk,b.apk= <product_name>-target_files.zip signed-target-files.zip
+}}}
+
+- 将签名的包转成image
+
+{{{class="brush:bash"
+# 使用img_from_target_files工具生成signed-img.zip文件
+$ ./build/tools/releasetools/img_from_target_files out/dist/signed-target-files.zip out/dist/signed-img.zip
+creating boot.img...
+creating recovery.img...
+creating system.img...
+creating userdata.img...
+cleaning up...
+done.
+}}}
+
+- 通过fastboot下载signed-img.zip文件
+
+{{{class="brush:bash"
+# 通过fastboot就可以把签了名的系统文件下载到手机上
+$ fastboot update signed-img.zip
+}}}
+
+= 签名机制的原理 =
+- 签名需要使用SignApk.jar，源码为build/tools/signapk/SignApk.java
+
+== SignApk.java ==
+=== main ===
+{{{class="brush:java"
+public static void main(String[] args) {
+    if (args.length != 4 && args.length != 5) {
+        System.err.println("Usage: signapk [-w] " +
+                "publickey.x509[.pem] privatekey.pk8 " +
+                "input.jar output.jar");
+        System.exit(2);
+    }
+
+    boolean signWholeFile = false;
+    int argstart = 0;
+    if (args[0].equals("-w")) {
+        signWholeFile = true;
+        argstart = 1;
+    }
+
+    JarFile inputJar = null;
+    JarOutputStream outputJar = null;
+    FileOutputStream outputFile = null;
+
+    try {
+        // 读取公钥数据
+        X509Certificate publicKey = readPublicKey(new File(args[argstart+0]));
+
+        // Assume the certificate is valid for at least an hour.
+        long timestamp = publicKey.getNotBefore().getTime() + 3600L * 1000;
+
+        // 读取私钥数据
+        PrivateKey privateKey = readPrivateKey(new File(args[argstart+1]));
+        inputJar = new JarFile(new File(args[argstart+2]), false);  // Don't verify.
+
+        OutputStream outputStream = null;
+        if (signWholeFile) {
+            outputStream = new ByteArrayOutputStream();
+        } else {
+            outputStream = outputFile = new FileOutputStream(args[argstart+3]);
+        }
+        outputJar = new JarOutputStream(outputStream);
+        outputJar.setLevel(9);
+
+        JarEntry je;
+
+        // MANIFEST.MF
+        Manifest manifest = addDigestsToManifest(inputJar);
+        // 并把数字签名信息写入MANIFEST.MF
+        je = new JarEntry(JarFile.MANIFEST_NAME);
+        je.setTime(timestamp);
+        outputJar.putNextEntry(je);
+        manifest.write(outputJar);
+
+        // CERT.SF
+        // 对manifest签名并写入CERT.SF
+        Signature signature = Signature.getInstance("SHA1withRSA");
+        signature.initSign(privateKey);
+        je = new JarEntry(CERT_SF_NAME);
+        je.setTime(timestamp);
+        outputJar.putNextEntry(je);
+        writeSignatureFile(manifest,
+                new SignatureOutputStream(outputJar, signature));
+
+        // CERT.RSA
+        // 把对输出文件的签名和公钥写入CERT.RSA
+        je = new JarEntry(CERT_RSA_NAME);
+        je.setTime(timestamp);
+        outputJar.putNextEntry(je);
+        writeSignatureBlock(signature, publicKey, outputJar);
+
+        // Everything else
+        copyFiles(manifest, inputJar, outputJar, timestamp);
+
+        outputJar.close();
+        outputJar = null;
+        outputStream.flush();
+
+        if (signWholeFile) {
+            outputFile = new FileOutputStream(args[argstart+3]);
+            signWholeOutputFile(((ByteArrayOutputStream)outputStream).toByteArray(),
+                                outputFile, publicKey, privateKey);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        System.exit(1);
+    } finally {
+        try {
+            if (inputJar != null) inputJar.close();
+            if (outputFile != null) outputFile.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+}
+}}}
+
+=== readPublicKey ===
+{{{class="brush:java"
+private static X509Certificate readPublicKey(File file)
+            throws IOException, GeneralSecurityException {
+    FileInputStream input = new FileInputStream(file);
+    try {
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        return (X509Certificate) cf.generateCertificate(input);
+    } finally {
+        input.close();
+    }
+}
+}}}
+
+=== readPassword ===
+{{{class="brush:java"
+/**
+ * Reads the password from stdin and returns it as a string.
+ * @param keyFile The file containing the private key.  Used to prompt the user.
+ */
+private static String readPassword(File keyFile) {
+    // TODO: use Console.readPassword() when it's available.
+    System.out.print("Enter password for " + keyFile + " (password will not be hidden): ");
+    System.out.flush();
+    BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+    try {
+        return stdin.readLine();
+    } catch (IOException ex) {
+        return null;
+    }
+}
+}}}
+
+=== decryptPrivateKey ===
+{{{class="brush:java"
+/**
+ * Decrypt an encrypted PKCS 8 format private key.
+ * @param encryptedPrivateKey The raw data of the private key
+ * @param keyFile The file containing the private key
+ */
+private static KeySpec decryptPrivateKey(byte[] encryptedPrivateKey, File keyFile)
+        throws GeneralSecurityException {
+    EncryptedPrivateKeyInfo epkInfo;
+    try {
+        epkInfo = new EncryptedPrivateKeyInfo(encryptedPrivateKey);
+    } catch (IOException ex) {
+        // Probably not an encrypted key.
+        return null;
+    }
+
+    char[] password = readPassword(keyFile).toCharArray();
+
+    SecretKeyFactory skFactory = SecretKeyFactory.getInstance(epkInfo.getAlgName());
+    Key key = skFactory.generateSecret(new PBEKeySpec(password));
+
+    Cipher cipher = Cipher.getInstance(epkInfo.getAlgName());
+    cipher.init(Cipher.DECRYPT_MODE, key, epkInfo.getAlgParameters());
+
+    try {
+        return epkInfo.getKeySpec(cipher);
+    } catch (InvalidKeySpecException ex) {
+        System.err.println("signapk: Password for " + keyFile + " may be bad.");
+        throw ex;
+    }
+}
+}}}
+
+=== readPrivateKey ===
+{{{class="brush:java"
+/** Read a PKCS 8 format private key. */
+private static PrivateKey readPrivateKey(File file)
+        throws IOException, GeneralSecurityException {
+    DataInputStream input = new DataInputStream(new FileInputStream(file));
+    try {
+        byte[] bytes = new byte[(int) file.length()];
+        input.read(bytes);
+
+        KeySpec spec = decryptPrivateKey(bytes, file);
+        if (spec == null) {
+            spec = new PKCS8EncodedKeySpec(bytes);
+        }
+
+        try {
+            return KeyFactory.getInstance("RSA").generatePrivate(spec);
+        } catch (InvalidKeySpecException ex) {
+            return KeyFactory.getInstance("DSA").generatePrivate(spec);
+        }
+    } finally {
+        input.close();
+    }
+}
+}}}
+
+=== addDigestsToManifest ===
+{{{class="brush:java"
+// 先为输入的jar/zip文件中的所有文件生成SHA1数字签名
+private static Manifest addDigestsToManifest(JarFile jar)
+            throws IOException, GeneralSecurityException {
+    Manifest input = jar.getManifest();
+    Manifest output = new Manifest();
+    Attributes main = output.getMainAttributes();
+    if (input != null) {
+        main.putAll(input.getMainAttributes());
+    } else {
+        main.putValue("Manifest-Version", "1.0");
+        main.putValue("Created-By", "1.0 (Android SignApk)");
+    }
+
+    BASE64Encoder base64 = new BASE64Encoder();
+    MessageDigest md = MessageDigest.getInstance("SHA1");
+    byte[] buffer = new byte[4096];
+    int num;
+
+    // We sort the input entries by name, and add them to the
+    // output manifest in sorted order.  We expect that the output
+    // map will be deterministic.
+
+    TreeMap<String, JarEntry> byName = new TreeMap<String, JarEntry>();
+
+    for (Enumeration<JarEntry> e = jar.entries(); e.hasMoreElements(); ) {
+        JarEntry entry = e.nextElement();
+        byName.put(entry.getName(), entry);
+    }
+
+    for (JarEntry entry: byName.values()) {
+        String name = entry.getName();
+        if (!entry.isDirectory() && !name.equals(JarFile.MANIFEST_NAME) &&
+            !name.equals(CERT_SF_NAME) && !name.equals(CERT_RSA_NAME) &&
+            (stripPattern == null ||
+             !stripPattern.matcher(name).matches())) {
+            InputStream data = jar.getInputStream(entry);
+            while ((num = data.read(buffer)) > 0) {
+                md.update(buffer, 0, num);
+            }
+
+            Attributes attr = null;
+            if (input != null) attr = input.getAttributes(name);
+            attr = attr != null ? new Attributes(attr) : new Attributes();
+            attr.putValue("SHA1-Digest", base64.encode(md.digest()));
+            output.getEntries().put(name, attr);
+        }
+    }
+
+    return output;
+}
+}}}

@@ -1,0 +1,808 @@
+= Event处理参考代码2_3 =
+
+%toc
+
+== WindowManagerService.java ==
+=== WindowManagerService ===
+{{{class="brush:java"
+private WindowManagerService(Context context, PowerManagerService pm,
+            boolean haveInputMethods) {
+    ......
+    final WindowManagerPolicy mPolicy = PolicyManager.makeNewWindowManager();
+
+    ......
+    mInputManager = new InputManager(context, this);
+
+    ......
+    mInputManager.start();
+}
+}}}
+
+=== WindowManagerService.InputMonitor.interceptKeyBeforeQueueing ===
+{{{class="brush:java"
+public int interceptKeyBeforeQueueing(long whenNanos, int action, int flags,
+                int keyCode, int scanCode, int policyFlags, boolean isScreenOn) {
+    return mPolicy.interceptKeyBeforeQueueing(whenNanos, action, flags,
+            keyCode, scanCode, policyFlags, isScreenOn);
+}
+}}}
+
+== InputManager.java ==
+=== InputManager ===
+{{{class="brush:java"
+// 包裹了C++层的InputManager并提供Callbacks回调
+public class InputManager {
+    ...... 
+    private static native void nativeInit(Callbacks callbacks);
+    private static native void nativeStart();
+    private static native void nativeSetDisplaySize(int displayId, int width, int height);
+    private static native void nativeSetDisplayOrientation(int displayId, int rotation);
+    
+    private static native int nativeGetScanCodeState(int deviceId, int sourceMask,
+            int scanCode);
+    private static native int nativeGetKeyCodeState(int deviceId, int sourceMask,
+            int keyCode);
+    private static native int nativeGetSwitchState(int deviceId, int sourceMask,
+            int sw);
+    ......
+
+    private class Callbacks {
+       ...... 
+    }
+ 
+}}}
+
+=== InputManager.Callbacks ===
+{{{class="brush:java"
+private class Callbacks {
+    ......
+
+    @SuppressWarnings("unused")
+    public int interceptKeyBeforeQueueing(long whenNanos, int action, int flags,
+            int keyCode, int scanCode, int policyFlags, boolean isScreenOn) {
+        return mWindowManagerService.mInputMonitor.interceptKeyBeforeQueueing(
+                whenNanos, action, flags, keyCode, scanCode, policyFlags, isScreenOn);
+    }
+}
+}}}
+
+
+== com_android_server_InputManager.cpp ==
+=== NativeInputManager ===
+{{{class="brush:c++"
+class NativeInputManager : public virtual RefBase,
+    public virtual InputReaderPolicyInterface,
+    public virtual InputDispatcherPolicyInterface {
+    ......
+    
+public:
+    ......
+    virtual status_t start();
+    virtual status_t stop();
+
+    virtual sp<InputReaderInterface> getReader();
+    virtual sp<InputDispatcherInterface> getDispatcher();
+
+private:
+    sp<InputReaderInterface> mReader;
+    sp<InputReaderThread> mReaderThread;
+
+    sp<InputDispatcherInterface> mDispatcher;
+    sp<InputDispatcherThread> mDispatcherThread;
+}
+}}}
+
+=== NativeInputManager::NativeInputManager ===
+{{{class="brush:c++"
+NativeInputManager::NativeInputManager(jobject callbacksObj) :
+    mFilterTouchEvents(-1), mFilterJumpyTouchEvents(-1), mVirtualKeyQuietTime(-1),
+    mMaxEventsPerSecond(-1),
+    mDisplayWidth(-1), mDisplayHeight(-1), mDisplayOrientation(ROTATION_0) {
+    
+    // 设置回调
+    mCallbacksObj = env->NewGlobalRef(callbacksObj);
+    // 初始化EventHub
+    sp<EventHub> eventHub = new EventHub();
+    // 初始化InputManager
+    mInputManager = new InputManager(eventHub, this, this);
+}
+}}}
+
+=== NativeInputManager::registerInputChannel ===
+{{{class="brush:c++"
+status_t NativeInputManager::registerInputChannel(JNIEnv* env,
+        const sp<InputChannel>& inputChannel, jobject inputChannelObj, bool monitor) {
+    ......
+    status = mInputManager->getDispatcher()->registerInputChannel(inputChannel, monitor);
+    if (! status) {
+        return OK;
+    }
+    ......
+}
+}}}
+
+== android_view_InputChannel.cpp ==
+=== android_view_InputChannel_nativeOpenInputChannelPair ===
+{{{class="brush:c++"
+static jobjectArray android_view_InputChannel_nativeOpenInputChannelPair(JNIEnv* env,
+        jclass clazz, jstring nameObj) {
+    ......
+    sp<InputChannel> serverChannel;
+    sp<InputChannel> clientChannel;
+    status_t result = InputChannel::openInputChannelPair(name, serverChannel, clientChannel);
+
+    ......
+    // TODO more robust error checking
+    jobject serverChannelObj = android_view_InputChannel_createInputChannel(env,
+            new NativeInputChannel(serverChannel));
+    jobject clientChannelObj = android_view_InputChannel_createInputChannel(env,
+            new NativeInputChannel(clientChannel));
+    ......
+    return channelPair;
+}
+}}}
+
+== InputTransport.cpp ==
+=== InputChannel::openInputChannelPair ===
+{{{class="brush:c++"
+status_t InputChannel::openInputChannelPair(const String8& name,
+        sp<InputChannel>& outServerChannel, sp<InputChannel>& outClientChannel) {
+    ......
+    int serverAshmemFd = ashmem_create_region(name.string(), DEFAULT_MESSAGE_BUFFER_SIZE);
+    if (serverAshmemFd < 0) {
+        ......
+    } else {
+        result = ashmem_set_prot_region(serverAshmemFd, PROT_READ | PROT_WRITE);
+        if (result < 0) {
+            ......
+        } else {
+            int clientAshmemFd;
+            clientAshmemFd = dup(serverAshmemFd);
+            if (clientAshmemFd < 0) {
+                ......
+            } else {
+                int forward[2];
+                if (pipe(forward)) {
+                    ......
+                } else {
+                    int reverse[2];
+                    if (pipe(reverse)) {
+                        ......
+                    } else {
+                        String8 serverChannelName = name;
+                        serverChannelName.append(" (server)");
+                        outServerChannel = new InputChannel(serverChannelName,
+                                serverAshmemFd, reverse[0], forward[1]);
+
+                        String8 clientChannelName = name;
+                        clientChannelName.append(" (client)");
+                        outClientChannel = new InputChannel(clientChannelName,
+                                clientAshmemFd, forward[0], reverse[1]);
+                        return OK;
+                    }
+                    ::close(forward[0]);
+                    ::close(forward[1]);
+                }
+                ::close(clientAshmemFd);
+            }
+        }
+        ::close(serverAshmemFd);
+    }
+    
+    ......
+    return result;
+}
+}}}
+
+== android_view_InputQueue.cpp ==
+{{{class="brush:c++"
+status_t NativeInputQueue::registerInputChannel(JNIEnv* env, jobject inputChannelObj,
+        jobject inputHandlerObj, jobject messageQueueObj) {
+    sp<InputChannel> inputChannel = android_view_InputChannel_getInputChannel(env,
+            inputChannelObj);
+    ......
+
+    sp<Looper> looper = android_os_MessageQueue_getLooper(env, messageQueueObj);
+
+    { // acquire lock
+        AutoMutex _l(mLock);
+
+        ......
+        sp<Connection> connection = new Connection(connectionId, inputChannel, looper);
+        status_t result = connection->inputConsumer.initialize();
+        ......
+
+        connection->inputHandlerObjGlobal = env->NewGlobalRef(inputHandlerObj);
+        
+        .....
+        looper->addFd(receiveFd, 0, ALOOPER_EVENT_INPUT, handleReceiveCallback, this);
+    } // release lock
+    
+    ......
+    return OK;
+}
+}}}
+
+=== NativeInputQueue::handleReceiveCallback ===
+{{{class="brush:c++"
+int NativeInputQueue::handleReceiveCallback(int receiveFd, int events, void* data) {
+    ......
+    { // acquire lock
+        AutoMutex _l(q->mLock);
+
+        ssize_t connectionIndex = q->mConnectionsByReceiveFd.indexOfKey(receiveFd);
+        ......
+
+        connection = q->mConnectionsByReceiveFd.valueAt(connectionIndex);
+        ......
+
+        status_t status = connection->inputConsumer.receiveDispatchSignal();
+        ......
+
+        status = connection->inputConsumer.consume(& connection->inputEventFactory, & inputEvent);
+        ......
+
+        finishedToken = generateFinishedToken(receiveFd, connection->id, connection->messageSeqNum);
+        ......
+
+        inputHandlerObjLocal = env->NewLocalRef(connection->inputHandlerObjGlobal);
+    } // release lock
+
+    ......
+    switch (inputEventType) {
+    case AINPUT_EVENT_TYPE_KEY:
+        inputEventObj = android_view_KeyEvent_fromNative(env,
+                static_cast<KeyEvent*>(inputEvent));
+        // 调用java层的dispatchKeyEvent方法
+        dispatchMethodId = gInputQueueClassInfo.dispatchKeyEvent;
+        break;
+
+    case AINPUT_EVENT_TYPE_MOTION:
+        inputEventObj = android_view_MotionEvent_fromNative(env,
+                static_cast<MotionEvent*>(inputEvent));
+        // 调用java层的dispatchMotionEvent方法
+        dispatchMethodId = gInputQueueClassInfo.dispatchMotionEvent;
+        break;
+
+    default:
+        assert(false); // InputConsumer should prevent this from ever happening
+        inputEventObj = NULL;
+    }
+
+    ......
+    env->CallStaticVoidMethod(gInputQueueClassInfo.clazz,
+            dispatchMethodId, inputHandlerObjLocal, inputEventObj,
+            jlong(finishedToken));
+
+    ......
+    return 1;
+}
+}}}
+
+== InputManager.cpp ==
+=== InputManager::InputManager ===
+{{{class="brush:c++"
+InputManager::InputManager(
+        const sp<EventHubInterface>& eventHub,
+        const sp<InputReaderPolicyInterface>& readerPolicy,
+        const sp<InputDispatcherPolicyInterface>& dispatcherPolicy) {
+    mDispatcher = new InputDispatcher(dispatcherPolicy);
+    mReader = new InputReader(eventHub, readerPolicy, mDispatcher);
+    initialize();
+}
+}}}
+
+=== InputManager::start ===
+{{{class="brush:c++"
+status_t InputManager::start() {
+    status_t result = mDispatcherThread->run("InputDispatcher", PRIORITY_URGENT_DISPLAY);
+    ......
+    result = mReaderThread->run("InputReader", PRIORITY_URGENT_DISPLAY);
+    ......
+
+    return OK;
+}
+}}}
+
+=== InputManager::stop ===
+{{{class="brush:c++"
+status_t InputManager::stop() {
+    status_t result = mReaderThread->requestExitAndWait();
+    ......
+    result = mDispatcherThread->requestExitAndWait();
+    ......
+
+    return OK;
+}
+}}}
+
+== InputReader.h ==
+=== InputReader ===
+{{{class="brush:c++"
+class InputReader : public InputReaderInterface, protected InputReaderContext {
+public:
+    InputReader(const sp<EventHubInterface>& eventHub,
+            const sp<InputReaderPolicyInterface>& policy,
+            const sp<InputDispatcherInterface>& dispatcher);
+            
+    ......
+    virtual void loopOnce();
+    
+private:
+    sp<EventHubInterface> mEventHub;
+    sp<InputReaderPolicyInterface> mPolicy;
+    sp<InputDispatcherInterface> mDispatcher;
+    ......
+}
+}}}
+
+== InputReader.cpp ==
+=== InputReader::loopOnce ===
+{{{class="brush:c++"
+void InputReader::loopOnce() {
+    RawEvent rawEvent;
+    mEventHub->getEvent(& rawEvent);
+
+#if DEBUG_RAW_EVENTS
+    LOGD("Input event: device=0x%x type=0x%x scancode=%d keycode=%d value=%d",
+            rawEvent.deviceId, rawEvent.type, rawEvent.scanCode, rawEvent.keyCode,
+            rawEvent.value);
+#endif
+
+    process(& rawEvent);
+}
+}}}
+
+=== InputReader::process ===
+{{{class="brush:c++"
+void InputReader::process(const RawEvent* rawEvent) {
+    switch (rawEvent->type) {
+    case EventHubInterface::DEVICE_ADDED:
+        addDevice(rawEvent->deviceId);
+        break;
+
+    case EventHubInterface::DEVICE_REMOVED:
+        removeDevice(rawEvent->deviceId);
+        break;
+
+    case EventHubInterface::FINISHED_DEVICE_SCAN:
+        handleConfigurationChanged(rawEvent->when);
+        break;
+
+    default:
+        consumeEvent(rawEvent);
+        break;
+    }
+}
+}}}
+
+=== InputReader::consumeEvent ===
+{{{class="brush:c++"
+void InputReader::consumeEvent(const RawEvent* rawEvent) {
+    int32_t deviceId = rawEvent->deviceId;
+    { // acquire device registry reader lock
+        RWLock::AutoRLock _rl(mDeviceRegistryLock);
+
+        ssize_t deviceIndex = mDevices.indexOfKey(deviceId);
+        if (deviceIndex < 0) {
+            return;
+        }
+
+        InputDevice* device = mDevices.valueAt(deviceIndex);
+        if (device->isIgnored()) {
+            return;
+        }
+
+        device->process(rawEvent);
+    } // release device registry reader lock
+}
+}}}
+
+=== InputDevice::process ===
+{{{class="brush:c++"
+void InputDevice::process(const RawEvent* rawEvent) {
+    size_t numMappers = mMappers.size();
+    for (size_t i = 0; i < numMappers; i++) {
+        InputMapper* mapper = mMappers[i];
+        mapper->process(rawEvent);
+    }
+}
+}}}
+
+== KeyboardInputMapper.cpp ==
+=== KeyboardInputMapper::processKey ===
+{{{class="brush:c++"
+void KeyboardInputMapper::processKey(nsecs_t when, bool down, int32_t keyCode,
+        int32_t scanCode, uint32_t policyFlags) {
+    int32_t newMetaState;
+    nsecs_t downTime;
+    bool metaStateChanged = false;
+
+    { // acquire lock
+        AutoMutex _l(mLock);
+
+        if (down) {
+            // Rotate key codes according to orientation if needed.
+            // Note: getDisplayInfo is non-reentrant so we can continue holding the lock.
+            ......
+            if (! getPolicy()->getDisplayInfo(mAssociatedDisplayId, NULL, NULL, & orientation)) {
+                return;
+            }
+
+            // Add key down.KeyboardInputMapper::processKey
+            ssize_t keyDownIndex = findKeyDownLocked(scanCode);
+            if (keyDownIndex >= 0) {
+                // key repeat, be sure to use same keycode as before in case of rotation
+                keyCode = mLocked.keyDowns.itemAt(keyDownIndex).keyCode;
+            } else {
+                // key down
+                ......
+            }
+        } else {
+            // Remove key down.
+        }
+        
+        ......
+    } // release lock
+
+    // 通过InputDispatcher分发事件
+    getDispatcher()->notifyKey(when, getDeviceId(), AINPUT_SOURCE_KEYBOARD, policyFlags,
+            down ? AKEY_EVENT_ACTION_DOWN : AKEY_EVENT_ACTION_UP,
+            AKEY_EVENT_FLAG_FROM_SYSTEM, keyCode, scanCode, newMetaState, downTime);
+}
+}}}
+
+== InputDispatcher.cpp ==
+=== InputDispatcher::registerInputChannel ===
+{{{class="brush:c++"
+status_t InputDispatcher::registerInputChannel(const sp<InputChannel>& inputChannel, bool monitor) {
+    { // acquire lock
+        AutoMutex _l(mLock);
+
+        sp<Connection> connection = new Connection(inputChannel);
+        status_t status = connection->initialize();
+        ......
+
+        int32_t receiveFd = inputChannel->getReceivePipeFd();
+        mConnectionsByReceiveFd.add(receiveFd, connection);
+
+        if (monitor) {
+            mMonitoringChannels.push(inputChannel);
+        }
+
+        mLooper->addFd(receiveFd, 0, ALOOPER_EVENT_INPUT, handleReceiveCallback, this);
+
+        runCommandsLockedInterruptible();
+    } // release lock
+    return OK;
+}
+}}}
+
+=== InputDispatcher::notifyKey ===
+{{{class="brush:c++"
+void InputDispatcher::notifyKey(nsecs_t eventTime, int32_t deviceId, int32_t source,
+        uint32_t policyFlags, int32_t action, int32_t flags,
+        int32_t keyCode, int32_t scanCode, int32_t metaState, nsecs_t downTime) {
+    // 检验Key是否合法
+    if (! validateKeyEvent(action)) {
+        return;
+    }
+
+    // 系统预处理
+    policyFlags |= POLICY_FLAG_TRUSTED;
+    mPolicy->interceptKeyBeforeQueueing(eventTime, deviceId, action, /*byref*/ flags,
+            keyCode, scanCode, /*byref*/ policyFlags);
+
+    // 加入事件队列
+    bool needWake;
+    { // acquire lock
+        AutoMutex _l(mLock);
+
+        int32_t repeatCount = 0;
+        KeyEntry* newEntry = mAllocator.obtainKeyEntry(eventTime,
+                deviceId, source, policyFlags, action, flags, keyCode, scanCode,
+                metaState, repeatCount, downTime);
+
+        needWake = enqueueInboundEventLocked(newEntry);
+    } // release lock
+
+    // 唤醒线程处理
+    if (needWake) {
+        mLooper->wake();
+    }
+}
+}}}
+
+== InputTransport.cpp ==
+=== InputChannel::openInputChannelPair ===
+{{{class="brush:c++"
+status_t InputChannel::openInputChannelPair(const String8& name,
+        sp<InputChannel>& outServerChannel, sp<InputChannel>& outClientChannel) {
+    status_t result;
+
+    int serverAshmemFd = ashmem_create_region(name.string(), DEFAULT_MESSAGE_BUFFER_SIZE);
+    if (serverAshmemFd < 0) {
+        result = -errno;
+    } else {
+        result = ashmem_set_prot_region(serverAshmemFd, PROT_READ | PROT_WRITE);
+        if (result < 0) {
+            ......
+        } else {
+            // Dup the file descriptor because the server and client input channel objects that
+            // are returned may have different lifetimes but they share the same shared memory region.
+            int clientAshmemFd;
+            clientAshmemFd = dup(serverAshmemFd);
+            if (clientAshmemFd < 0) {
+                result = -errno;
+            } else {
+                int forward[2];
+                if (pipe(forward)) {
+                    result = -errno;
+                } else {
+                    int reverse[2];
+                    if (pipe(reverse)) {
+                        result = -errno;
+                    } else {
+                        String8 serverChannelName = name;
+                        serverChannelName.append(" (server)");
+                        outServerChannel = new InputChannel(serverChannelName,
+                                serverAshmemFd, reverse[0], forward[1]);
+
+                        String8 clientChannelName = name;
+                        clientChannelName.append(" (client)");
+                        outClientChannel = new InputChannel(clientChannelName,
+                                clientAshmemFd, forward[0], reverse[1]);
+                        return OK;
+                    }
+                    ::close(forward[0]);
+                    ::close(forward[1]);
+                }
+                ::close(clientAshmemFd);
+            }
+        }
+        ::close(serverAshmemFd);
+    }
+
+    outServerChannel.clear();
+    outClientChannel.clear();
+    return result;
+}
+}}}
+
+== PhoneWindowManager.java ==
+=== updateSettings ===
+{{{class="brush:java"
+public void updateSettings() {
+    if (mPointerLocationInputChannel == null) {
+        try {
+            mPointerLocationInputChannel =
+                mWindowManager.monitorInput("PointerLocationView");
+            InputQueue.registerInputChannel(mPointerLocationInputChannel,
+                    mPointerLocationInputHandler, mHandler.getLooper().getQueue());
+        } catch (RemoteException ex) {
+        }
+    }
+}
+}}}
+
+=== interceptKeyBeforeQueueing ===
+{{{class="brush:java"
+public int interceptKeyBeforeQueueing(long whenNanos, int action, int flags,
+            int keyCode, int scanCode, int policyFlags, boolean isScreenOn) {
+    ......
+    // If screen is off then we treat the case where the keyguard is open but hidden
+    // the same as if it were open and in front.
+    // This will prevent any keys other than the power button from waking the screen
+    // when the keyguard is hidden by another activity.
+    final boolean keyguardActive = (isScreenOn ?
+                                    mKeyguardMediator.isShowingAndNotHidden() :
+                                    mKeyguardMediator.isShowing());
+
+    ......
+    if (down && (policyFlags & WindowManagerPolicy.FLAG_VIRTUAL) != 0) {
+        performHapticFeedbackLw(null, HapticFeedbackConstants.VIRTUAL_KEY, false);
+    }
+
+    // Basic policy based on screen state and keyguard.
+    // FIXME: This policy isn't quite correct.  We shouldn't care whether the screen
+    //        is on or off, really.  We should care about whether the device is in an
+    //        interactive state or is in suspend pretending to be "off".
+    //        The primary screen might be turned off due to proximity sensor or
+    //        because we are presenting media on an auxiliary screen or remotely controlling
+    //        the device some other way (which is why we have an exemption here for injected
+    //        events).
+    int result;
+    if (isScreenOn || isInjected) {
+        // When the screen is on or if the key is injected pass the key to the application.
+        ......
+    } else {
+        // When the screen is off and the key is not injected, determine whether
+        // to wake the device but don't pass the key to the application.
+        ......
+    }
+
+    // Handle special keys.
+    switch (keyCode) {
+        case KeyEvent.KEYCODE_VOLUME_DOWN:
+        case KeyEvent.KEYCODE_VOLUME_UP: {
+            ......
+            break;
+        }
+
+        case KeyEvent.KEYCODE_ENDCALL: {
+            ......
+            break;
+        }
+
+        case KeyEvent.KEYCODE_POWER: {
+            ......
+            break;
+        }
+
+        case KeyEvent.KEYCODE_HEADSETHOOK:
+        case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+        case KeyEvent.KEYCODE_MEDIA_STOP:
+        case KeyEvent.KEYCODE_MEDIA_NEXT:
+        case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+        case KeyEvent.KEYCODE_MEDIA_REWIND:
+        case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD: {
+            ......
+            break;
+        }
+
+        case KeyEvent.KEYCODE_CALL: {
+            ......
+            break;
+        }
+    }
+    return result;
+}
+}}}
+
+== Looper.h ==
+=== Looper ===
+{{{class="brush:c++"
+class Looper : public ALooper, public RefBase {
+    ......
+    void wake();
+    int addFd(int fd, int ident, int events, ALooper_callbackFunc callback, void* data);
+    int removeFd(int fd);
+
+private:
+    struct Request {
+        int fd;
+        int ident;
+        ALooper_callbackFunc callback;
+        void* data;
+    };
+
+    struct Response {
+        int events;
+        Request request;
+    };
+    
+    ......
+}
+}}}
+
+== Looper.cpp ==
+=== Looper::Looper ===
+{{{class="brush:c++"
+Looper::Looper(bool allowNonCallbacks) :
+        mAllowNonCallbacks(allowNonCallbacks),
+        mResponseIndex(0) {
+    int wakeFds[2];
+    int result = pipe(wakeFds);
+
+    mWakeReadPipeFd = wakeFds[0];
+    mWakeWritePipeFd = wakeFds[1];
+    ......
+    result = fcntl(mWakeReadPipeFd, F_SETFL, O_NONBLOCK);
+    ......
+    result = fcntl(mWakeWritePipeFd, F_SETFL, O_NONBLOCK);
+
+#ifdef LOOPER_USES_EPOLL
+    // Allocate the epoll instance and register the wake pipe.
+    mEpollFd = epoll_create(EPOLL_SIZE_HINT);
+
+    struct epoll_event eventItem;
+    memset(& eventItem, 0, sizeof(epoll_event)); // zero out unused members of data field union
+    eventItem.events = EPOLLIN;
+    eventItem.data.fd = mWakeReadPipeFd;
+    result = epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mWakeReadPipeFd, & eventItem);
+#else
+    ......
+#endif
+}
+}}}
+
+=== Looper::pollOnce ===
+{{{class="brush:c++"
+int Looper::pollOnce(int timeoutMillis, int* outFd, int* outEvents, void** outData) {
+    int result = 0;
+    for (;;) {
+        ......
+        result = pollInner(timeoutMillis);
+    }
+}
+}}}
+
+=== Looper::pollInner ===
+{{{class="brush:c++"
+int Looper::pollInner(int timeoutMillis) {
+    ......
+    // epoll模式监听事件
+#ifdef LOOPER_USES_EPOLL
+    struct epoll_event eventItems[EPOLL_MAX_EVENTS];
+    int eventCount = epoll_wait(mEpollFd, eventItems, EPOLL_MAX_EVENTS, timeoutMillis);
+    bool acquiredLock = false;
+#else
+    ......
+#endif
+
+    if (eventCount < 0) {
+        if (errno == EINTR) {
+            goto Done;
+        }
+
+        result = ALOOPER_POLL_ERROR;
+        goto Done;
+    }
+
+    if (eventCount == 0) {
+        result = ALOOPER_POLL_TIMEOUT;
+        goto Done;
+    }
+
+    // push相应的应答对象
+#ifdef LOOPER_USES_EPOLL
+    for (int i = 0; i < eventCount; i++) {
+        int fd = eventItems[i].data.fd;
+        uint32_t epollEvents = eventItems[i].events;
+        if (fd == mWakeReadPipeFd) {
+            if (epollEvents & EPOLLIN) {
+                awoken();
+            } else {
+            }
+        } else {
+            if (! acquiredLock) {
+                mLock.lock();
+                acquiredLock = true;
+            }
+
+            ssize_t requestIndex = mRequests.indexOfKey(fd);
+            if (requestIndex >= 0) {
+                int events = 0;
+                if (epollEvents & EPOLLIN) events |= ALOOPER_EVENT_INPUT;
+                if (epollEvents & EPOLLOUT) events |= ALOOPER_EVENT_OUTPUT;
+                if (epollEvents & EPOLLERR) events |= ALOOPER_EVENT_ERROR;
+                if (epollEvents & EPOLLHUP) events |= ALOOPER_EVENT_HANGUP;
+                pushResponse(events, mRequests.valueAt(requestIndex));
+            } else {
+            }
+        }
+    }
+    if (acquiredLock) {
+        mLock.unlock();
+    }
+Done: ;
+#else
+    ......
+#endif
+    ......
+    // 循环调用注册的callback方法
+    for (size_t i = 0; i < mResponses.size(); i++) {
+        const Response& response = mResponses.itemAt(i);
+        if (response.request.callback) {
+            int callbackResult = response.request.callback(
+                    response.request.fd, response.events, response.request.data);
+            if (callbackResult == 0) {
+                removeFd(response.request.fd);
+            }
+
+            result = ALOOPER_POLL_CALLBACK;
+        }
+    }
+    return result;
+}
+}}}

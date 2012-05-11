@@ -1,0 +1,33 @@
+= BaseColumns子类 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.provider.BaseColumns;
+import android.net.Uri;
+}}}
+
+== 要点说明 ==
+- 数据库列的抽象接口层，该层描述了数据库列的基本信息，包含_COUNT和_ID。
+- 通常需要实现该接口，并添加自定义的数据项，作为数据库列。
+
+== 示例代码 ==
+{{{class="brush:java"
+public class MyDatabase {
+
+    private MyDatabase() {
+    }
+	
+    static public final class MyColumn implements BaseColumns {
+        private MyColumn() {
+        }
+
+        public static final Uri CONTENT_URI = Uri.parse("content://com.zenki.myprovider/myprovider");
+        public static final String CONTENT_TYPE = "vnd.Android.cursor.dir";
+        public static final String CONTENT_ITEM_TYPE = "vnd.Android.cursor.item";
+        public static final String NAME = "name";
+        public static final String AGE = "age";
+    }
+}
+}}}

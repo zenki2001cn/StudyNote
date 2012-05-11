@@ -1,0 +1,11 @@
+= 资源管理 =
+
+== Bundle类的相关方法 ==
+_void clear()_ :: 清除所有元素
+
+_Object clone()_ :: 克隆当前的Bundle
+
+_Object get(String key)_ :: 通过key获取相应的值
+
+_String getString(String key)_ :: 获取字符串类型的值
+

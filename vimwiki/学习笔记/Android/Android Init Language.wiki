@@ -1,0 +1,156 @@
+= Android初始化脚本解析 =
+
+%toc
+
+== Android初始化脚本(init.rc)概述 ==
+{{{class="brush:text"
+    Android初始化脚本语言包含了四种类型的声明：Actions(行动)、Commands(命令)、Services(服务)和Options(选项)。
+    脚本的内容以行为单位的，各种记号由空格来隔开。C语言风格的反斜杠号可用于在记号间插入空格。双引号也可用于防止
+字符串被空格分割成多个记号。行末的反斜杠用于折行。
+    注释行以井号（#）开头（允许以空格开头）。
+    Actions和Services用来声明一个新的分组。所有的命令或选项都属于最近申明的分组。位于第一个分组之前的命令或选项将会被忽略。
+    Actions和Services有唯一的名字。如果有重名的情况，第二个申明的将会被作为错误忽略。
+}}}
+
+== init.rc包含四种类型的声明 ==
+- Actions
+- Commands
+- Services
+- Options
+
+== Actions语法 ==
+- Actions包含一序列的Commands(命令)和一个trigger(触发器)，trigger用来决定action的执行时间。当一个符合action触发条件的事件发生时，action会被加入到执行队列的末尾，除非它已经在队列里了。
+-    队列中的每一个action都被依次提取出，而这个action中的每个command(命令)都将被依次执行。Init在这些命令的执行期间还控制着其他的活动(设备节点的创建和注销、属性的设置、进程的重启)。
+
+{{{class="brush:bash"
+on <trigger>
+    <command>
+    <command>
+    <command>
+}}}
+
+=== Triggers描述 ===
+| 关键字                                     | 描述                                       |
+|--------------------------------------------+--------------------------------------------|
+| early-init                                 | init之前触发的时机，通常用来初始化设备节点 |
+| init                                       | 初始化时机，在boot之前触发                 |
+| early-boot                                 | boot之前触发的时机                         |
+| boot                                       | 启动的时机                                 |
+| <name>=<value>                             | 属性<name>设置为指定的<value>时触发        |
+| device-added-<path>、device-removed-<path> | 添加或移除设备节点时触发                   |
+| service-exited-<name>                      | 当特定的设备退出时触发                     |
+
+=== Commands描述 ===
+| 关键字                                        | 描述                                                         |
+|-----------------------------------------------+--------------------------------------------------------------|
+| exec <path> [ <argument> ]*                   | 执行一个程序，并阻塞直到程序退出                             |
+| export <name> <value>                         | 设置环境变量                                                 |
+| ifup <interface>                              | 开启网络接口                                                 |
+| import <filename>                             | 加载初始化配置文件，对当前的配置做扩展                       |
+| hostname <name>                               | 设置主机名                                                   |
+| chmod <octal-mode> <path>                     | 更改文件访问权限                                             |
+| chown <owner> <group> <path>                  | 更改文件的所有者和组                                         |
+| class_start <serviceclass>                    | 开启指定的service，如果他们没有在运行                        |
+| class_stop <serviceclass>                     | 停止已经运行的指定的service                                  |
+| domainname <name>                             | 设置域名                                                     |
+| insmod <path>                                 | 安装系统模块                                                 |
+| mkdir <path> [mode] [owner] [group]           | 创建文件夹                                                   |
+| mount <type> <device> <dir> [ <mountpoint> ]* | 挂载设备，<mountoption>包括 "ro"、"rw"、"remount"、"noatime" |
+| setkey                                        | 未使用                                                       |
+| setprop <name> <value>                        | 设置系统属性值                                               |
+| setrlimit <resource> <cur> <max>              | 设置资源限制                                                 |
+| start <service>                               | 开启service，如果他们没有在运行                              |
+| restart <service>                             | 重启service，停止之前运行的服务，重新启动                    |
+| stop <service>                                | 停止已经运行的service                                        |
+| symlink <target> <path>                       | 创建软链接                                                   |
+| sysclktz <mins_west_of_gmt>                   | 设置系统时钟基准(0代表时钟滴答以格林威治平均时(GMT)为准)     |
+| trigger <event>                               | 触发一个事件。用于将一个action与另一个action排列             |
+| write <path> <string> [ <string> ]*           | 打开文件，并写入内容                                         |
+
+== Services语法 ==
+{{{class="brush:bash"
+service <name> <pathname> [<argument>] *
+    <option>
+    <option>
+    <option>
+}}}
+
+=== Options描述 ===
+| 关键字                                             | 描述                                                                                                                              |
+|----------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------|
+| critical                                           | 说明这是一个对于设备关键的服务。如果他四分钟内退出大于四次，系统将会重启并进入recovery(恢复)模式                                  |
+| disabled                                           | 不允许自动运行                                                                                                                    |
+| setenv <name> <value>                              | 在进程启动时将环境变量<name>设置为<value>                                                                                         |
+| socket <type> <name> <perm> [ <user> [ <group> ] ] | 创建一个unix域的socket,名为/dev/socket/<name>,并将它的描述符传递给启动进程。<type> 必须是 "dgram"或"stream"。user和group默认为0 |
+| user <username>                                    | 执行service前改变username，默认是root                                                                                             |
+| group <groupname> [ <groupname> ]*                 | 执行service前改变groupname，默认是root                                                                                            |
+| capability [ <capability> ]+                       | 执行service前设置linux capability                                                                                                 |
+| oneshot                                            | 只执行一次，服务退出时不重启                                                                                                      |
+| class <name>                                       | 为service指定类名，所有同一类的服务可以同时启动和停止。如果不通过class选项指定一个类，则默认为"default"类服务                     |
+| onrestart                                          | 当服务重启，执行一个命令                                                                                                          |
+
+=== Property描述 ===
+| 关键字          | 描述                                            |
+|-----------------+-------------------------------------------------|
+| init.action     | action被执行                                    |
+| init.command    | command被执行                                   |
+| init.svc.<name> | service状态，如"stopped","running","restarting" |
+
+== init.rc示例 ==
+{{{class="brush:bash"
+on early-init
+    start ueventd
+
+on boot
+    export PATH /sbin:/system/sbin:/system/bin
+    export LD_LIBRARY_PATH /system/lib
+
+    mkdir /dev
+    mkdir /proc
+    mkdir /sys
+
+    mount tmpfs tmpfs /dev
+    mkdir /dev/pts
+    mkdir /dev/socket
+    mount devpts devpts /dev/pts
+    mount proc proc /proc
+    mount sysfs sysfs /sys
+
+    write /proc/cpu/alignment 4
+
+    ifup lo
+
+    hostname localhost
+    domainname localhost
+
+    mount yaffs2 mtd@system /system
+    mount yaffs2 mtd@userdata /data
+
+    import /system/etc/init.conf
+
+    class_start default
+
+service adbd /sbin/adbd
+    user adb
+    group adb
+
+service usbd /system/bin/usbd -r
+    user usbd
+    group usbd
+    socket usbd 666
+
+service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
+    socket zygote stream 666
+    onrestart write /sys/android_power/request_state wake
+    onrestart write /sys/power/state on
+    onrestart restart media
+
+on device-added-/dev/compass
+    start akmd
+
+# 将akmd的输出重定向到Android的log
+service /system/bin/logwrapper /sbin/akmd
+    disabled
+    user akmd
+    group akmd
+}}}

@@ -1,0 +1,41 @@
+= CheckBox使用方法 =
+
+[pic/checkbox.png]
+
+- 设置复选框的Check状态的时候，调用setChecked()方法
+- 追加复选框被选择时处理的时候，
+    # 调用setOnCheckedChangeListener()方法，并把 CompoundButton.OnCheckedChangeListener实例作为参数传入
+    # 在CompoundButton.OnCheckedChangeListener的onCheckedChanged()方法里，取得被选中复选框的实例
+
+== 相关类 ==
+{{{class="brush: java"
+import android.widget.CheckBox;
+}}}
+ 
+== 例程源码(Java) ==
+{{{class="brush: java"
+CheckBox checkBox = (CheckBox) findViewById(id.checkBox);
+        
+checkBox.setChecked(true);
+
+checkBox.setOnCheckedChangeListener(
+    new CompoundButton.OnCheckedChangeListener() {
+    @Override
+    public void onCheckedChanged(
+        CompoundButton buttonView,
+        boolean isChecked) {
+        CheckBox checkBox = (CheckBox) buttonView;
+        Log.v("Test", String.valueOf(checkBox.getText()) +
+            " is " + String.valueOf(isChecked));
+    }
+});
+}}}
+
+== 例程源码(Resource) ==
+{{{class="brush: xml"
+<CheckBox android:id="@+id/checkBox"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/test" />
+}}}
+

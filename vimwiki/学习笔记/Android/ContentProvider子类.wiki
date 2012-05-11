@@ -1,0 +1,291 @@
+= ContentProvider子类 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.ContentProvider;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.UriMatcher;
+import android.net.Uri;
+}}}
+
+== 基本流程 ==
+- 从ContentProvider派生子类，添加URI数据路径
+- 实现insert、delete、update、query等数据操作方法
+- 在XML文件中添加provider节点
+- 在访问Provider时通过获取ContentResolver对象实例进行访问。
+
+== 示例代码 ==
+=== 继承ContentProvider子类 ===
+- 数据库创建参见[[SQLiteDatabase]]
+
+{{{class="brush:java"
+public class MyProvider extends ContentProvider {
+
+    // 通过UriMatcher匹配外部请求
+    private static UriMatcher uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
+    SQLiteDataBase db = null;
+    
+    // 匹配状态常量
+    private static final int CONTACT_LIST = 1;
+    private static final int CONTACT = 2;
+    private static final String AUTHORITY = "com.zenki.provider";
+    private static final String TABLE_NAME = "mytable";
+    
+    // 添加Uri，并对特定的URI返回一个常量标识
+    // 通常Provider提供带有ID标识的和不带ID标识的查询
+    static {
+        uriMatcher.addURI(AUTHORITY, "myprovider", CONTACT_LIST);
+        uriMatcher.addURI(AUTHORITY, "myprovider/#", CONTACT_ID);
+    }
+    
+    public MyProvider {
+    }
+    
+    private String whereWithId(String id, String selection) {
+        StringBuilder sb = new StringBuilder(256);
+        sb.append("_id=");
+        sb.append(id);
+        if (selection != null) {
+            sb.append(" AND (");
+            sb.append(selection);
+            sb.append(')');
+        }
+        return sb.toString();
+    }
+    
+    // 这里做作数据库初始化操作
+    public boolean onCreate() {
+        db = SQLiteOpenHelper.getWriteableDatabase();
+        return false;
+    }
+    
+    // 插入数组类型
+    @Override
+    public int bulkInsert(Uri uri, ContentValues[] values) {
+        int match = uriMatcher.match(uri);
+        Context context = getContext();
+        // 默认返回的插入成功数目为0
+        int i = 0;
+        try {
+            db.beginTransaction();
+            // 使用for循环插入值
+            for (ContentValues value : values) {
+                switch (match) {
+                case CONTACT_LIST:
+                    db.insert(TABLE_NAMES, "", value);
+                    break;
+                case CONTACT_ID:
+                    db.insert(TABLE_NAMES, "", value);
+                    break;
+                default:
+                    throw new IllegalArgumentException(TAG + ".insert()"
+                            + ":Unknown URI" + uri);
+                }
+                if (match != CONTACT) {
+                    getContext().getContentResolver().notifyChange(uri, null);
+                }
+                i++;
+            }
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            e.printStackTrace();
+            i = -1;
+        } finally {
+            db.endTransaction();
+        }
+        return i;
+    }
+
+    // 重载insert方法，该方法用来插入数据
+    @Override
+    public Uri insert(Uri uri, ContentValues values) {
+        Uri ret = null;
+        ContentValues val = null;
+        long rowId = -1;
+        
+        if ( values != null ) {
+            // 如果有新的值，则对该值作拷贝
+            val = new ContentValues(values);
+        } else {
+            // 否则，在此添加默认的值
+            val = new ContentValues();
+            val.put(MyDatabase.MyColumn.NAME, "zenki");
+            val.put(MyDatabase.MyColumn.AGE, "28");
+        }
+
+        // 根据id选择不同操作，对数据进行写入操作，并根据条件返回相应的URI
+        switch (uriMatcher.match(uri)) {
+            case CONTACT_LIST:
+                try {
+                    db.beginTransaction();
+                    rowId = db.insert(TABLE_NAME, null, val);
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
+                if (rowId != -1) {
+                    ret = Uri.parse(path);
+                }
+            case CONTACT_ID:
+                try {
+                    db.beginTransaction();
+                    rowId = db.insert(TABLE_NAME, null, val);
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
+                if (rowId != -1) {
+                    ret = ContentUris.withAppendedId(uri, id);
+                }
+            default:
+                // 抛出异常
+                throw new IllegalArgumentException("Uri IllegalArgument:" + uri);
+        }
+        
+        return ret;
+    }
+
+    // 重载delete方法，该方法用来删除数据
+    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+        String id;
+        String mySelection = selection;
+        
+        // 根据id选择不同的操作，对数据进行删除操作
+        switch (uriMatcher.match(uri)) {
+        case CONTACT_LIST:
+            mySelection = selection; 
+            break;
+        case CONTACT_ID:
+            // 删除符合条件的数据
+            id = uri.getPathSegments().get(1);
+            mySelection = whereWithId(id, selection);
+            break;
+        default:
+            throw new IllegalArgumentException("Uri IllegalArgument:" + uri);
+        }
+        
+        try {
+            db.beginTransaction();
+            db.delete(TABLE_NAME, mySelection, selectionArgs);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+
+        return result;
+    }
+
+    // 重载query方法，该方法用来查询数据
+    @Override
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
+        String id;
+        String mySelection = selection;
+        
+        // 根据id选择不同操作
+        switch (uriMatcher.match(uri)) {
+            case CONTACT_LIST:
+                qb.setTables(TABLE_NAME); 
+            case CONTACT_ID:
+                qb.setTables(TABLE_NAME); 
+                id = uri.getPathSegments().get(1);
+                qb.appendWhere(whereWithId(id, selection));
+            default:
+                throw new IllegalArgumentException("Uri IllegalArgument:" + uri);
+        }
+        
+        Cursor cursor = qb.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+        
+        return cursor;
+    }
+
+    // 重载update方法，该方法用来更新数据
+    @Override
+    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+        ContentValues myValues;
+        String mySelection = selection;
+        
+        // 根据id选择不同操作，并设置myValues和mySelection
+        switch (uriMatcher.match(uri)) {
+            case CONTACT_LIST:
+                mySelection = selection; 
+                break;
+            case CONTACT_ID:
+                String id = uri.getPathSegments().get(1);
+                mySelection = whereWithId(id, selection), selectionArgs);
+                break;
+            default:
+                throw new IllegalArgumentException("Uri IllegalArgument:" + uri);
+        }
+        
+        try {
+            db.beginTransaction();
+            db.setTransactionSuccessful();
+            int result = db.update(TABLE_NAME, values, mySelection, selectionArgs);
+        } finally {
+            db.endTransaction();
+        }
+        
+        return result;
+    }
+    
+    // 重载getType方法，该方法用来返回MIME类型
+    @Override
+    public String getType(Uri uri) {
+        // 根据id选择不同操作
+        switch (uriMatcher.match(uri)) {
+            case CONTACT_LIST:          // 集合类型必须在前面加上vnd.android.cursor.dir/
+                return "vnd.android.cursor.dir/contactlist";
+            case CONTACT_ID:            // 非集合类型必须在前面加上vnd.android.cursor.item/
+                return "vnd.android.cursor.item/contact";
+            default:
+                throw new IllegalArgumentException("Uri IllegalArgument:" + uri);
+        }
+    }
+}
+}}}
+
+=== 添加ContentProvider配置 ===
+{{{class="brush:xml"
+<provider android:name=".MyProvider"  
+    android:authorities="com.zenki.myprovider"/>
+}}}
+
+=== 外部应用使用ContentProvider ===
+{{{class="brush:java"
+// 获取ContentResolver对象
+ContentResolver contentResolver = this.getContext().getContentResolver();
+
+// 获取URI
+Uri uri = Uri.parse("content://com.zenki.provider/contact");
+
+// 获取数据库光标
+// 由Activity管理
+String selection = MyColumn.NAME + "=? and " + MyColumn.AGE + "=?";
+String[] selectionArgs = new String[] {String.valueOf(name), age};
+Cursor cursor = managedQuery(uri, new String[] { "_id", "name", "phone" }, selection, selectionArgs, "_id desc");
+
+// 由ContentResolver管理
+Cursor cursor = contentResolver.query(uri, new String[] { "_id", "name", "phone" }, null, null, "_id desc");
+
+// 插入数据
+ContentValues values = new ContentValues();
+values.put(MyDatabase.MyColumn.NAME, "zenki");
+values.put(MyDatabase.MyColumn.AGE, "28");
+contentResolver.insert(MyDatabase.MyColumn.CONTENT_URI, values);
+
+// 数据查询光标
+cursor.moveToFirst();
+while(!cursor.isAfterLast()) {
+    String name = cursor.getString(cursor.getColumnIndexOrThrow(MyDatabase.MyColumn.NAME));
+    String age = cursor.getString(cursor.getColumnIndexOrThrow(MyDatabase.MyColumn.AGE));
+    
+    if (!cursor.moveToNext()) {
+        break;
+    }
+}
+}}}

@@ -1,0 +1,24 @@
+= 获取颜色值 =
+
+例程源码(JAVA)
+{{{class="brush:java"
+int b = getResources().getColor(R.color.blue);//得到配置文件里的颜色
+mButton.setTextColor(b);
+}}}
+
+例程源码(XML)
+{{{class="brush:xml"
+<resources>
+  <color name="darkgray">#404040ff</color>
+  <color name="black">#000</color>
+  <color name="red">#ff00ff</color>
+  <color name="green">#0ff0ff</color>
+  <color name="lightgray">#c0c0c0ff</color>
+  <color name="white">#ffffffff</color>
+  <color name="yellow">#ffFF33ff</color>
+  <color name="blue">#00ffff</color>
+  <color name="gray">#808080ff</color>
+  <color name="magenta">#ff6699ff</color>
+  <color name="cyan">#66ffffff</color>
+</resources>
+}}}

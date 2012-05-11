@@ -1,0 +1,269 @@
+= 显示系统HAL层 =
+
+%toc
+
+== 概述 ==
+- 显示系统通常使用framebuffer，而使用Overlay时可以使用v4l2驱动。这里我们先讨论framebuffer的驱动。
+
+== 模块定义(gralloc.h) ==
+=== gralloc_module_t ===
+{{{class="brush:c++"
+typedef struct gralloc_module_t {
+    struct hw_module_t common;
+    
+    int (*registerBuffer)(struct gralloc_module_t const* module,
+            buffer_handle_t handle);
+
+    int (*unregisterBuffer)(struct gralloc_module_t const* module,
+            buffer_handle_t handle);
+    
+    int (*lock)(struct gralloc_module_t const* module,
+            buffer_handle_t handle, int usage,
+            int l, int t, int w, int h,
+            void** vaddr);
+
+    int (*unlock)(struct gralloc_module_t const* module,
+            buffer_handle_t handle);
+
+    int (*perform)(struct gralloc_module_t const* module,
+            int operation, ... );
+
+    void* reserved_proc[7];
+} gralloc_module_t;
+}}}
+
+=== gralloc_open ===
+{{{class="brush:c++"
+static inline int gralloc_open(const struct hw_module_t* module, 
+        struct alloc_device_t** device) {
+    return module->methods->open(module, 
+            GRALLOC_HARDWARE_GPU0, (struct hw_device_t**)device);
+}
+}}}
+
+=== gralloc_close ===
+{{{class="brush:c++"
+static inline int gralloc_close(struct alloc_device_t* device) {
+    return device->common.close(&device->common);
+}
+}}}
+
+=== framebuffer_open ===
+{{{class="brush:c++"
+static inline int framebuffer_open(const struct hw_module_t* module, 
+        struct framebuffer_device_t** device) {
+    return module->methods->open(module, 
+            GRALLOC_HARDWARE_FB0, (struct hw_device_t**)device);
+}
+}}}
+
+=== framebuffer_close ===
+{{{class="brush:c++"
+static inline int framebuffer_close(struct framebuffer_device_t* device) {
+    return device->common.close(&device->common);
+}
+}}}
+
+== 模块初始化(gralloc.cpp) ==
+{{{class="brush:c++"
+struct private_module_t HAL_MODULE_INFO_SYM = {
+    base: {
+        common: {
+            tag: HARDWARE_MODULE_TAG,
+            version_major: 1,
+            version_minor: 0,
+            id: GRALLOC_HARDWARE_MODULE_ID,
+            name: "Graphics Memory Allocator Module",
+            author: "The Android Open Source Project",
+            methods: &gralloc_module_methods
+        },
+        registerBuffer: gralloc_register_buffer,
+        unregisterBuffer: gralloc_unregister_buffer,
+        lock: gralloc_lock,
+        unlock: gralloc_unlock,
+    },
+    framebuffer: 0,
+    flags: 0,
+    numBuffers: 0,
+    bufferMask: 0,
+    lock: PTHREAD_MUTEX_INITIALIZER,
+    currentBuffer: 0,
+};
+}}}
+
+== 设备定义(gralloc.h) ==
+=== alloc_device_t ===
+{{{class="brush:c++"
+typedef struct alloc_device_t {
+    struct hw_device_t common;
+
+    int (*alloc)(struct alloc_device_t* dev,
+            int w, int h, int format, int usage,
+            buffer_handle_t* handle, int* stride);
+
+    int (*free)(struct alloc_device_t* dev,
+            buffer_handle_t handle);
+
+} alloc_device_t;
+}}}
+
+=== framebuffer_device_t ===
+{{{class="brush:c++"
+typedef struct framebuffer_device_t {
+    struct hw_device_t common;
+
+    const uint32_t  flags;
+    
+    const uint32_t  width;
+    const uint32_t  height;
+
+    const int       stride;
+    const int       format;
+    
+    const float     xdpi;
+    const float     ydpi;
+
+    const float     fps;
+    const int       minSwapInterval;
+    const int       maxSwapInterval;
+
+    int reserved[8];
+    int (*setSwapInterval)(struct framebuffer_device_t* window,
+            int interval);
+    int (*setUpdateRect)(struct framebuffer_device_t* window,
+            int left, int top, int width, int height);
+    
+    int (*post)(struct framebuffer_device_t* dev, buffer_handle_t buffer);
+    int (*compositionComplete)(struct framebuffer_device_t* dev);
+    void* reserved_proc[8];
+} framebuffer_device_t;
+}}}
+
+== 设备初始化 ==
+{{{class="brush:c++"
+int fb_device_open(hw_module_t const* module, const char* name,
+        hw_device_t** device)
+{
+    int status = -EINVAL;
+    if (!strcmp(name, GRALLOC_HARDWARE_FB0)) {
+        alloc_device_t* gralloc_device;
+        status = gralloc_open(module, &gralloc_device);
+        if (status < 0)
+            return status;
+
+        /* initialize our state here */
+        fb_context_t *dev = (fb_context_t*)malloc(sizeof(*dev));
+        memset(dev, 0, sizeof(*dev));
+
+        /* initialize the procs */
+        dev->device.common.tag = HARDWARE_DEVICE_TAG;
+        dev->device.common.version = 0;
+        dev->device.common.module = const_cast<hw_module_t*>(module);
+        dev->device.common.close = fb_close;
+        dev->device.setSwapInterval = fb_setSwapInterval;
+        dev->device.post            = fb_post;
+        dev->device.setUpdateRect = 0;
+
+        private_module_t* m = (private_module_t*)module;
+        status = mapFrameBuffer(m);
+        if (status >= 0) {
+            int stride = m->finfo.line_length / (m->info.bits_per_pixel >> 3);
+            int format = (m->info.bits_per_pixel == 32)
+                         ? HAL_PIXEL_FORMAT_RGBX_8888
+                         : HAL_PIXEL_FORMAT_RGB_565;
+#ifdef NO_32BPP
+            format = HAL_PIXEL_FORMAT_RGB_565;
+#endif
+            const_cast<uint32_t&>(dev->device.flags) = 0;
+            const_cast<uint32_t&>(dev->device.width) = m->info.xres;
+            const_cast<uint32_t&>(dev->device.height) = m->info.yres;
+            const_cast<int&>(dev->device.stride) = stride;
+            const_cast<int&>(dev->device.format) = format;
+            const_cast<float&>(dev->device.xdpi) = m->xdpi;
+            const_cast<float&>(dev->device.ydpi) = m->ydpi;
+            const_cast<float&>(dev->device.fps) = m->fps;
+            const_cast<int&>(dev->device.minSwapInterval) = 1;
+            const_cast<int&>(dev->device.maxSwapInterval) = 1;
+            *device = &dev->device.common;
+        }
+    }
+    return status;
+}
+}}}
+
+== 模块的封装 ==
+=== FramebufferNativeWindow::FramebufferNativeWindow ===
+{{{class="brush:c++"
+FramebufferNativeWindow::FramebufferNativeWindow()
+    : BASE(), fbDev(0), grDev(0), mUpdateOnDemand(false)
+{
+    hw_module_t const* module;
+    if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module) == 0) {
+        int stride;
+        int err;
+        err = framebuffer_open(module, &fbDev);
+        
+        err = gralloc_open(module, &grDev);
+
+        // bail out if we can't initialize the modules
+        if (!fbDev || !grDev)
+            return;
+        
+        mUpdateOnDemand = (fbDev->setUpdateRect != 0);
+        
+        // initialize the buffer FIFO
+        mNumBuffers = 2;
+        mNumFreeBuffers = 2;
+        mBufferHead = mNumBuffers-1;
+        
+        buffers[0] = new NativeBuffer(
+                fbDev->width, fbDev->height, fbDev->format, GRALLOC_USAGE_HW_FB);
+        buffers[1] = new NativeBuffer(
+                fbDev->width, fbDev->height, fbDev->format, GRALLOC_USAGE_HW_FB);
+        
+        err = grDev->alloc(grDev,
+                fbDev->width, fbDev->height, fbDev->format, 
+                GRALLOC_USAGE_HW_FB, &buffers[0]->handle, &buffers[0]->stride);
+        err = grDev->alloc(grDev,
+                fbDev->width, fbDev->height, fbDev->format, 
+                GRALLOC_USAGE_HW_FB, &buffers[1]->handle, &buffers[1]->stride);
+
+        const_cast<uint32_t&>(ANativeWindow::flags) = fbDev->flags; 
+        const_cast<float&>(ANativeWindow::xdpi) = fbDev->xdpi;
+        const_cast<float&>(ANativeWindow::ydpi) = fbDev->ydpi;
+        const_cast<int&>(ANativeWindow::minSwapInterval) = 
+            fbDev->minSwapInterval;
+        const_cast<int&>(ANativeWindow::maxSwapInterval) = 
+            fbDev->maxSwapInterval;
+    } else {
+    }
+
+    ANativeWindow::setSwapInterval = setSwapInterval;
+    ANativeWindow::dequeueBuffer = dequeueBuffer;
+    ANativeWindow::lockBuffer = lockBuffer;
+    ANativeWindow::queueBuffer = queueBuffer;
+    ANativeWindow::query = query;
+    ANativeWindow::perform = perform;
+}
+}}}
+
+== 显示设备的抽象 ==
+=== DisplayHardware::init ===
+{{{class="brush:c++"
+void DisplayHardware::init(uint32_t dpy)
+{
+    mNativeWindow = new FramebufferNativeWindow();
+    framebuffer_device_t const * fbDev = mNativeWindow->getDevice();
+    mDpiX = mNativeWindow->xdpi;
+    mDpiY = mNativeWindow->ydpi;
+    mRefreshRate = fbDev->fps;
+
+    mOverlayEngine = NULL;
+    hw_module_t const* module;
+    if (hw_get_module(OVERLAY_HARDWARE_MODULE_ID, &module) == 0) {
+        overlay_control_open(module, &mOverlayEngine);
+    }
+    
+    ......
+}
+}}}

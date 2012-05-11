@@ -1,0 +1,35 @@
+= 修改系统字体 =
+
+%toc
+
+== 字体的编译拷贝 ==
+- 字体相关的设定在frameworks/base/data/fonts/Android.mk中
+- 字体文件在相同目录中
+
+{{{class="brush:bash"
+LOCAL_PATH:= $(call my-dir)
+include $(CLEAR_VARS)
+
+copy_from :=                \
+    DroidSans.ttf           \
+    DroidSans-Bold.ttf      \
+    DroidSansArabic.ttf     \
+    DroidSansHebrew.ttf     \
+    DroidSansThai.ttf       \
+    DroidSerif-Regular.ttf  \
+    DroidSerif-Bold.ttf     \
+    DroidSerif-Italic.ttf   \
+    DroidSerif-BoldItalic.ttf   \
+    DroidSansMono.ttf        \
+    Clockopia.ttf
+
+ifneq ($(NO_FALLBACK_FONT),true)
+ifeq ($(filter %system/fonts/DroidSansFallback.ttf,$(PRODUCT_COPY_FILES)),)
+    # if the product makefile has set the the fallback font, don't override it.
+    copy_from += DroidSansFallback.ttf
+endif
+endif
+
+copy_file_pairs := $(foreach cf,$(copy_from),$(LOCAL_PATH)/$(cf):system/fonts/$(cf))
+PRODUCT_COPY_FILES += $(copy_file_pairs)
+}}}

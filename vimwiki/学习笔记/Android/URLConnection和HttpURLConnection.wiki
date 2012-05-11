@@ -1,0 +1,123 @@
+= URLConnection和HttpURLConnection实现代码 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.HttpURLConnection;
+import java.io.OutputStream;
+import java.io.ObjectOutputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+}}}
+
+== 流程说明 ==
+- 新建URL实例，并获取一个URLConnection对象
+- 将Stream转换成Reader进行数据读取
+
+=== 例程源码(JAVA) ===
+{{{class="brush:java"
+String uriAPI = "http://www.dubblogs.cc:8751/Android/Test/API/YamWeather/";
+String inputLine;
+String uriPic = "";
+
+// 获取图片路径的URL
+URL objURL = new URL(uriAPI);
+
+// 取得连接
+URLConnection conn = objURL.openConnection();
+// 设置连接参数
+conn.setConnectTimeout(10000); 
+conn.addRequestProperty("User-Agent", "J2me/MIDP2.0"); 
+conn.connect();
+
+// 向服务器发送数据
+OutputStream outStream = conn.getOutputStream();   
+ObjectOutputStream objOutput = new ObjectOutputStream(outStream);   
+objOutput.writeObject(new String("this is a string..."));
+objOutput.flush(); 
+
+// 从服务器读数据，将InputStream转成Reader 
+BufferedReader in = new BufferedReader(
+                    new InputStreamReader(
+                    conn.getInputStream()));
+// 一行一行读取
+while ((inputLine = in.readLine()) != null) {
+    uriPic += inputLine;
+}
+
+// 关闭Reader
+in.close();
+
+// 获取图片数据的URL
+objURL = new URL(uriPic);
+
+// 取得连接
+HttpURLConnection conn2 = (HttpURLConnection) objURL.openConnection();
+conn2.connect();
+
+// 取得返回的InputStream
+InputStream is = conn2.getInputStream();
+
+// 将InputStream变成Bitmap
+Bitmap bm = BitmapFactory.decodeStream(is);
+
+// 关闭InputStream
+is.close();
+
+// 会将上面的网络图片显示在 ImageView里面
+mImageView1.setImageBitmap(bm);
+}}}
+
+== 用WebView实现 ==
+
+=== 相关类 ===
+{{{class="brush:java"
+import android.webkit.WebView;
+}}}
+
+- 定义WebView控件，并在manifest中加入权限
+- 如果需要，在Activity中处理Back事件使浏览器可以退回历史页面
+
+=== 例程源码(JAVA) ===
+{{{class="brush:java"
+@Override
+public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+    
+    // 获取WebView对象
+    webview = (WebView) findViewById(R.id.webview); 
+    // 使能JavaScript
+    webview.getSettings().setJavaScriptEnabled(true); 
+    
+    webview.loadUrl("http://www.google.com");    
+}
+}}}
+
+=== 例程源码(XML) --- layout ===
+{{{class="brush:xml"
+<WebView  
+    android:id="@+id/webview" 
+    android:layout_width="fill_parent" 
+    android:layout_height="fill_parent" 
+/>
+}}}
+
+=== 例程源码(XML) --- Manifest ===
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.INTERNET" />
+}}}
+
+=== 例程源码(JAVA) --- loadData方式 ===
+{{{class="brush:java"
+mWebView1.loadData(
+    "<html><body><p>Subscribe to my Blog</p>" +
+    "<div class='widget-content'> "+
+    "<a href=http://www.wretch.cc/blog/blackoa&rss20=1>" +
+    "<img src=http://angelosu.googlepages.com/feeds128.png />" +
+    "<a href=http://www.cnblogs.com/tt_mc>Link Blog</a>" +
+    "</body></html>", "text/html", "utf-8");
+}}}

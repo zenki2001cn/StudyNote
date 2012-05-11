@@ -1,0 +1,137 @@
+= AudioSystem =
+
+%toc
+
+== 概述 ==
+{{{class="brush:text"
+    AudioSystem是声音系统的抽象，它为AudioService提供接口，具体实现透过JNI调用C++层的AudioSystem。
+}}}
+
+== static常量定义 ==
+=== Audio类型 ===
+- 该组变量对应Settings.System.VOLUME_SETTINGS和attrs.xml
+
+| 变量名                 | 值 | 描述 |
+|------------------------+----+------|
+| STREAM_VOICE_CALL      | 0  |      |
+| STREAM_SYSTEM          | 1  |      |
+| STREAM_RING            | 2  |      |
+| STREAM_MUSIC           | 3  |      |
+| STREAM_ALARM           | 4  |      |
+| STREAM_NOTIFICATION    | 5  |      |
+| STREAM_BLUETOOTH_SCO   | 6  |      |
+| STREAM_SYSTEM_ENFORCED | 7  |      |
+| STREAM_DTMF            | 8  |      |
+| STREAM_TTS             | 9  |      |
+
+=== Audio状态 ===
+| 变量名                | 值 | 描述 |
+|-----------------------+----+------|
+| MODE_INVALID          | -2 |      |
+| MODE_CURRENT          | -1 |      |
+| MODE_NORMAL           | 0  |      |
+| MODE_RINGTONE         | 1  |      |
+| MODE_IN_CALL          | 2  |      |
+| MODE_IN_COMMUNICATION | 3  |      |
+| NUM_MODES             | 4  |      |
+
+=== 错误信息 ===
+- 该组变量对应libs/android_runtime/android_media_AudioSystem.cpp的定义
+
+| 变量名                   | 值  | 描述 |
+|--------------------------+-----+------|
+| AUDIO_STATUS_OK          | 0   |      |
+| AUDIO_STATUS_ERROR       | 1   |      |
+| AUDIO_STATUS_SERVER_DIED | 100 |      |
+
+- 以下常量对应AudioSystem.cpp中的定义
+=== 输出设备 ===
+| 变量名                               | 值     | 描述 |
+|--------------------------------------+--------+------|
+| DEVICE_OUT_EARPIECE                  | 0x1    |      |
+| DEVICE_OUT_SPEAKER                   | 0x2    |      |
+| DEVICE_OUT_WIRED_HEADSET             | 0x4    |      |
+| DEVICE_OUT_WIRED_HEADPHONE           | 0x8    |      |
+| DEVICE_OUT_BLUETOOTH_SCO             | 0x10   |      |
+| DEVICE_OUT_BLUETOOTH_SCO_HEADSET     | 0x20   |      |
+| DEVICE_OUT_BLUETOOTH_SCO_CARKIT      | 0x40   |      |
+| DEVICE_OUT_BLUETOOTH_A2DP            | 0x80   |      |
+| DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES | 0x100  |      |
+| DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER    | 0x200  |      |
+| DEVICE_OUT_AUX_DIGITAL               | 0x400  |      |
+| DEVICE_OUT_FM_TRANSMIT               | 0x800  |      |
+| DEVICE_OUT_LOW_POWER                 | 0x1000 |      |
+| DEVICE_OUT_DEFAULT                   | 0x8000 |      |
+
+=== 输入设备 ===
+| 变量名                          | 值        | 描述 |
+|---------------------------------+-----------+------|
+| DEVICE_IN_COMMUNICATION         | 0x10000   |      |
+| DEVICE_IN_AMBIENT               | 0x20000   |      |
+| DEVICE_IN_BUILTIN_MIC1          | 0x40000   |      |
+| DEVICE_IN_BUILTIN_MIC2          | 0x80000   |      |
+| DEVICE_IN_MIC_ARRAY             | 0x100000  |      |
+| DEVICE_IN_BLUETOOTH_SCO_HEADSET | 0x200000  |      |
+| DEVICE_IN_WIRED_HEADSET         | 0x400000  |      |
+| DEVICE_IN_AUX_DIGITAL           | 0x800000  |      |
+| DEVICE_IN_FM_ANALOG             | 0x1000000 |      |
+| DEVICE_IN_DEFAULT               | 0x8000000 |      |
+
+== JNI接口 ==
+- AudioSystem的JNI接口定义在frameworks/base/core/jni/android_media_AudioSystem.cpp中
+
+{{{class="brush:c++"
+static JNINativeMethod gMethods[] = {
+    {"setParameters",        "(Ljava/lang/String;)I", (void *)android_media_AudioSystem_setParameters},
+    {"getParameters",        "(Ljava/lang/String;)Ljava/lang/String;", (void *)android_media_AudioSystem_getParameters},
+    {"muteMicrophone",      "(Z)I",     (void *)android_media_AudioSystem_muteMicrophone},
+    {"isMicrophoneMuted",   "()Z",      (void *)android_media_AudioSystem_isMicrophoneMuted},
+    {"isStreamActive",      "(I)Z",     (void *)android_media_AudioSystem_isStreamActive},
+    {"setDeviceConnectionState", "(IILjava/lang/String;)I", (void *)android_media_AudioSystem_setDeviceConnectionState},
+    {"getDeviceConnectionState", "(ILjava/lang/String;)I",  (void *)android_media_AudioSystem_getDeviceConnectionState},
+    {"setPhoneState",       "(I)I",     (void *)android_media_AudioSystem_setPhoneState},
+    {"setRingerMode",       "(II)I",    (void *)android_media_AudioSystem_setRingerMode},
+    {"setForceUse",         "(II)I",    (void *)android_media_AudioSystem_setForceUse},
+    {"getForceUse",         "(I)I",     (void *)android_media_AudioSystem_getForceUse},
+    {"initStreamVolume",    "(III)I",   (void *)android_media_AudioSystem_initStreamVolume},
+    {"setStreamVolumeIndex","(II)I",    (void *)android_media_AudioSystem_setStreamVolumeIndex},
+    {"getStreamVolumeIndex","(I)I",     (void *)android_media_AudioSystem_getStreamVolumeIndex}
+};
+}}}
+
+== AudioSystem(C++层) ==
+- AudioSystem主要是调用IAudioFlinger接口实现具体的功能，这里主要关注两个Binder的回调：
+    - AudioSystem::AudioFlingerClient：连接AudioFlinger服务的回调。
+        - 当Binder断开时会调用binderDied。
+        - 当io配置变化时，会调用ioConfigChanged，如AudioFlinger初始化时。
+    - AudioSystem::AudioPolicyServiceClient：连接AudioPolicyService服务的回调，当Binder断开时会调用该回调。
+
+=== AudioSystem::AudioFlingerClient ===
+{{{class="brush:c++"
+class AudioFlingerClient: public IBinder::DeathRecipient, public BnAudioFlingerClient
+{
+public:
+    AudioFlingerClient() {
+    }
+
+    // Binder通知
+    virtual void binderDied(const wp<IBinder>& who);
+
+    // 输入和输出的配置变更时被调用
+    virtual void ioConfigChanged(int event, int ioHandle, void *param2);
+};
+}}}
+
+=== AudioSystem::AudioPolicyServiceClient ===
+{{{class="brush:c++"
+class AudioPolicyServiceClient: public IBinder::DeathRecipient
+{
+public:
+    AudioPolicyServiceClient() {
+    }
+
+    // Binder通知
+    virtual void binderDied(const wp<IBinder>& who);
+};
+}}}
+

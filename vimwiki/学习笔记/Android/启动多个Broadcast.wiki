@@ -1,0 +1,22 @@
+= 启动多个Broadcast =
+
+- 接收端注册多个Broadcast，每个Broadcast处理相应的任务，加入IntentFilter
+
+{{{class="brush:java"
+registerReceiver(mReceiver, new IntentFilter(Alarms.ALARM_KILLED));
+registerReceiver(mReceiver2, new IntentFilter(Alarms.ALARM_NEXT_NAME));
+}}}
+
+- 发送端根据Action名字的不同，发送多个Broadcast
+
+{{{class="brush:java"
+// Broadcast 1
+Intent closeDialogs = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+context.sendBroadcast(closeDialogs);
+
+// Broadcast 2
+Intent alarmChangeName = new Intent(Alarms.ALARM_NEXT_NAME);
+alarmChangeName.putExtra(Alarms.ALARM_NEXT_NAME, alarm.label);
+context.sendBroadcast(alarmChangeName);
+}}}
+

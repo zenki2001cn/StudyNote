@@ -1,0 +1,212 @@
+= 语法概要 =
+
+== 变量声明 ==
+变量声明格式: *var* var_name var_type
+{{{class="brush: text"
+var s string = "hello"
+
+const (
+    name = "zenki"
+    work = "programmer"
+)
+
+a := 1
+}}}
+
+类型定义: *type* new_type var_type
+{{{class="brush: text"
+type T struct {a, b int}
+type I interface {}
+}}}
+
+Boolean类型: *var* var_name *bool*
+{{{class="brush: text"
+表示true或false的数据类型
+}}}
+
+数字类型: *var* var_name var_type
+{{{class="brush: text"
+uint8       the set of all unsigned  8-bit integers (0 to 255)
+uint16      the set of all unsigned 16-bit integers (0 to 65535)
+uint32      the set of all unsigned 32-bit integers (0 to 4294967295)
+uint64      the set of all unsigned 64-bit integers (0 to 18446744073709551615)
+
+int8        the set of all signed  8-bit integers (-128 to 127)
+int16       the set of all signed 16-bit integers (-32768 to 32767)
+int32       the set of all signed 32-bit integers (-2147483648 to 2147483647)
+int64       the set of all signed 64-bit integers (-9223372036854775808 to 9223372036854775807)
+
+float32     the set of all IEEE-754 32-bit floating-point numbers
+float64     the set of all IEEE-754 64-bit floating-point numbers
+
+complex64   the set of all complex numbers with float32 real and imaginary parts
+complex128  the set of all complex numbers with float64 real and imaginary parts
+
+byte        familiar alias for uint8
+}}}
+
+字符串类型: *var* var_name *string*
+{{{class="brush: text"
+var strName string
+}}}
+
+数组声明: *var* var_name *[num]* var_type
+{{{class="brush: text"
+var arrayInt [10]int    #声明10个元素的整形数组
+
+arrayInt[ low:high ]    #对数组进行切片操作
+
+sum( &[3]int{1, 2, 3} ) #初始化一个整形数组并传递给函数
+}}}
+
+切片类型声明: *var* var_name = *make*([]T, lenth, capacity)
+{{{class="brush: text"
+make([]T, length)
+make([]T, length, capacity)
+
+make([]int, 50, 100)
+new([100]int)[0:50]
+}}}
+
+结构类型声明: *struct* {}
+{{{class="brush: text"
+struct {}
+
+struct {
+	x, y int
+	u float
+	_ float  // padding
+	A *[]int
+	F func()
+}
+}}}
+*结构体中的域名不能重复*
+
+指针类型声明: *var* var_name = * *BaseType*
+{{{class="brush: text"
+*int
+*map[string] *chan int
+}}}
+
+函数类型声明: *func* [pack (arg, ...)] *func_name* (ret_type, ...)
+{{{class="brush: text"
+func()
+func(x int)
+func() int
+func(string, float, ...)
+func(prefix string, values ... int)
+func(a, b int, z float) bool
+func(a, b int, z float) (bool)
+func(a, b int, z float, opt ...) (success bool)
+func(int, int, float) (float, *[]int)
+func(n int) func(p *T)
+}}}
+
+接口类型声明: *type* var_name *interface* {}
+{{{class="brush: text"
+interface{}
+
+interface {
+	Read(b Buffer) bool
+	Write(b Buffer) bool
+	Close()
+}
+
+type Lock interface {
+	Lock()
+	Unlock()
+}
+
+type ReadWrite interface {
+	Read(b Buffer) bool
+	Write(b Buffer) bool
+}
+
+type File interface {
+	ReadWrite  // same as enumerating the methods in ReadWrite
+	Lock       // same as enumerating the methods in Lock
+	Close()
+}
+}}}
+*定义一个具有某个功能的接口，就可以与同样具有该功能的一个包相融合，可以看作是对这个包的继承和扩展。*
+*通常可以定义一个结构，通过提供这个结构的一组同名函数来实现接口的继承和重载，接口可以看作是对struct的扩展。*
+
+字典类型声明: *map* *[key_type]* *val_type* {}
+{{{class="brush: text"
+map [string] int
+map [*T] struct { x, y float }
+map [string] interface {}
+
+make(map[string] int)
+make(map[string] int, 100)
+}}}
+*通常使用make来创建一个map类型: vm := make(map[string]int)*
+
+通道类型声明: ChannelType = *chan* *<-* | *<* *chan* ElementType .
+{{{class="brush: text"
+chan T         // can be used to send and receive values of type T
+chan<- float   // can only be used to send floats
+<-chan int     // can only be used to receive ints
+
+chan<- chan int     // same as chan<- (chan int)
+chan<- <-chan int   // same as chan<- (<-chan int)
+<-chan <-chan int   // same as <-chan (<-chan int)
+chan (<-chan int)
+
+make(chan int, 100)
+}}}
+_一个channel可以使用close或closed关闭。_
+
+== 流程控制 ==
+
+*labele* 标签:用于 *goto*, *break*, *continue* 的跳转
+{{{class="brush: text"
+Error: _do something_
+}}}
+
+*if* 语句:
+{{{class="brush: text"
+if x > 0 {
+    return true;
+}
+
+if x := f(); x < y {
+	return x
+} else if x > z {
+	return z
+} else {
+	return y
+}
+}}}
+
+*switch* 语句:
+{{{class="brush: text"
+switch tag {
+default: s3()
+case 0, 1, 2, 3: s1()
+case 4, 5, 6, 7: s2()
+}
+
+switch x := f(); {  // missing switch expression means "true"
+case x < 0: return -x
+default: return x
+}
+
+switch {
+case x < y: f1()
+case x < z: f2()
+case x == 4: f3()
+}
+}}}
+
+*for* 语句:
+{{{class="brush: text"
+for a < b {
+	a *= 2
+}
+
+for i := 0; i < 10; i++ {
+	f(i)
+}
+}}}
+

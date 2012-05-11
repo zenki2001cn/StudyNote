@@ -1,0 +1,222 @@
+= IPermissionController权限管理 =
+
+%toc
+
+== 权限管理的三个要素 ==
+- 权限名称
+- 进程ID
+- 用户ID
+
+== 基于Binder框架的实现 ==
+- 权限管理其实也是基于Binder框架来实现的，首先定义了IPermissionController接口类，它继承于IInterface，并声明了一个虚函数`checkPermission`。
+- `BnPermissionController`和`BpPermissionController`分别是权限管理的服务端和代理端。
+- 获取代理端对象BpPermissionController的入口函数在`IServiceManager.h`中定义，并在`IServiceManager.cpp`中实现，它们都属于名字空间——android。
+- 需要注意的是：IServiceManager.cpp中实现的checkPermission()方法并不是IPermissionController中的checkPermission()，IPermissionController中定义的checkPermission()方法分别在BnPermissionController和BpPermissionController中实现。目前BnPermissionController中的具体实现还没有找到。
+
+== 要点分析 ==
+- 我们用AudioPolicyService的例子来分析权限认证的流程，首先查看AudioPolicyService.cpp的代码。
+- 其中定义了一个静态方法checkPermission()，它会通过IPCThreadState来获取调用进程的ID，如果是当前服务进程，那么就返回true，否则会调用IServiceManager.cpp中的checkCallingPermission()方法，该方法最终会通过代理端——服务端模式的流程来检查权限。(结合前面章节的内容)
+- AudioPolicyService在调用setRingerMode()时会检查是否符合权限，否则返回PERMISSION_DENIED。(其他方法也会调用checkPermission)
+
+== IPermissionController.h ==
+=== IPermissionController ===
+{{{class="brush:c++"
+class IPermissionController : public IInterface
+{
+public:
+    DECLARE_META_INTERFACE(PermissionController);
+
+    virtual bool checkPermission(const String16& permission,
+                                 int32_t pid, int32_t uid) = 0;
+    
+    enum {
+        CHECK_PERMISSION_TRANSACTION = IBinder::FIRST_CALL_TRANSACTION
+    };
+};
+}}}
+
+=== BnPermissionController ===
+{{{class="brush:c++"
+class BnPermissionController : public BnInterface<IPermissionController>
+{
+public:
+    virtual status_t onTransact( uint32_t code,
+                                 const Parcel& data,
+                                 Parcel* reply,
+                                 uint32_t flags = 0);
+};
+}}}
+
+== IPermissionController.cpp ==
+=== IMPLEMENT_META_INTERFACE ===
+{{{class="brush:c++"
+IMPLEMENT_META_INTERFACE(PermissionController, "android.os.IPermissionController");
+}}}
+
+=== BpPermissionController ===
+{{{class="brush:c++"
+class BpPermissionController : public BpInterface<IPermissionController>
+{
+public:
+    BpPermissionController(const sp<IBinder>& impl)
+        : BpInterface<IPermissionController>(impl)
+    {
+    }
+
+    virtual bool checkPermission(const String16& permission, int32_t pid, int32_t uid)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IPermissionController::getInterfaceDescriptor());
+        data.writeString16(permission);
+        data.writeInt32(pid);
+        data.writeInt32(uid);
+        remote()->transact(CHECK_PERMISSION_TRANSACTION, data, &reply);
+        // fail on exception
+        if (reply.readExceptionCode() != 0) return 0;
+        return reply.readInt32() != 0;
+    }
+};
+}}}
+
+=== BnPermissionController::onTransact ===
+{{{class="brush:c++"
+status_t BnPermissionController::onTransact(
+    uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
+{
+    switch(code) {
+        case CHECK_PERMISSION_TRANSACTION: {
+            CHECK_INTERFACE(IPermissionController, data, reply);
+            String16 permission = data.readString16();
+            int32_t pid = data.readInt32();
+            int32_t uid = data.readInt32();
+            bool res = checkPermission(permission, pid, uid);
+            reply->writeNoException();
+            reply->writeInt32(res ? 1 : 0);
+            return NO_ERROR;
+        } break;
+        default:
+            return BBinder::onTransact(code, data, reply, flags);
+    }
+}
+}}}
+
+== IServiceManager.h ==
+=== checkPermission声明 ===
+{{{class="brush:c++"
+bool checkCallingPermission(const String16& permission);
+bool checkCallingPermission(const String16& permission,
+                            int32_t* outPid, int32_t* outUid);
+bool checkPermission(const String16& permission, pid_t pid, uid_t uid);
+}}}
+
+== IServiceManager.cpp ==
+=== _permission ===
+{{{class="brush:c++"
+static String16 _permission("permission");
+}}}
+
+=== checkCallingPermission ===
+{{{class="brush:c++"
+bool checkCallingPermission(const String16& permission)
+{
+    return checkCallingPermission(permission, NULL, NULL);
+}
+}}}
+
+=== checkCallingPermission ===
+{{{class="brush:c++"
+bool checkCallingPermission(const String16& permission, int32_t* outPid, int32_t* outUid)
+{
+    IPCThreadState* ipcState = IPCThreadState::self();
+    pid_t pid = ipcState->getCallingPid();
+    uid_t uid = ipcState->getCallingUid();
+    if (outPid) *outPid = pid;
+    if (outUid) *outUid = uid;
+    return checkPermission(permission, pid, uid);
+}
+}}}
+
+=== checkPermission ===
+{{{class="brush:c++"
+bool checkPermission(const String16& permission, pid_t pid, uid_t uid)
+{
+    sp<IPermissionController> pc;
+    gDefaultServiceManagerLock.lock();
+    pc = gPermissionController;
+    gDefaultServiceManagerLock.unlock();
+    
+    int64_t startTime = 0;
+
+    while (true) {
+        // 如果有BpPermissionController对象，则通过代理对象查询是否符合权限
+        if (pc != NULL) {
+            bool res = pc->checkPermission(permission, pid, uid);
+            if (res) {
+                if (startTime != 0) {
+                }
+                return res;
+            }
+            
+            // Is this a permission failure, or did the controller go away?
+            if (pc->asBinder()->isBinderAlive()) {
+                return false;
+            }
+            
+            // Object is dead!
+            gDefaultServiceManagerLock.lock();
+            if (gPermissionController == pc) {
+                gPermissionController = NULL;
+            }
+            gDefaultServiceManagerLock.unlock();
+        }
+    
+        // 第一次从ServiceManager获取permission的IBinder
+        sp<IBinder> binder = defaultServiceManager()->checkService(_permission);
+        if (binder == NULL) {
+            // Wait for the permission controller to come back...
+            if (startTime == 0) {
+                startTime = uptimeMillis();
+            }
+            sleep(1);
+        } else {
+            // 转换成BpPermissionController对象
+            pc = interface_cast<IPermissionController>(binder);
+            // Install the new permission controller, and try again.        
+            gDefaultServiceManagerLock.lock();
+            gPermissionController = pc;
+            gDefaultServiceManagerLock.unlock();
+        }
+    }
+}
+}}}
+
+== AudioPolicyService.cpp ==
+=== checkPermission ===
+{{{class="brush:c++"
+static bool checkPermission() {
+#ifndef HAVE_ANDROID_OS
+    return true;
+#endif
+    if (getpid() == IPCThreadState::self()->getCallingPid()) return true;
+    bool ok = checkCallingPermission(String16("android.permission.MODIFY_AUDIO_SETTINGS"));
+    if (!ok) LOGE("Request requires android.permission.MODIFY_AUDIO_SETTINGS");
+    return ok;
+}
+}}}
+
+=== AudioPolicyService::setRingerMode ===
+{{{class="brush:c++"
+status_t AudioPolicyService::setRingerMode(uint32_t mode, uint32_t mask)
+{
+    if (mpPolicyManager == NULL) {
+        return NO_INIT;
+    }
+    if (!checkPermission()) {
+        return PERMISSION_DENIED;
+    }
+
+    mpPolicyManager->setRingerMode(mode, mask);
+    return NO_ERROR;
+}
+}}}
+

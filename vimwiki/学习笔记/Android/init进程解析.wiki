@@ -1,0 +1,362 @@
+= init进程解析(基于Android 2.3) =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+system/core/init/init.c
+system/core/init/init.h
+system/core/init/devices.c
+system/core/init/devices.h
+system/core/init/logo.c
+system/core/init/bootchart.c
+system/core/init/bootchart.h
+system/core/init/util.c
+system/core/init/ueventd.c
+system/core/init/propery_service.c
+system/core/init/propery_service.h
+system/core/init/parser.c
+}}}
+
+== Android系统的启动 ==
+{{{class="brush:text"
+    内核引导启动时，会加上"init=/init"，表示内核成功挂载了这个文件系统之后，首先运行的就是这个根目录下的init程序，该进程启动后，进程号为1。
+    从源码分析，如果启动进程是ueventd，则会从ueventd_main()方法进入另一个分支。通常/sbin/ueventd是指向init的链接。
+}}}
+
+== init.rc的作用 ==
+- init进程在启动过程中会读取init.rc文件，该文件可作为配置系统的脚本，init对该脚本进行解析，并做出相应的动作。(参见[[Android Init Language]])
+
+== init进程的功能及流程分析 ==
+- 我们的分析从system/core/init/init.c文件的main()方法开始，并截取部分main的代码片段，完整代码请参考后面的代码。
+
+=== 1.初始化文件系统 ===
+- 首先init会创建系统文件夹，并挂载相应分区。
+
+{{{class="brush:c++"
+umask(0);
+
+/* Get the basic filesystem setup we need put
+ * together in the initramdisk on / and then we'll
+ * let the rc file figure out the rest.
+ */
+mkdir("/dev", 0755);
+mkdir("/proc", 0755);
+mkdir("/sys", 0755);
+
+mount("tmpfs", "/dev", "tmpfs", 0, "mode=0755");
+mkdir("/dev/pts", 0755);
+mkdir("/dev/socket", 0755);
+mount("devpts", "/dev/pts", "devpts", 0, NULL);
+mount("proc", "/proc", "proc", 0, NULL);
+mount("sysfs", "/sys", "sysfs", 0, NULL);
+}}}
+
+=== 2.创建kmsg和null文件节点 ===
+{{{class="brush:c++"
+// 创建空节点
+open_devnull_stdio();
+// 创建kmsg(/dev/kmsg)节点，主要用来输出LOG信息
+log_init();
+}}}
+
+=== 3.解析init.rc文件 ===
+- init.rc的脚本类型分为service和action两种，`parse_line_service()`和`parse_line_action()`分别对它们进行处理。
+
+{{{class="brush:c++"
+init_parse_config_file("/init.rc");
+}}}
+
+=== 4.解析cmdline ===
+- /proc/cmdline以key=value的形式保存了一些系统参数，init进程会读取这些值并设置系统属性，更重要的是它会改变该文件的属性使其他进程不能访问。
+
+{{{class="brush:c++"
+// 从linux内核里获取引导系统给内核的引导参数，并保存到全局变量
+import_kernel_cmdline(0);
+}}}
+
+==== /proc/cmdline示例 ====
+{{{class="brush:bash"
+console=ttyVSP1,115200n8 rootwait init=/init videoout=omap24xxvout omap_vout.video1_numbuffers=6 omap_vout.vid1_static_vrfb_alloc=y omapfb.vram=0:6M androidboot.console=ttyVSP1
+}}}
+
+
+=== 5.解析init.%hardware.rc文件 ===
+- 获取当前android系统运行的硬件信息，比如硬件的CPU名称。
+- init除了解析/init.rc文件外，还会解析/init.%hardware.rc文件。%hardware表示CPU名称，从/proc/cpuinfo中读取。
+
+{{{class="brush:c++"
+get_hardware_name(hardware, &revision);
+snprintf(tmp, sizeof(tmp), "/init.%s.rc", hardware);
+init_parse_config_file(tmp);
+}}}
+
+==== /proc/cpuinfo示例 ====
+{{{class="brush:text"
+Processor       : ARMv7 Processor rev 2 (v7l)
+BogoMIPS        : 796.19
+Features        : swp half thumb fastmult vfp edsp neon vfpv3 
+CPU implementer : 0x41
+CPU architecture: 7
+CPU variant     : 0x3
+CPU part        : 0xc08
+CPU revision    : 2
+
+Hardware        : OMAP3621 EVT1A board
+Revision        : 0010
+Serial          : 0000000000000000
+}}}
+
+=== 6.执行early-init触发的命令 ===
+- early-init的命令被加入到队列中优先执行。
+
+{{{class="brush:c++"
+action_for_each_trigger("early-init", action_add_queue_tail);
+drain_action_queue();
+}}}
+
+=== 7.初始化devices ===
+- 添加/sys下的设备
+
+{{{class="brush:c++"
+INFO("device init\n");
+device_fd = device_init();
+}}}
+
+=== 8.初始化属性系统 ===
+{{{class="brush:c++"
+property_init();
+}}}
+
+=== 9.打开keychord和console ===
+- 如果ro.debuggable是true，则打开keychord
+- 如果cmdline中没有指定console，则打开默认的/dev/console
+
+{{{class="brush:c++"
+keychord_fd = open_keychord();
+
+if (console[0]) {
+    snprintf(tmp, sizeof(tmp), "/dev/%s", console);
+    console_name = strdup(tmp);
+}
+
+fd = open(console_name, O_RDWR);
+if (fd >= 0)
+    have_console = 1;
+close(fd);
+}}}
+
+=== 10.加载logo ===
+- 加载`/initlogo.rle`图片，如果成功就显示在`/dev/graphics/fb0`。否则在`/dev/tty0`中显示Android字串。
+
+{{{class="brush:c++"
+if( load_565rle_image(INIT_IMAGE_FILE) ) {
+    fd = open("/dev/tty0", O_WRONLY);
+    if (fd >= 0) {
+        const char *msg;
+            msg = "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"  // console is 40 cols x 30 lines
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "             A N D R O I D ";
+        write(fd, msg, strlen(msg));
+        close(fd);
+    }
+}
+}}}
+
+=== 11.判断cmdline参数，设置系统属性 ===
+{{{class="brush:c++"
+if (qemu[0])
+    import_kernel_cmdline(1); 
+
+// 如果bootmode为factory，设置ro.factorytest值为1
+if (!strcmp(bootmode,"factory"))
+    property_set("ro.factorytest", "1");
+// factory2,设置ro.factorytest值为2
+else if (!strcmp(bootmode,"factory2"))
+    property_set("ro.factorytest", "2");
+// 其他ro.factorytest值为0
+else
+    property_set("ro.factorytest", "0");
+
+// 设置手机序列号
+property_set("ro.serialno", serialno[0] ? serialno : "");
+// 设置启动模式
+property_set("ro.bootmode", bootmode[0] ? bootmode : "unknown");
+// 设置基频率
+property_set("ro.baseband", baseband[0] ? baseband : "unknown");
+// 设置机器CID
+property_set("ro.carrier", carrier[0] ? carrier : "unknown");
+// 设置引导程序的版本号，以便知道引导程序的特性
+property_set("ro.bootloader", bootloader[0] ? bootloader : "unknown");
+
+// 设置CPU信息
+property_set("ro.hardware", hardware);
+// 设置硬件修订的版本号
+property_set("ro.revision", tmp);
+}}}
+
+=== 12.执行init触发的命令 ===
+{{{class="brush:c++"
+action_for_each_trigger("init", action_add_queue_tail);
+drain_action_queue();
+}}}
+
+=== 13.开启property_service服务 ===
+- 当所有属性设置完成后开启属性服务的service，以便其他进程查询和修改。
+- 从以下变量指定的文件中读取属性
+    - PROP_PATH_SYSTEM_BUILD = /system/build.prop
+    - PROP_PATH_SYSTEM_DEFAULT = /system/default.prop
+    - PROP_PATH_LOCAL_OVERRIDE = /data/local.prop
+
+{{{class="brush:c++"
+property_set_fd = start_property_service();
+}}}
+
+=== 14.创建信号处理机制 ===
+- 其实这个信号管理，就是用来让init进程与它的子进程进行沟通的，子进程从signal_fd写入信息，init进程从signal_recv_fd收到信息，然后再做处理。
+
+{{{class="brush:c++"
+/* create a signalling mechanism for the sigchld handler */
+if (socketpair(AF_UNIX, SOCK_STREAM, 0, s) == 0) {
+    signal_fd = s[0];
+    signal_recv_fd = s[1];
+    fcntl(s[0], F_SETFD, FD_CLOEXEC);
+    fcntl(s[0], F_SETFL, O_NONBLOCK);
+    fcntl(s[1], F_SETFD, FD_CLOEXEC);
+    fcntl(s[1], F_SETFL, O_NONBLOCK);
+}
+
+/* make sure we actually have all the pieces we need */
+if ((device_fd < 0) ||
+    (property_set_fd < 0) ||
+    (signal_recv_fd < 0)) {
+    ERROR("init startup failure\n");
+    return 1;
+}
+}}}
+
+=== 15.执行early-boot和boot触发的命令 ===
+{{{class="brush:c++"
+action_for_each_trigger("early-boot", action_add_queue_tail);
+action_for_each_trigger("boot", action_add_queue_tail);
+drain_action_queue();
+}}}
+
+=== 16. 执行property相关的命令 ===
+{{{class="brush:c++"
+queue_all_property_triggers();
+drain_action_queue();
+
+property_triggers_enabled = 1;
+}}}
+
+=== 17.注册轮询事件 ===
+{{{class="brush:c++"
+ufds[0].fd = device_fd;
+ufds[0].events = POLLIN;
+ufds[1].fd = property_set_fd;
+ufds[1].events = POLLIN;
+ufds[2].fd = signal_recv_fd;
+ufds[2].events = POLLIN;
+fd_count = 3;
+
+if (keychord_fd > 0) {
+    ufds[3].fd = keychord_fd;
+    ufds[3].events = POLLIN;
+    fd_count++;
+} else {
+    ufds[3].events = 0;
+    ufds[3].revents = 0;
+}
+}}}
+
+=== 18.初始化BOOTCHART ===
+- 初始化linux程序启动速度的性能分析工具，这个工具有一个好处，就是图形化显示每个进程启动顺序和占用时间。
+
+{{{class="brush:c++"
+#if BOOTCHART
+    bootchart_count = bootchart_init();
+    if (bootchart_count < 0) {
+        ERROR("bootcharting init failure\n");
+    } else if (bootchart_count > 0) {
+        NOTICE("bootcharting started (period=%d ms)\n", bootchart_count*BOOTCHART_POLLING_MS);
+    } else {
+        NOTICE("bootcharting ignored\n");
+    }
+#endif
+}}}
+
+=== 19.进入主循环等待事件处理 ===
+{{{class="brush:c++"
+for(;;) {
+    int nr, i, timeout = -1;
+
+    // 重置轮询事件的接收状态为0
+    for (i = 0; i < fd_count; i++)
+        ufds[i].revents = 0;
+
+    // 执行action队列
+    drain_action_queue();
+    // 重启需要重启的进程
+    restart_processes();
+
+    if (process_needs_restart) {
+        timeout = (process_needs_restart - gettime()) * 1000;
+        if (timeout < 0)
+            timeout = 0;
+    }
+
+#if BOOTCHART
+    // 完成BOOTCHART的log
+    if (bootchart_count > 0) {
+        if (timeout < 0 || timeout > BOOTCHART_POLLING_MS)
+            timeout = BOOTCHART_POLLING_MS;
+        if (bootchart_step() < 0 || --bootchart_count == 0) {
+            bootchart_finish();
+            bootchart_count = 0;
+        }
+    }
+#endif
+
+    // 轮询注册的事件，超时则continue
+    nr = poll(ufds, fd_count, timeout);
+    if (nr <= 0)
+        continue;
+
+    
+    if (ufds[2].revents == POLLIN) {
+        /* we got a SIGCHLD - reap and restart as needed */
+        read(signal_recv_fd, tmp, sizeof(tmp));
+        while (!wait_for_one_process(0))
+            ;
+        continue;
+    }
+
+    // 处理device事件
+    if (ufds[0].revents == POLLIN)
+        handle_device_fd(device_fd);
+        
+    // 处理设置系统属性的请求
+    if (ufds[1].revents == POLLIN)
+        handle_property_set_fd(property_set_fd);
+        
+    // 处理处理调试模式下的组合按键
+    if (ufds[3].revents == POLLIN)
+        handle_keychord(keychord_fd);
+}
+}}}
+
+= 参考代码 =
+- [[init进程参考代码]]

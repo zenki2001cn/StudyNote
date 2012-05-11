@@ -1,0 +1,56 @@
+= 帧动画 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.AnimationUtils;
+
+import android.graphics.drawable.AnimationDrawable;
+
+import android.widget.ImageView;
+}}}
+
+== 基本流程 ==
+- 定义图片资源
+- 定义动画列表资源
+- 通过ImageView.setBackgroundResource()方法设置动画列表，并通过getBackground()方法获取动画绘画对象
+- 使用AnimationDrawable.start()方法开始动画，AnimationDrawable.stop()方法停止动画
+
+== 示例代码 ==
+=== anim/animation.xml ===
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android" android:oneshot="true">
+    <item android:drawable="@drawable/one" android:duration="200" />
+    <item android:drawable="@drawable/two" android:duration="200" />
+    <item android:drawable="@drawable/three" android:duration="200" />
+    <item android:drawable="@drawable/four" android:duration="200" />
+</animation-list>
+}}}
+
+=== 装载并播放帧动画 ===
+{{{class="brush:java"
+private ImageView mImageView;
+private AnimationDrawable mDrawable;
+
+private void loadFrameAnimation() {
+    mImageView = (ImageView) findViewById(R.id.image);
+    mImageView.setBackgroundResource(R.anim.animation);
+    mDrawable = (AnimationDrawable) mImageView.getBackground();
+}
+
+// 在监听事件中播放动画，而不是在onCreate()方法中
+public void onClick(View view) {
+    switch ( view.getId() ) {
+    case R.id.button :
+        mDrawable.start();
+        break;
+    default :
+        break;
+    }
+}
+}}}

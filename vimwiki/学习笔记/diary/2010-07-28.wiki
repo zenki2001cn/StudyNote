@@ -1,0 +1,8 @@
+= 今日备份 =
+
+- home/wiki
+- ftp/wiki
+- home/downloads
+- python代码片断
+- gnome脚本
+- 小熊猫

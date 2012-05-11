@@ -1,0 +1,65 @@
+= Linux下获取root权限执行程序 =
+
+== 示例代碼 ==
+- 執行`su`程序獲取root權限
+- 獲取su程序的輸入和輸出流，并將需要執行的命令行寫入到輸出流中。
+- 從輸入流中獲取程序的輸出信息。
+
+{{{class="brush:java"
+Process process = null;
+DataOutputStream os = null;
+InputStreamReader osRes = null;
+
+String[] commands = {"mount -t yaffs2 -o remount,rw /dev/block/mtdblock3 /system",
+                     "chmod 777 /system/fonts",
+                     "cp -f -r ".concat(backupPath).concat("*.ttf /system/fonts/"),
+                     "cp -f -r ".concat(backupPath).concat("*.TTF /system/fonts/"),
+                     "chmod 666 /system/fonts/*"};
+
+try {
+    // 執行su程序
+    process = Runtime.getRuntime().exec("su");
+    // 獲取輸入和輸出流
+    os = new DataOutputStream(process.getOutputStream());
+    osRes = new InputStreamReader(process.getInputStream());
+    BufferedReader reader = new BufferedReader(osRes);
+    
+    // 執行命令行
+    for (String single : commands) {
+        os.writeBytes(single + "\n");
+        os.flush();
+        Thread.sleep(sleepTime);
+    }
+
+    os.writeBytes("exit \n");
+    os.flush();
+
+    // 讀取程序的輸出結果
+    String line = reader.readLine();
+    while (line != null) {
+        if(null == result) {
+            // do something
+        } else {
+            // do something
+        }
+        RootTools.log(line);
+        line = reader.readLine();
+    }
+}
+catch (Exception ex) {
+}
+finally {
+    int diag = process.waitFor();
+
+    try {
+        if (os != null) {
+            os.close();
+        }
+        if (osRes != null) {
+            osRes.close();
+        }
+        process.destroy();
+    } catch (Exception e) {
+    }
+}
+}}}

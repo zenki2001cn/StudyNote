@@ -1,0 +1,72 @@
+= 类型检查 =
+
+== 基本概念 ==
+运行期类型识别(RTTI, run-time type identification) :: 当你只有一个指向对象的基类的引用时，RTTI可以让你找出这个对象的确切类型。
+
+== ClassLoader类 ==
+- ClassLoader是Class类的加载器，可通过`loadClass`方法加载Class对象
+- Class类可通过`getClassLoader`方法返回ClassLoader类
+
+{{{class="brush:java"
+Class<?> class1 = Class.forName("myClass");
+Class<?> class2 = class1.getClassLoader().loadClass("myClass");
+}}}
+
+== Class类 ==
+- 每次编译一个新类，便产生一个Class对象，虚拟机通过该Class对象来创建所有该类的对象
+- `forName`方法返回一个Class对象
+- `newInstance`方法返回该类的对象
+ 
+{{{class="brush:java"
+Class<?> class1 = Class.forName("myClass");
+MyClass myClass = class1.newInstance();
+}}}
+
+- 通过".class"形式返回Class对象
+
+{{{class="brush:java"
+Class<?> class2 = myClass.class;
+MyClass myClass = class1.newInstance();
+}}}
+
+== RTTI的三种形式 ==
+# 经典的类型转换，需要显示的向下转型，使用类似"(Shape)"的方法。
+# 通过查询Class对象来获取运行时信息
+# 反射(Reflection)
+
+==== 关键字instanceof ====
+instanceof用来检查一个对象是否是一个特定类型的实例
+{{{class="brush:java"
+if ( c instanceof Circle ) {
+    ((Circle)c).draw();
+}
+}}}
+
+==== isInstance()方法 ====
+Class类的isInstance方法可以动态的调用instanceof运算符
+{{{class="brush:java"
+if ( (Circle.class).isInstance(c) ) {
+    // do something
+}
+}}}
+
+==== instanceof VS .class ====
+instanceof和isInstance都可以准确获取类型信息，包括继承关系，而通过""和equals进行比较则不能包含继承关系
+
+==== 反射 ====
+反射和RTTI的之间的区别在于，RTTI在编译期间打开和检查.class文件，而反射是在运行期间打开和检查.class文件
+
+类方法提取通过Class对象的getMethods和getConstructors来获取
+{{{class="brush:java"
+// 获取Class对象
+Class c = Class.forName(c);
+// 获取方法集合
+Method[] m = c.getMethods();
+// 公共构造方法集合
+Constructors[] ctor = c.getConstructors();
+
+// 反射使用
+Method m2 = c.getMethod("func", java.lang.Object.class);
+m2.invoke(obj, arg1, arg2);
+}}}
+

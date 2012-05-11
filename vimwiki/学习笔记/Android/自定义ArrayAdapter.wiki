@@ -1,0 +1,117 @@
+= 自定义ArrayAdapter =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import android.content.Context;
+
+import android.widget.ListView;
+import android.widget.ArrayAdapter;
+
+import java.util.List;
+import java.util.ArrayList;
+}}}
+
+- 从ArrayAdapter派生类，并实现`getView()`方法
+- `getItem()`方法需要返回一个对象，以便在处理事件响应时，父类的ListView能够获取到Item对象类型
+- 通过`notifyDataSetChanged()`通知更新列表内容
+
+ArrayAdapter派生类
+{{{class="brush:java"
+public class MyArrayAdapter extends BaseAdapter {
+
+    LayoutInflater factory; 
+    List<MyListItem> mListItem;
+    Context mContext;
+
+    public MyArrayAdapter(Context context, List<MyListItem> listItems) {
+
+        mListItem = listItems;
+        mContext = context;
+        factory = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    }
+
+    @Override
+    public int getCount() {
+        // 返回列表的大小
+        return mListItem.size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        // 如果此处返回null，在处理OnItemClick事件时会产生空指针异常
+        return mListItem.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        View view = convertView;
+
+        if ( view == null ) {
+            // 从XML中获取Item布局视图
+            view = factory.inflate(R.layout.item, null);
+        }
+
+        // 按位置获取item
+        MyListItem item = getItem(position);
+        // 为布局控件设置文本
+        TextView textView = (TextView) view.findViewById(R.id.itemtext);
+        textView.setText(item.getName());
+        
+        // notifyDataSetChanged()方法通知刷新列表内容，可以通过某些标志位做特别的刷新处理
+        if (something) {
+            // ......
+        } else {
+            // ......
+        }
+
+        return view;
+    }
+}
+}}}
+
+自定义Item类
+{{{class="brush:java"
+public class MyListItem {
+    String mItemName;
+
+    public MyListItem(String itemName) {
+        mItemName = itemName;    
+    }
+
+    public String getName() {
+        return mItemName;
+    }
+}
+}}}
+
+在Activity中使用自定义ArrayAdapter
+{{{class="brush:java"
+public void onCreate(Bundle savedInstanceState)
+{
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+
+    ListView listView = (ListView) findViewById(R.id.listview);
+
+    List<MyListItem> list = new ArrayList<MyListItem>();
+    MyListItem item1 = new MyListItem("item1");
+    MyListItem item2 = new MyListItem("item2");
+    MyListItem item3 = new MyListItem("item3");
+
+    list.add(item1);
+    list.add(item2);
+    list.add(item3);
+
+    MyArrayAdapter adapter = new MyArrayAdapter(this, list);
+    listView.setAdapter(adapter);
+}
+}}}

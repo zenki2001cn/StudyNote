@@ -1,0 +1,104 @@
+= Provider-Settings-System =
+
+== 要点说明 ==
+- 通过键/值对来存储属性信息。
+- 使用`put*`和`get*`系列方法来设置和存储属性值。
+
+== 主要参数说明 ==
+| 类型          | 方法名                                | 描述                                         |
+|---------------+---------------------------------------+----------------------------------------------|
+| String        | ACCELEROMETER_ROTATION                | 控制加速器改变屏幕坐标                       |
+| String        | AIRPLANE_MODE_ON                      | 是否开启飞行模式                             |
+| String        | AIRPLANE_MODE_RADIOS                  | 开启飞行模式时关闭收音机列表                 |
+| String        | ALARM_ALERT                           | 持久保存系统级的警告                         |
+| String        | ALWAYS_FINISH_ACTIVITIES              | 当Activity不再需要时，管理器将关闭该Activity |
+| String        | APPEND_FOR_LAST_AUDIBLE               | 记录最后音量值                               |
+| String        | AUTO_TIME                             | 网络时间同步                                 |
+| String        | BLUETOOTH_DISCOVERABILITY             | 蓝牙可见设置                                 |
+| String        | BLUETOOTH_DISCOVERABILITY_TIMEOUT     | 蓝牙连接超时                                 |
+| Uri           | CONTENT_URI                           | content:// 风格的URI                         |
+| String String | DATE_FORMAT                           | 日期格式: mm/dd/yyyy dd/mm/yyyy yyyy/mm/dd   |
+| String        | DEBUG_APP                             | 调试的应用程序package名称                    |
+| Uri           | DEFAULT_ALARM_ALERT_URI               | 默认警告URI                                  |
+| Uri           | DEFAULT_NOTIFICATION_URI              | 默认通知URI                                  |
+| Uri           | DEFAULT_RINGTONE_URI                  | 默认响铃URI                                  |
+| String        | DIM_SCREEN                            | 是否分割窗口                                 |
+| String        | DTMF_TONE_WHEN_DIALING                | 通话时是否使用DTMF音调                       |
+| String        | END_BUTTON_BEHAVIOR                   | 在没有通话的情况下，按下结束按钮的行为       |
+| String        | FONT_SCALE                            | 字体尺寸                                     |
+| String        | HAPTIC_FEEDBACK_ENABLED               | 是否启用长按                                 |
+| String        | MODE_RINGER                           | 响铃模式                                     |
+| String        | MODE_RINGER_STREAMS_AFFECTED          | 声音是否受响铃改变的影响                     |
+| String        | MUTE_STREAMS_AFFECTED                 | 声音是否受音量调整的影响                     |
+| String        | NEXT_ALARM_FORMATTED                  | 下次报警的字符串格式                         |
+| String        | NOTIFICATION_SOUND                    | 持久保存默认通知声音                         |
+| String        | RADIO_BLUETOOTH                       |                                              |
+| String        | RADIO_CELL                            |                                              |
+| String        | RADIO_WIFI                            |                                              |
+| String        | RINGTONE                              | 持久保存默认的响铃                           |
+| String        | SCREEN_BRIGHTNESS                     | 0-255的屏幕亮度                              |
+| String        | SCREEN_BRIGHTNESS_MODE                | 是否开启自动屏幕亮度                         |
+| int           | SCREEN_BRIGHTNESS_MODE_AUTOMATIC      | 自动屏幕亮度模式                             |
+| int           | SCREEN_BRIGHTNESS_MODE_MANUAL         | 手动屏幕亮度模式                             |
+| String        | SCREEN_OFF_TIMEOUT                    | 关闭屏幕超时时间                             |
+| String        | SETUP_WIZARD_HAS_RUN                  | 是否运行安装向导                             |
+| String        | SHOW_GTALK_SERVICE_STATUS             |                                              |
+| String        | SHOW_PROCESSES                        | 是否显示CPU占用率                            |
+| String        | SHOW_WEB_SUGGESTIONS                  | 网页搜索时是否启用关键字补全                 |
+| String        | SOUND_EFFECTS_ENABLED                 | 开启按键声音                                 |
+| String        | STAY_ON_WHILE_PLUGGED_IN              | 插入设备时保持开启                           |
+| String        | SYS_PROP_SETTING_VERSION              |                                              |
+| String        | TEXT_AUTO_CAPS                        | 编辑框自动大小写                             |
+| String        | TEXT_AUTO_PUNCTUATE                   | 编辑框自动截断                               |
+| String        | TEXT_AUTO_REPLACE                     | 编辑框自动替换                               |
+| String        | TEXT_SHOW_PASSWORD                    | 编辑框显示密码                               |
+| String        | TIME_12_24                            | 显示12小时或24小时制的时间                   |
+| String        | VIBRATE_ON                            | 开启震动                                     |
+| String        | VOLUME_ALARM                          | 报警音量                                     |
+| String        | VOLUME_BLUETOOTH_SCO                  | 蓝牙耳机音量                                 |
+| String        | VOLUME_MUSIC                          | 音乐游戏音量                                 |
+| String        | VOLUME_NOTIFICATION                   | 通知音量                                     |
+| String        | VOLUME_RING                           | 响铃音量                                     |
+| String[]      | VOLUME_SETTINGS                       |                                              |
+| String        | VOLUME_SYSTEM                         | 系统设置音量                                 |
+| String        | VOLUME_VOICE                          | 话筒音量                                     |
+| String        | WAIT_FOR_DEBUGGER                     | 等待调试                                     |
+| String        | WALLPAPER_ACTIVITY                    | Home界面的Activity                           |
+| String        | WIFI_SLEEP_POLICY                     | Wifi休眠                                     |
+| int           | WIFI_SLEEP_POLICY_DEFAULT             |                                              |
+| int           | WIFI_SLEEP_POLICY_NEVER               |                                              |
+| int           | WIFI_SLEEP_POLICY_NEVER_WHILE_PLUGGED |                                              |
+| String        | WIFI_STATIC_DNS1                      | WIFI DNS IP地址1                             |
+| String        | WIFI_STATIC_DNS2                      | WIFI DNS IP地址2                             |
+| String        | WIFI_STATIC_GATEWAY                   | WIFI 网关IP地址                              |
+| String        | WIFI_STATIC_IP                        | WIFI 静态IP地址                              |
+| String        | WIFI_STATIC_NETMASK                   | WIFI 静态子网掩码                            |
+| String        | WIFI_USE_STATIC_IP                    | 是否使用静态IP                               |
+| String        | WINDOW_ANIMATION_SCALE                | 窗口动画尺寸，0为禁止动画                    |
+| String        | TRANSITION_ANIMATION_SCALE            | 变形动画尺寸，0为禁止变形                    |
+
+== 示例代码 ==
+=== 获取属性值 ===
+{{{class="brush:java"
+int value = 0;
+try {
+    value = System.getInt(getContentResolver(), System.AUTO_TIME);
+} catch (SettingNotFoundException e) {
+    // TODO Auto-generated catch block
+    e.printStackTrace();
+}
+}}}
+
+=== 设置属性值 ===
+{{{class="brush:java"
+if (System.putInt(getContentResolver(), System.AUTO_TIME, 0) ) {
+    Log.v(TAG, "put value ok");
+} else {
+    Log.v(TAG, "put value failed");
+}
+}}}
+
+=== XML添加权限设置 ===
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.WRITE_SETTINGS" />
+}}}

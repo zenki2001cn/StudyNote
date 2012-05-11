@@ -1,0 +1,81 @@
+= WebView =
+
+%toc
+== 相关类 ==
+{{{class="brush:java"
+import android.webkit.SslErrorHandler;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+}}}
+
+== WebViewClient ==
+- 该类是注册给WebView的客户端对象，用户需要继承该类并实现定义的方法，当遇到特殊处理时会回调这些方法。
+
+{{{class="brush:java"
+// 自定义的WebViewClient
+private class WebBrowserViewClient extends WebViewClient {
+    @Override
+    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        view.loadUrl(url);
+        return true;
+    }
+    
+    @Override
+    public void onReceivedSslError(WebView view, SslErrorHandler handler,
+            SslError error) {
+        handler.proceed();
+    }
+}
+}}}
+
+== 代码示例 ==
+{{{class="brush:java"
+public class WebBrowserView extends WebView {
+
+	public WebBrowserView(Context context) {
+		super(context);
+		this.setWebBrowserView();
+	}
+	
+	public WebBrowserView(Context context, AttributeSet attrs){
+		super(context, attrs);
+		this.setWebBrowserView();
+	}
+	
+	@Override
+	public boolean onTouchEvent(MotionEvent ev) {
+		setVerticalScrollBarEnabled(true);
+		setHorizontalScrollBarEnabled(true);
+		return super.onTouchEvent(ev);
+	}
+	
+	public void flingScroll(int vx, int vy) {
+	}
+	
+	public boolean performLongClick(){
+		return false;
+	}
+	
+	protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+	}
+
+    // 初始化WebView，并进行配置设置
+	private void setWebBrowserView(){
+	    // 设置WebViewClient
+		this.setWebViewClient(new WebBrowserViewClient());
+		
+        //SET SCRIPT
+		this.getSettings().setJavaScriptEnabled(true);
+		this.getSettings().setSupportZoom(true);
+		this.getSettings().setDefaultZoom(WebSettings.ZoomDensity.FAR);
+		this.getSettings().setBuiltInZoomControls(true);
+		this.getSettings().setLayoutAlgorithm(LayoutAlgorithm.NORMAL);
+		this.getSettings().setLoadsImagesAutomatically(true);
+		this.getSettings().setPluginsEnabled(true);
+		this.getSettings().setAllowFileAccess(true);
+		this.getSettings().setAppCacheEnabled(true); 
+		this.getSettings().setDomStorageEnabled(true);
+	}
+}
+}}}

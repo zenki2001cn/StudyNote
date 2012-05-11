@@ -1,0 +1,71 @@
+= 内部变量 =
+
+%toc
+
+== 内部变量 ==
+=== $BASH ===
+描述 :: 这个变量将指向Bash的二进制执行文件的位置。
+示例 ::
+{{{class="brush:bash"
+bash$ echo $BASH    #/bin/bash
+}}}
+
+=== $BASH_ENV ===
+描述 :: 这个环境变量将指向一个Bash启动文件，这个启动文件将在调用一个脚本时被读取。
+
+=== $BASH_SUBSHELL ===
+描述 :: 这个变量将提醒subshell的层次，这是一个在version3才被添加到Bash中的新特性。
+
+=== $BASH_VERSINFO[n] ===
+描述 :: 记录Bash安装信息的一个6元素的数组。
+示例 ::
+{{{class="brush:bash"
+# Bash version info:
+
+for n in 0 1 2 3 4 5
+do
+    echo "BASH_VERSINFO[$n] = ${BASH_VERSINFO[$n]}"
+done
+
+# BASH_VERSINFO[0] = 3          # 主版本号
+# BASH_VERSINFO[1] = 00         # 次版本号
+# BASH_VERSINFO[2] = 14         # Patch次数
+# BASH_VERSINFO[3] = 1          # Build version
+# BASH_VERSINFO[4] = release    # Release status
+# BASH_VERSINFO[5] = i386-redhat-linux-gnu  # Architecture
+}}}
+
+=== $BASH_VERSION ===
+描述 :: 安装在系统上的Bash的版本号。
+
+=== $DIRSTACK ===
+描述 :: 在目录栈中最上边的值。这个内建的变量与dirs命令是保持一致的,但是dirs命令将显示目录栈的整个内容。
+
+=== $EDITOR ===
+描述 :: 脚本调用的默认编辑器,一般是vi或者是emacs。
+
+=== $EUID ===
+描述 :: 当前用户被假定的任何id号。可能在su命令中使用。注意:$EUID并不一定与$UID相同。
+
+=== $FUNCNAME ===
+描述 :: 当前函数的名字。
+
+=== $GLOBIGNORE ===
+描述 :: 一个文件名的模式匹配列表,如果在file globbing中匹配到的文件包含这个列表中的某个文件,那么这个文件将被从匹配到的文件中去掉。
+
+=== $GROUPS ===
+描述 :: 当前用户属于的组。这是一个当前用户的组id列表(数组),就像在/etc/passwd中记录的一样。
+
+=== $HOME ===
+描述 :: 用户的home目录,一般都是/home/username。
+
+=== $HOSTNAME ===
+描述 :: hostname命令将在一个init脚本中,在启动的时候分配一个系统名字。gethostname()函数将用来设置这个$HOSTNAME内部变量。
+
+=== $HOSTTYPE ===
+描述 :: 主机类型。
+
+=== $IFS ===
+描述 :: 内部域分隔符。这个变量用来决定Bash在解释字符串时如何识别域，或者单词边界。$IFS默认为空白(空格,tab,和新行),但可以修改,比如在分析逗号分隔的数据文件时。
+
+

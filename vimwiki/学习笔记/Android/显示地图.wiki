@@ -1,0 +1,13 @@
+= 显示地图 =
+
+{{{class="brush:java"
+// 显示地图
+Uri uri = Uri.parse("geo:38.899533,-77.036476");
+Intent it = new Intent(Intent.Action_VIEW,uri);
+startActivity(it); 
+
+// 路径规划
+Uri uri = Uri.parse("http://maps.google.com/maps?f=d&saddr=startLat%20startLng&daddr=endLat%20endLng&hl=en");  
+Intent it = new Intent(Intent.ACTION_VIEW,URI);  
+startActivity(it);
+}}}

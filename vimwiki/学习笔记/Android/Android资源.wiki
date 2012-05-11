@@ -1,0 +1,79 @@
+= Android Resource =
+
+== 相关文件夹介绍 ==
+
+| 目录          | 资源类型                                                                                                                                                                      |
+|---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| res/anim/     | XML文件，它们被编译进逐帧动画(frame by frame animation)或补间动画(tweened animation)对象                                                                                      |
+| res/drawable/ | .png、.9.png、.jpg文件，使用mContext.getResources().getDrawable(R.drawable.imageId)获取该资源                                                                                 |
+| res/layout/   | 被编译为屏幕布局(或屏幕的一部分)的XML文件。                                                                                                                                   |
+| res/values/   | 可以被编译成很多种类型的资源的XML文件。                                                                                                                                       |
+| res/xml/      | 任意的XML文件，在运行时可以通过调用Resources.getXML()读取。如array.xml，colors.xml，dimens.xml，strings.xml，styles.xml等                                                     |
+| res/raw/      | 直接复制到设备中的任意文件。它们无需编译，添加到你的应用程序编译产生的压缩文件中。要使用这些资源，可以调用Resources.openRawResource()，参数是资源的ID，即R.raw.somefilename。 |
+
+== 自动生成的R文件 ==
+    在项目文件夹的gen文件夹里面有个R.java，我们平常引用的资源主要引用这个类的变量。
+ 
+    注意：R类是自动生成的，并且它不能被手动修改。当资源发生变动时，它会自动修改。
+    
+== 如何使用资源 ==
+下面是一个引用资源的语法：R.resource_type.resource_name  或者 android.R.resource_type.resource_name
+ 
+其中resource_type是R的子类，保存资源的一个特定类型。resource_name是在XML 文件定义的资源的name属性，
+
+或者有其他文件类型为资源定义的文件名（不包含扩展名，这指的是drawable文件夹里面的icon.png类似的文件，name=icon）。
+
+Android包含了很多标准资源，如屏幕样式和按钮背景。要在代码中引用这些资源，你必须使用android进行限定，如android.R.drawable.button_background。
+
+{{{class="brush:java"
+// 装载图片资源，my_background_image为图片名
+this.getWindow().setBackgroundDrawableResource(R.drawable.my_background_image); 
+ 
+// 错误的调用方法，应该将该资源转换成字符串类型
+this.getWindow().setTitle(R.string.main_title); 
+ 
+// 正确的方法
+this.getWindow().setTitle(Resources.getText(R.string.main_title)); 
+  
+// 加载布局文件，main_screen为文件名
+setContentView(R.layout.main_screen); 
+ 
+// 加载动画资源，hyperspace_in为动画文件名
+mFlipper.setInAnimation(AnimationUtils.loadAnimation(this,  
+        R.anim.hyperspace_in)); 
+  
+// msg为id标识，hello_message为字符串名
+TextView msgTextView = (TextView)findViewByID(R.id.msg); 
+msgTextView.setText(R.string.hello_message);  
+}}}
+
+== 在xml中使用资源 ==
+- 引用自定义的资源，android:text="@string/hello"，这里使用"@"前缀引入对一个资源的引用--在@[package:]type/name形式中后面的文本是资源的名称。type是xml子节点名，name是xml属性名：
+
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?> 
+<resources> 
+   <string name="hello">Hello World, HelloDemo!</string> 
+</resources> 
+}}}
+ 
+- 引用系统资源，android:textColor="@android:color/opaque_red"   指定package: android
+ 
+- 引用主题属性
+
+{{{class="brush:text"
+另外一种资源值允许你引用当前主题中的属性的值。这个属性值只能在样式资源和XML属性中使用；它允许你通过将它们改变为当前主题提供的标准变化来改变UI元素的外观，
+而不是提供具体的值。android:textColor="?android:textDisabledColor"，注意，这和资源引用非常类似，除了我们使用一个"?"前缀代替了"@"。当你使用这个标记时，
+你就提供了属性资源的名称，它将会在主题中被查找--因为资源工具知道需要的属性资源，所以你不需要显示声明这个类型(如果声明，其形式就是?android:attr/android:
+textDisabledColor)。除了使用这个资源的标识符来查询主题中的值代替原始的资源，其命名语法和"@"形式一致：?[namespace:]type/name，这里类型可选。
+}}}
+
+== assets文件夹资源 ==
+- assets文件夹里面的文件都是保持原始的文件格式，需要用AssetManager以字节流的形式读取文件。
+
+{{{class="brush:text"
+1. 先在Activity里面调用getAssets()来获取AssetManager引用。
+2. 再用AssetManager的open(String fileName, int accessMode)方法则指定读取的文件以及访问模式就能得到输入流InputStream。 
+3. 然后就是用已经open file 的inputStream读取文件，读取完成后记得inputStream.close()。
+4. 调用AssetManager.close()关闭AssetManager。
+}}}

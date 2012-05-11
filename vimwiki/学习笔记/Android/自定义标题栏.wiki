@@ -1,0 +1,78 @@
+= 自定义标题栏 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.Window;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+}}}
+
+- 需要获取window句柄并设置其自定义属性
+    # requestWindowFeature(Window.FEATURE_CUSTOM_TITLE)设置自定义属性
+    # getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title_1)设置标题栏布局
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class CustomTitle extends Activity {
+    
+    /**
+     * Initialization of the Activity after it is first created.  Must at least
+     * call {@link android.app.Activity#setContentView(int)} to
+     * describe what is to be displayed in the screen.
+     */
+    @Override
+	protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
+        setContentView(R.layout.custom_title);
+        getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title_1);
+        
+        final TextView leftText = (TextView) findViewById(R.id.left_text);
+        final TextView rightText = (TextView) findViewById(R.id.right_text);
+        final EditText leftTextEdit = (EditText) findViewById(R.id.left_text_edit);
+        final EditText rightTextEdit = (EditText) findViewById(R.id.right_text_edit);
+        Button leftButton = (Button) findViewById(R.id.left_text_button);
+        Button rightButton = (Button) findViewById(R.id.right_text_button);
+        
+        leftButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                leftText.setText(leftTextEdit.getText());
+            }
+        });
+        
+        rightButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                rightText.setText(rightTextEdit.getText());
+            }
+        });
+    }
+}
+}}}
+
+例程源码(xml)
+{{{class="brush:xml"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:id="@+id/screen"
+    android:layout_width="fill_parent" 
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+    <TextView android:id="@+id/left_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:text="@string/custom_title_left" />
+    <TextView android:id="@+id/right_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:text="@string/custom_title_right" />
+</RelativeLayout>
+}}}

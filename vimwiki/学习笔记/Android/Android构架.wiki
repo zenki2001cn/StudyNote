@@ -1,0 +1,18 @@
+= Anroid架构 =
+
+_Android是一个移动设备的软件堆栈，包括操作系统、中间件和关键应用程序。_
+
+== 特征 ==
+- *Application framework* - 可复用和替换的应用程序组件 
+- *Dalvik virtual machine* - 优化过的虚拟机
+- *Integrated browser* - 基于Webkit引擎的内置浏览器
+- *Optimized graphics* - 优化的2D和3D图像处理
+- *SQLite* - SQLite数据库
+- *Media support* - 包括MPEG4, H.264, MP3, AAC, AMR, JPG, PNG, GIF等多媒体支持
+- *GSM Telephony* - 硬件支持
+- *Bluetooth, EDGE, 3G, and WiFi* - 硬件支持
+- *Camera, GPS, compass, and accelerometer* - 硬件支持
+- *Rich development environment* - 丰富的开发环境
+
+== 架构 ==
+[pic/system-architecture.jpg]

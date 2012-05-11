@@ -1,0 +1,56 @@
+= 列表对话框 =
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class AlertDialogSamples extends Activity {
+
+    private static final int DIALOG_LIST = 3;
+
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        switch (id) {
+        case DIALOG_LIST:
+            return new AlertDialog.Builder(AlertDialogSamples.this)
+                .setTitle(R.string.select_dialog)
+                .setItems(R.array.select_dialog_items, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        // User clicked so do some stuff 
+                        String[] items = getResources().getStringArray(R.array.select_dialog_items);
+                        new AlertDialog.Builder(AlertDialogSamples.this)
+                                .setMessage("You selected: " + which + " , " + items[which])
+                                .show();
+                    }
+                })
+                .create();
+       
+        default :
+            return null;
+    }
+    
+    @Override
+	protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.alert_dialog);
+        
+        /* Display a list of items */
+        Button selectButton = (Button) findViewById(R.id.select_button);
+        selectButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog(DIALOG_LIST);
+            }
+        });
+    }
+}}}
+
+例程源码(XML) --- R.array.select_dialog_items
+{{{class="brush:xml"
+<!-- Used in app/dialog examples -->
+<string-array name="select_dialog_items">
+    <item>Command one</item>
+    <item>Command two</item>
+    <item>Command three</item>
+    <item>Command four</item>
+</string-array>
+}}}

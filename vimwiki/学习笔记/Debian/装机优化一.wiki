@@ -1,0 +1,117 @@
+= 装机优化一 =
+
+%toc
+
+== 1. OSS独占问题。 ==
+{{{class="brush: text"
+通过“系统->首选项->音效”勾选“允许软件混音”及“播放系统声音”，可以打开系统音效。
+但X默认使用OSS做声音输出驱动，而OSS一旦开启后就独占声卡，其他程序（如xmms2）无法播放。
+因此，需要把ESD改为由ALSA提供，apt下载libesd-alsa0模块，取代oss，就能在开启系统音效的同时，允许其他程序共享声卡。
+}}}
+*附加：apt-get install alsa-base alsa-utils*
+
+== 2. 硬盘smart信息监视工具：smartmontools ==
+{{{class="brush: text"
+前段时间，暴出ubuntu的一个bug，其节电模块的一个脚本（laptop-mode-tools）滥用硬盘磁头移臂，剧烈地消耗硬盘寿命（多数硬盘默认的磁臂寿命能使用60万次）。
+因此，需要apt下载smartmontools来检测硬盘健康状况，运行smartctl -a /dev/sda，就能显示硬盘的smart信息，当然，也可以在rcconf中开启smartmontools服务。
+还好，我的机器的 Load_Cycle_Count只有两万五千，说明我的Debian没有这个问题。
+}}}
+
+== 3. 系统管理工具：sysvconfig。 ==
+{{{class="brush: text"
+比sysv-rc-conf功能强大，但没那个直接，不过二者都是update-rc.d命令的功能集成而已。
+小节一下：Deiban中提供service工具来开启、关闭、重启和查看/etc/init.d/中各个服务，RedHat中也提供该工具。 
+Debian中提供update-rc.d工具来开启、关闭、修改/etc/init.d/中各个服务的启动顺序和运行级别，而RedHat中由chkconfig承担这一功能，MS系统有msconfig提供。
+而sysv-rc-conf和sysvconfig是update-rc.d的继承与加强。
+}}}
+
+== 4. 代码、目录比较合并工具：meld。 ==
+
+== 5. mplayer最好的前端：smplayer。apt下载。 ==
+
+== 6. ape播放工具：audacious。 ==
+{{{class="brush: text"
+apt下载audacious、audacious-dev（必须，否则编译audacious-mac会失败），
+下载mac-3.99-u4_b5-1和audacious-mac（由于mac退出sourceforge，不能apt）。
+安装前三者后，编译后者，就可以听ape格式音乐文件了。
+在audacious的“首选项->音效”选项卡中，取消“格式检测”的所有选项，从此可以利用cue文件播放了。
+}}}
+
+== 7. 两个很棒的天文学软件：Celestia和Stellarium。==
+
+== 8. 为man着色。在~/.bashrc中添加如下指令： ==
+{{{class="brush: bash"
+export LESS_TERMCAP_mb=$'\E[01;31m'
+export LESS_TERMCAP_md=$'\E[01;31m'
+export LESS_TERMCAP_me=$'\E[0m'
+export LESS_TERMCAP_se=$'\E[0m'
+export LESS_TERMCAP_so=$'\E[01;44;33m'
+export LESS_TERMCAP_ue=$'\E[0m'
+export LESS_TERMCAP_us=$'\E[01;32m'
+}}}
+
+== 9. 为PS1着色。在~/.bashrc中把PS1改为： ==
+{{{class="brush: text"
+PS1='\[\033[1m\]\[\033[33;40m\][\u@\h\[\033[00m\]:\[\033[01;34m\]
+\W\[\033[00m\]\[\033[1m\]\[\033[33;40m\]]\[\033[00m\]\$ '
+}}}
+
+== 10.shell补全。在~/.bashrc中添加 ==
+{{{class="brush: text"
+if [ -f /etc/bash_completion ]; then
+   . /etc/bash_completion
+fi
+}}}
+
+== 11、关闭IPv6 ==
+{{{class="brush: text"
+编辑 /etc/modprobe.d/aliases
+修改
+alias net-pf-10 ipv6
+为
+alias net-pf-10 off
+然后注释掉 /etc/hosts文件中所有与IPV6有关的内容
+# The following lines are desirable for IPv6 capable hosts
+#::1 ip6-localhost ip6-loopback
+#fe00::0 ip6-localnet
+#ff00::0 ip6-mcastprefix
+#ff02::1 ip6-allnodes
+#ff02::2 ip6-allrouters
+#ff02::3 ip6-allhosts
+这将会禁止所有使用IPV6的网络接口。
+再新建一个/etc/modprobe.d/bad_list文件，内容为：
+alias net-pf-10 off
+}}}
+
+== 12、安装开发man手册 ==
+{{{class="brush: text"
+apt-get install manpages-dev
+apt-get install manpages-posix-dev
+}}}
+
+== 13、更快速的打开网页 ==
+{{{class="brush: text"
+在firefox浏览器地址拦里输入about:config
+找下面的选项进行修改吧:
+network.dns.disableIPv6 -> true
+network.http.pipelining -> true
+network.http.pipelining.maxrequests -> 8(8－24这是我自己的设置）
+network.http.proxy.pipelining -> true
+}}}
+
+== 14、以root权限打开文件夹 ==
+{{{class="brush: text"
+sudo apt-get install nautilus-gksu
+这样右键单击文件或文件夹，选择以管理员打开。
+}}}
+
+== 15、把终端加到右键菜单 ==
+{{{class="brush: text"
+sudo apt-get install nautilus-open-terminal
+这样就把终端加到右键菜单中了。
+}}}
+
+== 16、中文配置 ==
+{{{class="brush: bash"
+dpkg-reconfigure locales
+}}}

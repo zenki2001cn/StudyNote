@@ -208,7 +208,7 @@ ttyplay 播放录制的文件
 find  -type f -exec iconv -f GBK -t UTF-8 '{}' -o utf/'{}' \;
 convmv 文件名编码转换
 
-find . -iname *.rst -exec mv '{}' '{}'.html \;
+find . -iname "*.rst" -exec mv '{}' '{}'.html \;
 
 3.2. 根据用户名查找文件
 find . -user zenki

@@ -1,0 +1,109 @@
+= Keyboard按键映射 =
+
+%toc
+
+== keyboard输入系统概述 ==
+{{{class="brush:text"
+    keyboard输入系统使用/dev/input/event0作为设备节点，驱动层将事件传递给framework的监听线程，并向上传递给Application。
+本文介绍有关Android对于keyboard按键的映射、底层事件处理及Java层的事件响应。我们的入口从按键的响应流程开始。
+}}}
+
+== keyboard输入的流程 ==
+- 1.驱动层输出：首先驱动层接收到keyboard按键响应，将对应的按键作为scancode输出。
+- 2.scancode转换keycode：窗口管理器接收到来自驱动的scancode后，根据映射文件的定义，需要将scancode转换成keycode。例如将16转换成Q。
+- 3.发送scancode和keycode：窗口管理器将scancode和keycode同时发送给应用程序，由应用程序决定如何处理按键响应。
+
+== key的映射 ==
+{{{class="brush:text"
+    根据以上的描述，我们知道了scancode和keycode的概念。Android提供了两个映射文件
+分别映射scancode和keycode。
+    *.kl文件用来映射scancode到keycode。*.kcm文件用来映射keycode到具体的字符。
+下面将详细解析这两个文件。
+}}}
+
+=== Key Layout Map ===
+{{{class="brush:text"
+    *.kl文件用来映射scancode到keycode，通常称之为“Key Layout Map”，它的目录为
+/system/usr/keylayout/或/data/usr/keylayout。默认的文件名为/system/usr/keylayout/qwerty.kl。
+可以设置系统属性android.keylayout.*来指定文件路径。
+}}}
+
+==== .kl文件格式描述 ====
+- 注释：#开头为注释。
+- 空行：所有空行被忽略。
+- Key定义：`key SCANCODE KEYCODE [FLAGS...]`
+    - key为关键字
+    - SCANCODE为数字
+    - KEYCODE为映射的字符
+
+==== .kl文件示例 ====
+{{{class="brush:bash"
+# Copyright 2007 The Android Open Source Project
+#key scancode keycode flags
+key 158   BACK              WAKE_DROPPED
+key 230   SOFT_RIGHT        WAKE
+key 60    SOFT_RIGHT        WAKE
+key 107   ENDCALL           WAKE_DROPPED
+key 62    ENDCALL           WAKE_DROPPED
+key 229   MENU              WAKE_DROPPED
+key 59    MENU              WAKE_DROPPED
+key 228   POUND
+key 227   STAR
+
+key 16    Q
+key 17    W
+key 18    E
+key 19    R
+key 20    T
+key 21    Y
+key 22    U
+key 23    I
+key 24    O
+key 25    P
+}}}
+
+=== Key Character Map ===
+{{{class="brush:text"
+    *.kcm文件用来映射keycode到字符，通常称之为“Key Character Map”。它的目录为
+/system/usr/keychars或/data/usr/keychars。默认的文件名为/system/usr/keychar/qwerty.kl。
+可以设置系统属性android.keychar.*来指定文件路径。
+}}}
+
+==== .kcm文件格式描述 ====
+- 注释：#开头为注释。
+- 空行：所有空行被忽略。
+- Key定义：`keycode CHARACTER [...]`
+    - keycode为scancode对应的keycode
+    - CHARACTER为映射的字符
+ 
+==== .kcm文件示例 ====
+{{{class="brush:bash"
+# Copyright 2007 The Android Open Source Project
+
+[type=QWERTY]
+
+# keycode   base    caps    fn      caps_fn number  display_label
+
+A           'a'     'A'     '%'     0x00    '%'     'A'
+B           'b'     'B'     '='     0x00    '='     'B'
+C           'c'     'C'     '8'     0x00E7  '8'     'C'
+D           'd'     'D'     '5'     0x00    '5'     'D'
+E           'e'     'E'     '2'     0x0301  '2'     'E'
+F           'f'     'F'     '6'     0x00A5  '6'     'F'
+G           'g'     'G'     '-'     '_'     '-'     'G'
+H           'h'     'H'     '['     '{'     '['     'H'
+I           'i'     'I'     '$'     0x0302  '$'     'I'
+
+COMMA       ','     ';'     ';'     '|'     ','     ','
+PERIOD      '.'     ':'     ':'     0x2026  '.'     '.'
+AT          '@'     '0'     '0'     0x2022  '0'     '@'
+SLASH       '/'     '?'     '?'     '\'     '/'     '/'
+}}}
+
+== 映射文件路径 ==
+- 可通过系统属性来设置key映射文件的路径。
+
+{{{class="brush:bash"
+android.keylayout.partnerxx_keypad = /system/usr/keylayout/partnerxx_keypad.kl
+android.keychar.partnerxx_keypad = /system/usr/keychars/partnerxx.kcm
+}}}

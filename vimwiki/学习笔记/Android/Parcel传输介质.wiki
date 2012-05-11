@@ -1,0 +1,588 @@
+= Parcel传输介质 =
+
+%toc
+
+== Parcel的作用 ==
+{{{class="brush:text"
+    我们都知道JAVA中的Serialize机制，译成串行化、序列化……，其作用是能将数据对象存入字节流当中，在需要时重新生成对象。
+Android也提供了这样一种机制，而且效率更加高效，所有序列化的行为都在内存中完成。
+    Parcel不仅支持普通数据类型的序列化，而且支持Binder对象的序列化。
+}}}
+
+== 分析Parcel ==
+- 从Parcel类的构造方法可以看到该类保存普通数据和Binder类型的数据分别采用不同的成员`mData`和`mObjects`，并提供了读数据的`read*`方法和写数据的`write*`方法。
+- 之前讨论[[驱动适配层]]时发现IPCThreadState包含两个Parcel的成员对象`mIn`和`mOut`，分别代表从驱动读出的数据和写入到驱动中的数据。我们以IPCThreadState::joinThreadPool为例来分析Parcel的运用和实现：
+    - 首先根据isMain的标识往mOut中写入BC_ENTER_LOOPER或BC_REGISTER_LOOPER命令，通知驱动当前的线程状态。writeInt32()方法会调用`writeAligned()`方法。它首先检查分配的内存大小是否能够容纳写入的数据，如果满足条件，就会给当前的数据指针增加偏移值，再调用finishWrite()方法完成写入操作;否则会调用`growData()`方法扩充内存大小，它会按照`((mDataSize+len)*3)/2`的大小分配新的内存空间，并调用`continueWrite()`方法。continueWrite()会分几种情况处理，具体操作参见continueWrite()的注释。需要注意的是mOwner是一个回调函数指针，用来通知驱动释放它的内存空间。
+    - 接下来joinThreadPool会进入一个while循环，第一个条件语句调用了mIn的`dataPosition()`和`dataSize()`方法，这两个方法分别返回当前指针的偏移位置`mDataPos`和数据的大小`mDataSize`。通常我们写入数据会增加mDataPos的值，最终在finishWrite()中会将该值赋予mDataSize。
+    - 第二个条件语句，IPCThreadState会调用mIn的`dataAvail()`方法检查请求缓冲区，读取命令字段，再发送给驱动。dataAvail()方法会返回`mDataSize-mDataPos`。可以在talkWithDriver()方法中发现，如果`bwr.read_consumed > 0`，则会将mDataPos置为0，因此从dataAvail()的结果判断至少需要int32_t大小的数据才会执行读取操作。如果小于这个数值就continue，否则使用readInt32()方法取出一个int32_t大小数据作为的命令请求发送给驱动。readInt32()会调用`readAligned()`方法读取指定大小的数据。与此同时，mDataPos的偏移量则改为了`mDataPos += sizeof(T)`。
+    - 从目前的分析我们可以发现Parcel的数据是按顺序写入，mDataPos维护这个数据偏移大小的位置，读数据的时候也是按照这个顺序读出来，相应的mDataPos的大小也会改变。通常我们可以理解为`当前数据的地址 = 数据起始地址 + 数据偏移地址`。
+    - Parcel提供了一组read*和write*方法，我们只分析了readInt32()和writeInt32，还有诸如read()、write()、readCString()、writeCString()、readObject()、writeObject()等。其中需要注意的一个细节是`PAD_SIZE`这个宏，作用是在读写是以`4个字节`大小对齐，也就是说数据包的字节大小永远是4的倍数。
+
+== 要点总结 ==
+- 我们以joinThreadPool()方法流程为例分析了Parcel在Binder传输中的作用，可以做出以下总结：
+    - 序列化主要是进行内存分配，内存拷贝等，所有读写数据的行为都是在内存中，因此效率比较高。
+    - `读写数据都是4字节对齐的。`
+    - 如果空间不足，会根据((mDataSize+len)*3)/2大小的字节进行扩充。
+    - 普通数据和IBinder数据分别通过mData和mObjects保存。并且对于整型/浮点型、字符串型和IBinder类型采用不同的处理方式(查看read*和write*方法)。
+    - `Parcel对数据读写的特性决定了它能够保存一个对象到内存中，再读取该段内存数据后还可以还原这个对象，并借助Binder机制来实现跨进程的对象序列化功能。`
+    - Parcel还具备与生俱来的与驱动交互的特性，从flatten_binder()和unflatten_binder()中发现在读取IBinder对象类型时，会使用ProcessState对象与驱动交互。
+
+== Parcel.h ==
+=== Parcel ===
+{{{class="brush:c++"
+class Parcel
+{
+public:
+                        Parcel();
+                        ~Parcel();
+    
+    const uint8_t*      data() const;
+    size_t              dataSize() const;
+    size_t              dataAvail() const;
+    size_t              dataPosition() const;
+    size_t              dataCapacity() const;
+    
+    status_t            setDataSize(size_t size);
+    void                setDataPosition(size_t pos) const;
+    status_t            setDataCapacity(size_t size);
+    
+    status_t            setData(const uint8_t* buffer, size_t len);
+
+    status_t            appendFrom(Parcel *parcel, size_t start, size_t len);
+
+    bool                hasFileDescriptors() const;
+
+    status_t            writeInterfaceToken(const String16& interface);
+    bool                enforceInterface(const String16& interface) const;
+    bool                checkInterface(IBinder*) const;    
+
+    void                freeData();
+
+    const size_t*       objects() const;
+    size_t              objectsCount() const;
+    
+    status_t            errorCheck() const;
+    void                setError(status_t err);
+    
+    status_t            write(const void* data, size_t len);
+    void*               writeInplace(size_t len);
+    status_t            writeUnpadded(const void* data, size_t len);
+    status_t            writeInt32(int32_t val);
+    status_t            writeInt64(int64_t val);
+    status_t            writeFloat(float val);
+    status_t            writeDouble(double val);
+    status_t            writeIntPtr(intptr_t val);
+    status_t            writeCString(const char* str);
+    status_t            writeString8(const String8& str);
+    status_t            writeString16(const String16& str);
+    status_t            writeString16(const char16_t* str, size_t len);
+    status_t            writeStrongBinder(const sp<IBinder>& val);
+    status_t            writeWeakBinder(const wp<IBinder>& val);
+
+    // Place a native_handle into the parcel (the native_handle's file-
+    // descriptors are dup'ed, so it is safe to delete the native_handle
+    // when this function returns). 
+    // Doesn't take ownership of the native_handle.
+    status_t            writeNativeHandle(const native_handle* handle);
+    
+    // Place a file descriptor into the parcel.  The given fd must remain
+    // valid for the lifetime of the parcel.
+    status_t            writeFileDescriptor(int fd);
+    
+    // Place a file descriptor into the parcel.  A dup of the fd is made, which
+    // will be closed once the parcel is destroyed.
+    status_t            writeDupFileDescriptor(int fd);
+    
+    status_t            writeObject(const flat_binder_object& val, bool nullMetaData);
+
+    void                remove(size_t start, size_t amt);
+    
+    status_t            read(void* outData, size_t len) const;
+    const void*         readInplace(size_t len) const;
+    int32_t             readInt32() const;
+    status_t            readInt32(int32_t *pArg) const;
+    int64_t             readInt64() const;
+    status_t            readInt64(int64_t *pArg) const;
+    float               readFloat() const;
+    status_t            readFloat(float *pArg) const;
+    double              readDouble() const;
+    status_t            readDouble(double *pArg) const;
+    intptr_t            readIntPtr() const;
+    status_t            readIntPtr(intptr_t *pArg) const;
+
+    const char*         readCString() const;
+    String8             readString8() const;
+    String16            readString16() const;
+    const char16_t*     readString16Inplace(size_t* outLen) const;
+    sp<IBinder>         readStrongBinder() const;
+    wp<IBinder>         readWeakBinder() const;
+
+    
+    // Retrieve native_handle from the parcel. This returns a copy of the
+    // parcel's native_handle (the caller takes ownership). The caller
+    // must free the native_handle with native_handle_close() and 
+    // native_handle_delete().
+    native_handle*     readNativeHandle() const;
+
+    
+    // Retrieve a file descriptor from the parcel.  This returns the raw fd
+    // in the parcel, which you do not own -- use dup() to get your own copy.
+    int                 readFileDescriptor() const;
+    
+    const flat_binder_object* readObject(bool nullMetaData) const;
+
+    // Explicitly close all file descriptors in the parcel.
+    void                closeFileDescriptors();
+    
+    typedef void        (*release_func)(Parcel* parcel,
+                                        const uint8_t* data, size_t dataSize,
+                                        const size_t* objects, size_t objectsSize,
+                                        void* cookie);
+                        
+    const uint8_t*      ipcData() const;
+    size_t              ipcDataSize() const;
+    const size_t*       ipcObjects() const;
+    size_t              ipcObjectsCount() const;
+    void                ipcSetDataReference(const uint8_t* data, size_t dataSize,
+                                            const size_t* objects, size_t objectsCount,
+                                            release_func relFunc, void* relCookie);
+    
+    void                print(TextOutput& to, uint32_t flags = 0) const;
+        
+private:
+                        Parcel(const Parcel& o);
+    Parcel&             operator=(const Parcel& o);
+    
+    status_t            finishWrite(size_t len);
+    void                releaseObjects();
+    void                acquireObjects();
+    status_t            growData(size_t len);
+    status_t            restartWrite(size_t desired);
+    status_t            continueWrite(size_t desired);
+    void                freeDataNoInit();
+    void                initState();
+    void                scanForFds() const;
+                        
+    template<class T>
+    status_t            readAligned(T *pArg) const;
+
+    template<class T>   T readAligned() const;
+
+    template<class T>
+    status_t            writeAligned(T val);
+
+    status_t            mError;
+    uint8_t*            mData;
+    size_t              mDataSize;
+    size_t              mDataCapacity;
+    mutable size_t      mDataPos;
+    size_t*             mObjects;
+    size_t              mObjectsSize;
+    size_t              mObjectsCapacity;
+    mutable size_t      mNextObjectHint;
+
+    mutable bool        mFdsKnown;
+    mutable bool        mHasFds;
+    
+    release_func        mOwner;
+    void*               mOwnerCookie;
+};
+}}}
+
+== Parcel.cpp ==
+=== PAD_SIZE宏定义 ===
+{{{class="brush:c++"
+#define PAD_SIZE(s) (((s)+3)&~3)
+}}}
+
+=== Parcel::dataPosition ===
+{{{class="brush:c++"
+size_t Parcel::dataPosition() const
+{
+    return mDataPos;
+}
+}}}
+
+=== Parcel::dataSize ===
+{{{class="brush:c++"
+size_t Parcel::dataSize() const
+{
+    return (mDataSize > mDataPos ? mDataSize : mDataPos);
+}
+}}}
+
+=== Parcel::readAligned ===
+{{{class="brush:c++"
+template<class T>
+status_t Parcel::readAligned(T *pArg) const {
+    COMPILE_TIME_ASSERT_FUNCTION_SCOPE(PAD_SIZE(sizeof(T)) == sizeof(T));
+
+    // 如果数据大小没有超出范围则进行数据的转换
+    if ((mDataPos+sizeof(T)) <= mDataSize) {
+        // 当前数据的地址 = 起始地址 + 数据偏移
+        const void* data = mData+mDataPos;
+        // 数据的偏移加上T的大小
+        mDataPos += sizeof(T);
+        // 从当前的起始地址开始转换T类型数据并通过指针回传
+        *pArg =  *reinterpret_cast<const T*>(data);
+        return NO_ERROR;
+    } else {
+        return NOT_ENOUGH_DATA;
+    }
+}
+}}}
+
+=== Parcel::writeAligned ===
+{{{class="brush:c++"
+template<class T>
+status_t Parcel::writeAligned(T val) {
+    COMPILE_TIME_ASSERT_FUNCTION_SCOPE(PAD_SIZE(sizeof(T)) == sizeof(T));
+
+    // 如果有足够大的内存空间，则将mData+mDataPos的指针指向T数据
+    if ((mDataPos+sizeof(val)) <= mDataCapacity) {
+restart_write:
+        *reinterpret_cast<T*>(mData+mDataPos) = val;
+        return finishWrite(sizeof(val));
+    }
+
+    // 否则增加内存空间的大小
+    status_t err = growData(sizeof(val));
+    if (err == NO_ERROR) goto restart_write;
+    return err;
+}
+}}}
+
+=== Parcel::write ===
+{{{class="brush:c++"
+status_t Parcel::write(const void* data, size_t len)
+{
+    void* const d = writeInplace(len);
+    if (d) {
+        memcpy(d, data, len);
+        return NO_ERROR;
+    }
+    return mError;
+}
+}}}
+
+=== Parcel::writeInplace ===
+{{{class="brush:c++"
+void* Parcel::writeInplace(size_t len)
+{
+    const size_t padded = PAD_SIZE(len);
+
+    // sanity check for integer overflow
+    if (mDataPos+padded < mDataPos) {
+        return NULL;
+    }
+
+    if ((mDataPos+padded) <= mDataCapacity) {
+restart_write:
+        uint8_t* const data = mData+mDataPos;
+
+        // Need to pad at end?
+        if (padded != len) {
+#if BYTE_ORDER == BIG_ENDIAN
+            static const uint32_t mask[4] = {
+                0x00000000, 0xffffff00, 0xffff0000, 0xff000000
+            };
+#endif
+#if BYTE_ORDER == LITTLE_ENDIAN
+            static const uint32_t mask[4] = {
+                0x00000000, 0x00ffffff, 0x0000ffff, 0x000000ff
+            };
+#endif
+            *reinterpret_cast<uint32_t*>(data+padded-4) &= mask[padded-len];
+        }
+
+        finishWrite(padded);
+        return data;
+    }
+
+    status_t err = growData(padded);
+    if (err == NO_ERROR) goto restart_write;
+    return NULL;
+}
+}}}
+
+=== Parcel::read ===
+{{{class="brush:c++"
+status_t Parcel::read(void* outData, size_t len) const
+{
+    if ((mDataPos+PAD_SIZE(len)) >= mDataPos && (mDataPos+PAD_SIZE(len)) <= mDataSize) {
+        memcpy(outData, mData+mDataPos, len);
+        mDataPos += PAD_SIZE(len);
+        return NO_ERROR;
+    }
+    return NOT_ENOUGH_DATA;
+}
+}}}
+
+=== Parcel::readInplace ===
+{{{class="brush:c++"
+const void* Parcel::readInplace(size_t len) const
+{
+    if ((mDataPos+PAD_SIZE(len)) >= mDataPos && (mDataPos+PAD_SIZE(len)) <= mDataSize) {
+        const void* data = mData+mDataPos;
+        mDataPos += PAD_SIZE(len);
+        return data;
+    }
+    return NULL;
+}
+}}}
+
+=== flatten_binder ===
+{{{class="brush:c++"
+status_t flatten_binder(const sp<ProcessState>& proc,
+    const sp<IBinder>& binder, Parcel* out)
+{
+    flat_binder_object obj;
+    
+    obj.flags = 0x7f | FLAT_BINDER_FLAG_ACCEPTS_FDS;
+    if (binder != NULL) {
+        // 获取本地Binder对象
+        IBinder *local = binder->localBinder();
+        if (!local) {
+            BpBinder *proxy = binder->remoteBinder();
+            if (proxy == NULL) {
+                LOGE("null proxy");
+            }
+            // 如果是代理对象，则保存句柄
+            const int32_t handle = proxy ? proxy->handle() : 0;
+            obj.type = BINDER_TYPE_HANDLE;
+            obj.handle = handle;
+            obj.cookie = NULL;
+        } else {
+            // 如果是本地对象，则保存weakref_type对象和IBinder对象
+            obj.type = BINDER_TYPE_BINDER;
+            obj.binder = local->getWeakRefs();
+            obj.cookie = local;
+        }
+    } else {
+        obj.type = BINDER_TYPE_BINDER;
+        obj.binder = NULL;
+        obj.cookie = NULL;
+    }
+    
+    return finish_flatten_binder(binder, obj, out);
+}
+}}}
+
+=== unflatten_binder ===
+{{{class="brush:c++"
+status_t unflatten_binder(const sp<ProcessState>& proc,
+    const Parcel& in, sp<IBinder>* out)
+{
+    const flat_binder_object* flat = in.readObject(false);
+    
+    if (flat) {
+        switch (flat->type) {
+            // 如果是本地Binder，则进行类型转换
+            case BINDER_TYPE_BINDER:
+                *out = static_cast<IBinder*>(flat->cookie);
+                return finish_unflatten_binder(NULL, *flat, in);
+            // 如果是代理对象，则需要通过proc向驱动查询
+            case BINDER_TYPE_HANDLE:
+                *out = proc->getStrongProxyForHandle(flat->handle);
+                return finish_unflatten_binder(
+                    static_cast<BpBinder*>(out->get()), *flat, in);
+        }        
+    }
+    return BAD_TYPE;
+}
+}}}
+
+=== Parcel::finishWrite ===
+{{{class="brush:c++"
+status_t Parcel::finishWrite(size_t len)
+{
+    // 简单的赋予数据大小的值
+    mDataPos += len;
+    // 如果mDataPos大于mDataSize，则将较大的值赋予mDataSize
+    if (mDataPos > mDataSize) {
+        mDataSize = mDataPos;
+    }
+    return NO_ERROR;
+}
+}}}
+
+=== Parcel::growData ===
+{{{class="brush:c++"
+status_t Parcel::growData(size_t len)
+{
+    // 按照((mDataSize+len)*3)/2的大小分配新的内存空间
+    size_t newSize = ((mDataSize+len)*3)/2;
+    return (newSize <= mDataSize)
+            ? (status_t) NO_MEMORY
+            : continueWrite(newSize);
+}
+}}}
+
+=== Parcel::continueWrite ===
+{{{class="brush:c++"
+status_t Parcel::continueWrite(size_t desired)
+{
+    // 如果缩小内存，则减少Binder对象
+    size_t objectsSize = mObjectsSize;
+    if (desired < mDataSize) {
+        if (desired == 0) {
+            objectsSize = 0;
+        } else {
+            while (objectsSize > 0) {
+                if (mObjects[objectsSize-1] < desired)
+                    break;
+                objectsSize--;
+            }
+        }
+    }
+    
+    // 如果有mOwner的回调方法，则分配空间，做内存拷贝操作
+    if (mOwner) {
+        ......
+
+        uint8_t* data = (uint8_t*)malloc(desired);
+        
+        ......
+
+        mData = data;
+        mObjects = objects;
+        mDataSize = (mDataSize < desired) ? mDataSize : desired;
+        mDataCapacity = desired;
+        mObjectsSize = mObjectsCapacity = objectsSize;
+        mNextObjectHint = 0;
+        
+    // 如果当前存在数据，则做realloc操作
+    } else if (mData) {
+        if (objectsSize < mObjectsSize) {
+            ......
+
+            size_t* objects =
+                (size_t*)realloc(mObjects, objectsSize*sizeof(size_t));
+            if (objects) {
+                mObjects = objects;
+            }
+            mObjectsSize = objectsSize;
+            mNextObjectHint = 0;
+        }
+
+        if (desired > mDataCapacity) {
+            uint8_t* data = (uint8_t*)realloc(mData, desired);
+            if (data) {
+                mData = data;
+                mDataCapacity = desired;
+            } else if (desired > mDataCapacity) {
+                mError = NO_MEMORY;
+                return NO_MEMORY;
+            }
+        } else {
+            ......
+        }
+        
+    // 第一次初始化，直接做malloc操作
+    } else {
+        uint8_t* data = (uint8_t*)malloc(desired);
+        
+        ......
+        
+        mData = data;
+        mDataSize = mDataPos = 0;
+        mDataCapacity = desired;
+    }
+
+    return NO_ERROR;
+}
+}}}
+
+=== acquire_object ===
+{{{class="brush:c++"
+void acquire_object(const sp<ProcessState>& proc,
+    const flat_binder_object& obj, const void* who)
+{
+    switch (obj.type) {
+        case BINDER_TYPE_BINDER:
+            if (obj.binder) {
+                static_cast<IBinder*>(obj.cookie)->incStrong(who);
+            }
+            return;
+        case BINDER_TYPE_WEAK_BINDER:
+            if (obj.binder)
+                static_cast<RefBase::weakref_type*>(obj.binder)->incWeak(who);
+            return;
+        case BINDER_TYPE_HANDLE: {
+            const sp<IBinder> b = proc->getStrongProxyForHandle(obj.handle);
+            if (b != NULL) {
+                b->incStrong(who);
+            }
+            return;
+        }
+        case BINDER_TYPE_WEAK_HANDLE: {
+            const wp<IBinder> b = proc->getWeakProxyForHandle(obj.handle);
+            if (b != NULL) b.get_refs()->incWeak(who);
+            return;
+        }
+        case BINDER_TYPE_FD: {
+            return;
+        }
+    }
+}
+}}}
+
+== IPCThreadState.cpp ==
+=== IPCThreadState::joinThreadPool ===
+{{{class="brush:c++"
+void IPCThreadState::joinThreadPool(bool isMain)
+{
+    mOut.writeInt32(isMain ? BC_ENTER_LOOPER : BC_REGISTER_LOOPER);
+    
+    status_t result;
+    do {
+        ......
+
+        if (mIn.dataPosition() >= mIn.dataSize()) {
+            ......
+        }
+
+        result = talkWithDriver();
+        if (result >= NO_ERROR) {
+            size_t IN = mIn.dataAvail();
+            // 如果可用数据大小小于int32_t，则continue
+            if (IN < sizeof(int32_t)) continue;
+            cmd = mIn.readInt32();
+
+            result = executeCommand(cmd);
+        }
+        
+        ......
+
+    } while (result != -ECONNREFUSED && result != -EBADF);
+
+    mOut.writeInt32(BC_EXIT_LOOPER);
+    talkWithDriver(false);
+}
+}}}
+
+=== IPCThreadState::talkWithDriver ===
+{{{class="brush:c++"
+status_t IPCThreadState::talkWithDriver(bool doReceive)
+{
+    .....
+
+    if (err >= NO_ERROR) {
+        if (bwr.write_consumed > 0) {
+            if (bwr.write_consumed < (ssize_t)mOut.dataSize())
+                mOut.remove(0, bwr.write_consumed);
+            else
+                mOut.setDataSize(0);
+        }
+        // 将mDataPos置0
+        if (bwr.read_consumed > 0) {
+            mIn.setDataSize(bwr.read_consumed);
+            mIn.setDataPosition(0);
+        }
+        
+        return NO_ERROR;
+    }
+    
+    ......
+}
+}}}

@@ -1,0 +1,23 @@
+= Activity相关示例 =
+
+== Tips ==
+    - [[自定义Activity窗口]]
+    - [[自定义标题栏]]
+    - [[窗口标题栏隐藏]]
+    - [[全屏显示]]
+    - [[持久化]]
+    - [[快捷键启动]]
+    - [[Activity间的替换和跳转]]
+    - [[从一个Activity传递数据]]
+    - [[从一个Activity返回结果]]
+    - [[重新排序Activity]]
+    - [[半透明背景的Activity]]
+    - [[虚化背景的Activity]]
+    - [[完全退出程序]]
+    - [[TabActivity]]
+    - [[PreferenceActivity]]
+
+== 备忘录 ==
+- [[Activity关键方法集合]]
+- [[Activity属性说明]]
+

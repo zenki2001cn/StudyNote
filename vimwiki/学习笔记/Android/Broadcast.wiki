@@ -1,0 +1,55 @@
+= Broadcast =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Intent;
+import android.content.Context;
+import android.content.BroadcastReceiver;
+}}}
+
+== 接受方 ==
+- 继承BroadcastReceiver类，并实现`onReceive`方法
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class ConnectionStatus extends BroadcastReceiver {
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        // do something
+    }
+}
+}}}
+
+== 发送方 ==
+- BroadcastReceiver对象作为Intent示例的一个参数传递，用来表示这个广播是一个行为
+- 通过Context类的`sendBroadcast`或者PendingIntent类的`getBroadcast`方法发送一个广播
+- 在manifest文件中还需要加入一个receiver配置项
+
+例程源码(JAVA)
+{{{class="brush:java"
+Intent intent = new Intent(this, ConnectionStatus.class);
+intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+sendBroadcast(intent);
+}}}
+
+例程源码(XML)
+{{{class="brush:xml"
+<receiver android:name=".ConnectionStatus" />
+}}}
+
+== 注册与注销 ==
+- `registerReceiver`根据特定的过滤器注册一个BroadcastReceiver
+- `unregisterReceiver`注销一个BroadcastReceiver
+
+{{{class="brush:java"
+Intent registerReceiver(BroadcastReceiver receiver, IntentFilter filter, 
+                        String broadcastPermission, Handler scheduler);
+Intent registerReceiver(BroadcastReceiver receiver, IntentFilter filter);
+}}}
+
+
+== 应用示例 ==
+- [[检测外部存储状态]]

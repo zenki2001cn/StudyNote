@@ -1,0 +1,175 @@
+= DOM解析XML =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.io.InputStream;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
+}}}
+
+== 基本处理流程 ==
+- 通过DocumentBuilderFactory.newInstance()生成`DocumentBuilderFactory`对象工厂，工厂根据系统环境决定使用哪个解析器。
+- DocumentBuilderFactory对象使用newDocumentBuilder()方法生成`DocumentBuilder`DOM解析器。
+- DocumentBuilder对象通过parse方法生成`Document`DOM树模型，之后所有操作都和该模型相关。
+- 通过Document对象的getElementsByTagName方法获取`NodeList`节点列表对象，并通过其item方法获取`Node`抽象节点对象。
+- Node对象`Element`通过`getFirstChild().getNodeValue()`方法获取节点的值。
+
+== DOM对象列表 ==
+
+Document :: Document对象代表了整个XML的文档，所有其它的Node，都以一定的顺序包含在 Document对象之内，排列成一个树形的结构，程序员可以通过遍历这颗树来得到XML文档的所有的内容，这也是对XML文档操作的起点。
+| 方法                         | 描述                                                                             |
+|------------------------------+----------------------------------------------------------------------------------|
+| createAttribute(String)      | 用给定的属性名创建一个Attr对象                                                   |
+| createElement(String)        | 用给定的标签名创建一个Element对象，代表XML文档中的一个标签                       |
+| createTextNode(String)       | 用给定的字符串创建一个Text对象，Text对象代表了标签或者属性中所包含的纯文本字符串 |
+| getElementsByTagName(String) | 返回一个NodeList对象，它包含了所有给定标签名字的标签                             |
+| getDocumentElement()         | 返回一个代表这个DOM树的根节点的Element对象，也就是代表XML文档根元素的那个对象    |
+
+Node :: Node对象是DOM结构中最为基本的对象，代表了文档树中的一个抽象的节点。在实际使用的时候，很少会真正的用到Node这个对象，而是用到诸如Element、Attr、Text等Node对象的子对象来操作文档。
+| 方法                             | 描述                                                                                             |
+|----------------------------------+--------------------------------------------------------------------------------------------------|
+| appendChild(Node node)           | 为这个节点添加一个子节点，并放在所有子节点的最后，如果这个子节点已经存在，则先把它删掉再添加进去 |
+| getFirstChild()                  | 如果节点存在子节点，则返回第一个子节点                                                           |
+| getNextSibling()                 | 返回在DOM树中这个节点的下一个兄弟节点                                                            |
+| getNodeName()                    | 根据节点的类型返回节点的名称                                                                     |
+| getNodeType()                    | 返回节点的类型                                                                                   |
+| getNodeValue()                   | 返回节点的值                                                                                     |
+| hasChildNodes()                  | 判断是不是存在有子节点                                                                           |
+| hasAttributes()                  | 判断这个节点是否存在有属性                                                                       |
+| getOwnerDocument()               | 返回节点所处的Document对象                                                                       |
+| insertBefore(Node new，Node ref) | 在给定的一个子对象前再插入一个子对象                                                             |
+| removeChild(Node node)           | 删除给定的子节点对象                                                                             |
+| replaceChild(Node new，Node old) | 用一个新的Node对象代替给定的子节点对象                                                           |
+
+NodeList :: 顾名思义，就是代表了一个包含了一个或者多个Node的列表。可以简单的把它看成一个Node的数组，我们可以通过方法来获得列表中的元素。
+| 方法        | 描述                   |
+|-------------+------------------------|
+| GetLength() | 返回列表的长度         |
+| Item(int)   | 返回指定位置的Node对象 |
+
+Element :: 代表的是XML文档中的标签元素，继承于Node，亦是Node的最主要的子对象。
+| 方法                         | 描述                                                                             |
+|------------------------------+----------------------------------------------------------------------------------|
+| getElementsByTagName(String) | 返回一个NodeList对象，它包含了在这个标签中其下的子孙节点中具有给定标签名字的标签 |
+| getTagName()                 | 返回一个代表这个标签名字的字符串                                                 |
+| getAttribute(String)         | 返回标签中给定属性名称的属性的值                                                 |
+| getAttributeNode(String)     | 返回一个代表给定属性名称的Attr对象                                               |
+
+Attr :: 代表了某个标签中的属性。Attr继承于Node，但是因为Attr实际上是包含在Element中的，它并不能被看作是Element的子对象，因而在DOM中Attr并不是DOM树的一部分，所以Node中的 getparentNode()，getpreviousSibling()和getnextSibling()返回的都将是null。也就是说，Attr其实是被看作包含它的Element对象的一部分，它并不作为DOM树中单独的一个节点出现。这一点在使用的时候要同其它的Node子对象相区别。
+
+== 示例代码 ==
+
+例程源码(XML) --- person.xml
+{{{class="brush:xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<persons>
+    <person id="1">
+        <name>Jerry</name>
+        <age>23</age>
+    </person>
+    
+    <person id="3">
+        <name>Lily</name>
+        <age>17</age>
+    </person>
+</persons>
+}}}
+
+例程源码(JAVA) --- Person类
+{{{class="brush:java"
+package cn.partner4java.xml.bean;
+
+public class Person {
+    private int id;
+    private String name;
+    private short age;
+    
+    public int getId() {
+        return id;
+    }
+    
+    public void setId(int id) {
+        this.id = id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public short getAge() {
+        return age;
+    }
+    
+    public void setAge(short age) {
+        this.age = age;
+    }
+}
+}}}
+
+例程源码(JAVA) --- 解析代码
+{{{class="brush:java"
+/**
+ * 使用Dom解析xml文件
+ *
+ */
+public class DomXMLReader {
+
+    public static List<Person> readXML(InputStream inStream) {
+        List<Person> persons = new ArrayList<Person>();
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        try {
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document dom = builder.parse(inStream);
+            dom.normalize();
+            Element root = dom.getDocumentElement();
+            NodeList items = root.getElementsByTagName("person");//查找所有person节点
+            
+            for (int i = 0; i < items.getLength(); i++) {
+                Person person = new Person();
+                //得到第一个person节点
+                Element personNode = (Element) items.item(i);
+                //获取person节点的id属性值
+                person.setId(new Integer(personNode.getAttribute("id")));
+                
+                //获取person节点下的所有子节点(标签之间的空白节点和name/age元素)
+                NodeList childsNodes = personNode.getChildNodes();
+                for (int j = 0; j < childsNodes.getLength(); j++) {
+                    Node node = (Node) childsNodes.item(j);             
+                    //判断是否为元素类型
+                    if(node.getNodeType() == Node.ELEMENT_NODE){                       
+                        Element childNode = (Element) node;
+                        //判断是否name元素
+                        if ("name".equals(childNode.getNodeName())) {
+                            //获取name元素下Text节点,然后从Text节点获取数据                       
+                            person.setName(childNode.getFirstChild().getNodeValue());
+                        } 
+                        else if (“age”.equals(childNode.getNodeName())) {
+                            person.setAge(new Short(childNode.getFirstChild().getNodeValue()));
+                        }
+                    }
+                }
+                persons.add(person);
+            }
+            
+            inStream.close();
+        } 
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return persons;
+    }
+}
+}}}
+
+== 乱码问题 ==
+- DocumentBuilder类的parse()方法接收InputSource作为参数，InputSource类可以通过setEncoding()方法设置编码，如setEncoding("GB2312")

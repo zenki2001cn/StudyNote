@@ -1,0 +1,73 @@
+= JUnit使用 =
+
+== 相关类 ==
+{{{class="brush:java"
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import junit.textui.TestRunner;
+}}}
+
+== 基本处理流程 ==
+- 从TestCase继承子类，实现`setUp`和`tearDown`方法进行初始化和卸载
+- 编写测试用例，以`test`开头的方法名,返回值为`public void`类型
+- 编写测试组件，并添加测试用例到测试组件中，通过`TestRunner.run`来运行测试组件
+
+== 示例代码 ==
+
+=== 测试用例类 ===
+{{{class="brush:java"
+public class JunitTest extends TestCase {
+
+    // 创建测试组件
+    static TestSuite suite = new TestSuite();
+
+    // 构造方法
+    public JunitTest(String args) {
+        super(args);
+    }
+
+    // 初始化方法
+    protected void setUp() {
+        System.out.println("JunitTest setUp");
+    }
+
+    // 析构方法
+    protected void tearDown() {
+        System.out.println("JunitTest tearDown");
+    }
+
+    // 静态方法，返回测试组件
+    public static Test suite() {
+        // 测试所有用例
+        //suite.addTestSuite(JunitTest.class);
+
+        // 只测试testContainIt用例
+        suite.addTest(new JunitTest("testContainIt"));
+
+        return suite;
+    }
+
+    // 测试用例一
+    public void testContainIt() {
+        boolean ok = false;
+
+        assertEquals(false, ok);
+    }
+
+    // 测试用例二
+    public void testDemo() {
+        boolean ok = contain.containIt("!");
+
+        assertEquals(false, ok);
+    }
+}
+}}}
+
+=== 使用测试类 ===
+{{{class="brush:java"
+// 使用junit.textui.TestRunner.run方法运行测试用例类
+static private void testJunit() {
+    junit.textui.TestRunner.run(JunitTest.suite());
+}
+}}}

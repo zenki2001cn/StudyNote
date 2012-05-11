@@ -1,0 +1,131 @@
+= mmc驱动示例 =
+_该示例以mmc驱动的实现为线索，描述了如何支持sysfs特性。_
+
+%toc
+
+== 数据结构定义 ==
+=== struct mmc_card ===
+- 定义mmc的抽象数据结构，并包含一个struct device结构指针，该指针会在注册时初始化。
+- 在device结构中会包含device_type的指针，实际上我们通过初始化device作为入口，最终初始化*_attribute的属性。
+
+{{{class="brush:c"
+struct mmc_card {
+    ......
+	struct device		dev;		/* the device */
+};
+}}}
+
+== 初始化device_type ==
+=== MMC_DEV_ATTR定义 ===
+- 该宏是对DEVICE_ATTR的进一步封装，目的是通过sysfs为用户层提供读方法来获取mmc的属性。
+
+{{{class="brush:c"
+#define MMC_DEV_ATTR(name, fmt, args...)					                \
+static ssize_t mmc_##name##_show (struct device *dev,                       \
+                                  struct device_attribute *attr, char *buf)	\
+{										                                    \
+	struct mmc_card *card = container_of(dev, struct mmc_card, dev);	    \
+	return sprintf(buf, fmt, args);						                    \
+}										                                    \
+static DEVICE_ATTR(name, S_IRUGO, mmc_##name##_show, NULL)
+}}}
+
+=== MMC_DEV_ATTR实现 ===
+- 这组宏的使用实际上是声明了一组device_attribute的变量。
+
+{{{class="brush:c"
+MMC_DEV_ATTR(cid, "%08x%08x%08x%08x\n", card->raw_cid[0], card->raw_cid[1],
+	card->raw_cid[2], card->raw_cid[3]);
+MMC_DEV_ATTR(csd, "%08x%08x%08x%08x\n", card->raw_csd[0], card->raw_csd[1],
+	card->raw_csd[2], card->raw_csd[3]);
+MMC_DEV_ATTR(date, "%02d/%04d\n", card->cid.month, card->cid.year);
+MMC_DEV_ATTR(fwrev, "0x%x\n", card->cid.fwrev);
+MMC_DEV_ATTR(hwrev, "0x%x\n", card->cid.hwrev);
+MMC_DEV_ATTR(manfid, "0x%06x\n", card->cid.manfid);
+MMC_DEV_ATTR(name, "%s\n", card->cid.prod_name);
+MMC_DEV_ATTR(oemid, "0x%04x\n", card->cid.oemid);
+MMC_DEV_ATTR(serial, "0x%08x\n", card->cid.serial);
+}}}
+
+=== 初始化attribute和attribute_group ===
+- 创建一组attribute的结构指针，而这些指针是通过上面的MMC_DEV_ATTR宏所定义的。
+- 之后将这组attribute指针再封装进attribute_group结构中，最终用来初始化device_type结构。
+
+{{{class="brush:c"
+// 将DEVICE_ATTR宏分解后得到以下的结构体变量
+static struct attribute *mmc_std_attrs[] = {
+	&dev_attr_cid.attr,
+	&dev_attr_csd.attr,
+	&dev_attr_date.attr,
+	&dev_attr_fwrev.attr,
+	&dev_attr_hwrev.attr,
+	&dev_attr_manfid.attr,
+	&dev_attr_name.attr,
+	&dev_attr_oemid.attr,
+	&dev_attr_serial.attr,
+	NULL,
+};
+
+// 封装进attribute_group结构
+static struct attribute_group mmc_std_attr_group = {
+	.attrs = mmc_std_attrs,
+};
+
+static struct attribute_group *mmc_attr_groups[] = {
+	&mmc_std_attr_group,
+	NULL,
+};
+
+// 最终初始化device_type结构
+static struct device_type mmc_type = {
+	.groups = mmc_attr_groups,
+};
+}}}
+
+== 创建并初始化MMC ==
+- 初始化mmc_card结构时会传入上面创建的mmc_type作为参数，最终这个device_type指针会用于初始化struct device。
+
+=== mmc_init_card ===
+{{{class="brush:c"
+static int mmc_init_card(struct mmc_host *host, u32 ocr,
+	struct mmc_card *oldcard)
+{
+	struct mmc_card *card;
+    ......
+    
+    /*
+     * Allocate card structure.
+     */
+    card = mmc_alloc_card(host, &mmc_type);
+    if (IS_ERR(card)) {
+        err = PTR_ERR(card);
+        goto err;
+    }
+
+    ......
+}
+}}}
+
+=== mmc_alloc_card ===
+{{{class="brush:c"
+struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
+{
+	struct mmc_card *card;
+
+	card = kzalloc(sizeof(struct mmc_card), GFP_KERNEL);
+	if (!card)
+		return ERR_PTR(-ENOMEM);
+
+	card->host = host;
+
+	device_initialize(&card->dev);
+
+	card->dev.parent = mmc_classdev(host);
+	card->dev.bus = &mmc_bus_type;
+	card->dev.release = mmc_release_card;
+	// 初始化device中的device_type
+	card->dev.type = type;
+
+	return card;
+}
+}}}

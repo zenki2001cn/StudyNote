@@ -1,0 +1,43 @@
+修改、设置mysql的root密码
+
+步骤：
+第一种方法
+1、使用mysqladmin设置mysql root密码
+
+如果你安装后重新就没有配置过密码，默认密码为空，使用下面命令设置
+$ mysqladmin -u root password newpass
+
+如果你想修改（更新）root密码，使用下面命令
+$ mysqladmin -u root -p oldpassword newpass
+
+如果使用上述命令，获得如下信息，
+mysqladmin: connect to server at ‘localhost’ failed
+error: ‘Access denied for user ‘root’@'localhost’ (using password: YES)’
+
+下面第二种方法可以解决
+2、修改普通用户的密码
+$ mysqladmin -u user-name -p oldpassword newpass
+
+第二种方法：
+mysql存储用户和密码放置于mysql数据库的use表里，你可以通过下面命令直接修改其密码
+
+$ mysql -u root -p   #--登录mysql 服务器
+mysql> use mysql;    #使用mysql数据库
+mysql> update user set password=PASSWORD("newpass") where User='ENTER-USER-NAME-HERE'; #--更新用户密码
+mysql>flush privileges;  #--重新刷新权限
+mysql> quit  #--退出mysql服务器
+
+--------------------------------------------------------------------------------------------------------
+mysql的UTF8问题
+
+修改/etc/mysql/my.cnf 这个配置文件
+找到客户端配置[client] 在下面添加
+default_character_set=utf8 默认字符集为utf8
+在找到[mysqld] 添加
+default_character_set=utf8 默认字符集为utf8
+init_connect='SET NAMES utf8' （设定连接mysql数据库时使用utf8编码，以让mysql数据库为utf8运行
+
+mysql> status; 显示状态信息
+mysql> show variables like 'character%'; 查看字符编码
+
+--------------------------------------------------------------------------------------------------------

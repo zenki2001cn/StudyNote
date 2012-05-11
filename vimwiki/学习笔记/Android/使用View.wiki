@@ -1,0 +1,138 @@
+= 使用View =
+
+== 典型使用View的流程方法 ==
+* 通过改写XML资源文件来设置View属性
+* 设置焦点,通过哦requestFocus()方法来获得焦点
+* 设置监听器来响应用户的交互
+* 通过setVisibility(int)来设置视图可见
+
+== 自定义View的流程方法 ==
+| 流程     | 方法                                                              | 描述                              |
+|----------+-------------------------------------------------------------------+-----------------------------------|
+| 创建对象 | 构造函数, onFinishInflate                                         | 当视图和子对象从XML文件加载后调用 |
+| 设置布局 | onMeasure, onLayout, onSizeChanged                                | 设置布局的大小,样式               |
+| 绘画     | onDraw, invalidate                                                | 将内容显示出来,刷新视图           |
+| 事件处理 | onKeyDown, onKeyUp, onTrackballEvent, onTouchEvent                | 处理按键和触摸动作                |
+| 焦点     | onFocusChanged                                                    | 当视图失去或得到焦点是触发        |
+| 附着     | onAttachedWindow, onDetechedFromWindow, onWindowVisibilityChanged | 当窗口消失或离开窗口的事件响应    |
+
+== 与视图绑定的IDs ==
+通常需要将视图与一个ID绑定,使Activity可以获取到该视图的对象
+
+1.在资源文件中定义ID
+{{{class="brush: xml"
+<Button id="@+id/my_button"
+     android:layout_width="wrap_content"
+     android:layout_height="wrap_content"
+     android:text="@string/my_button_text"/>
+}}}
+
+2.在onCreate方法中查找视图
+{{{class="brush: java"
+Button myButton = (Button) findViewById(R.id.my_button);
+}}}
+
+== View的位置,大小,边距，可见性 ==
+View的位置以左上角为基准,通过调用getLeft()和getTop()来返回当前位置.
+{{{class="brush: text"
+getRight = getLeft() + getWidth()
+getBottom = getTop() + getHeight()
+}}}
+
+=== 位置，大小,边距 ===
+- padding是控件的内容相对控件的边缘的边距
+- margin是控件边缘相对父空间的边距
+- android:gravity属性是对该view内容的限定。比如一个button上面的text。你可以设置该text在view的靠左，靠右等位置。
+- android:layout_gravity是用来设置该view相对于父view的位置。比如一个button在linearlayout里，你想把该button放在靠左，靠右等位置就可以通过该属性设置。
+- android:visibility标识view是否可见，invisible值为对用户不可见，visible值为对用户可见，gone值为对用户不可见，并且不占据视图的空间。
+
+{{{class="brush: java"
+getMeasureWidth()
+getMeasureHeight()
+getWidth()
+getHeight()
+setPadding(int, int, int, int)
+getPaddingLeft()
+getPaddingTop()
+getPaddingRight()
+getPaddingBottom()
+}}}
+
+== 事件处理和线程 ==
+*1.一个事件发生后分配给相应的View,View处理事件并通知listeners*
+
+*2.在事件处理中View的边界如果发生变化,会调用requestLayout*
+
+*3.在事件处理中如果View发生变化,会调用invalidate*
+
+*4.在处理UI事件时应该使用单独的线程*
+
+== 绘画 ==
+{{{class="brush:java"
+@Override
+protected void onDraw(Canvas canvas) {
+    //这里我们直接使用canvas对象处理当前的画布，比如说使用Paint来选择要填充的颜色
+    Paint paintBackground = new Paint();
+    
+    //从Res中找到名为xxx的color颜色定义
+    paintBackground.setColor(getResources().getColor(R.color.xxx));  
+    //设置当前画布的背景颜色为paintBackground中定义的颜色，以0,0作为为起点，以当前画布的宽度和高度为重点即整块画布来填充。  
+    canvas.drawRect(0, 0, getWidth(), getHeight(), paintBackground); 
+}
+}}}
+
+== 焦点处理 ==
+以下方法处理焦点的控制
+{{{class="brush: java"
+isFocusable()
+setFocusable(boolean)
+isFocusableInTouchMode()
+setFocusableInTouchMode(boolean)
+requestFocus()
+}}}
+
+== 触摸模式 ==
+以下方法处理触摸模式
+{{{class="brush: java"
+isFocusableInTouchMode()
+setFocusableInTouchMode(boolean)
+isInTouchMode()
+}}}
+
+== 卷轴 ==
+以下方法处理卷轴
+{{{class="brush: java"
+scrollBy(int, int)
+scrollTo(int, int)
+awakenScroolBars()
+}}}
+
+== Tags ==
+Tags用来标识View附带的额外数据
+
+== 动画 ==
+以下方法可以将Animation对象加入到View
+{{{class="brush: java"
+setAnimation(Animation)
+startAnimation(Animation)
+}}}
+
+== 处理窗口还原状态 ==
+{{{class="brush:java"
+@Override
+protected Parcelable onSaveInstanceState() {
+    Parcelable p = super.onSaveInstanceState();
+    Bundle bundle = new Bundle();
+    bundle.putInt("x", pX);
+    bundle.putInt("y", pY);
+    bundle.putParcelable("android123_state", p);
+    return bundle;
+}
+@Override
+protected void onRestoreInstanceState(Parcelable state) { 
+    Bundle bundle = (Bundle) state;
+    dosomething(bundle.getInt("x"), bundle.getInt("y")); //获取刚才存储的x和y信息
+    super.onRestoreInstanceState(bundle.getParcelable("android123_state"));
+    return;
+}
+}}}

@@ -1,0 +1,120 @@
+= Intent =
+
+== Intent概念 ==
+Intent表示动作将被执行的抽象类,它可以被用来`startActivity`,`broadcastIntent`,`startService`或`bindService`
+
+它主要包含两种信息
+- 动作 -- 如ACTION_VIEW, ACTION_EDIT, ACTION_MAIN, ACTION_DIAL，可自定义Action，作为构造函数的参数传给Intent
+- 数据 -- 如Uri
+
+{{{class="brush:text"
+自定义Action是给一个Intent赋值字符串形式的名字(android:name属性)，<intent-filter>标签用来匹配，符合这个名字的Intent则优先调用。
+}}}
+
+它还包括一些附加属性
+- category -- 关于动作执行的附加信息
+- type -- 关于数据类型的附加信息
+- component -- 关于组件
+- extras -- 与Bundle相关的信息
+
+=== 相关方法和变量 ===
+_Intent putExtra(String name, String value)_ :: 添加额外的数据
+
+_String getStringExtra(String name)_ :: 获取字符串数据
+
+...... :: 省略
+
+=== Intent分类 ===
+| 标准Actions            | 标准Broadcast                 | 标准categories                  | 标准extra data         |
+|----------------------+-----------------------------+-------------------------------+------------------------------|
+| ACTION_MAIN          | ACTION_TIME_TICK            | CATEGORY_DEFAULT              | EXTRA_ALARM_COUNT            | 
+| ACTION_VIEW          | ACTION_TIME_CHANGED         | CATEGORY_BROWSABLE            | EXTRA_BCC                    |   
+| ACTION_ATTACH_DATA   | ACTION_TIMEZONE_CHANGED     | CATEGORY_CAR_MODE             | EXTRA_CC                     |
+| ACTION_EDIT          | ACTION_BOOT_COMPLETED       | CATEGORY_TAB                  | EXTRA_CHANGED_COMPONENT_NAME |
+| ACTION_PICK          | ACTION_PACKAGE_ADDED        | CATEGORY_ALTERNATIVE          | EXTRA_DATA_REMOVED           |
+| ACTION_CHOOSER       | ACTION_PACKAGE_CHANGED      | CATEGORY_SELECTED_ALTERNATIVE | EXTRA_DOCK_STATE             |
+| ACTION_GET_CONTENT   | ACTION_PACKAGE_REMOVED      | CATEGORY_LAUNCHER             | EXTRA_DOCK_STATE_CAR         |
+| ACTION_DIAL          | ACTION_PACKAGE_RESTARTED    | CATEGORY_INFO                 | EXTRA_DOCK_STATE_DESK        |
+| ACTION_CALL          | ACTION_PACKAGE_DATA_CLEARED | CATEGORY_HOME                 | EXTRA_DOCK_STATE_UNDOCKED    |
+| ACTION_SEND          | ACTION_UID_REMOVED          | CATEGORY_PREFERENCE           | EXTRA_DONT_KILL_APP          |
+| ACTION_SENDTO        | ACTION_BATTERY_CHANGED      | CATEGORY_TEST                 | EXTRA_EMAIL                  |
+| ACTION_ANSWER        | ACTION_POWER_CONNECTED      | CATEGORY_CAR_DOCK             | EXTRA_INITIAL_INTENTS        |
+| ACTION_INSERT        | ACTION_POWER_DISCONNECTED   | CATEGORY_DESK_DOCK            | EXTRA_INTENT                 |
+| ACTION_DELETE        | ACTION_SHUTDOWN             |                               | EXTRA_KEY_EVENT              |
+| ACTION_RUN           |                             |                               | EXTRA_PHONE_NUMBER           |
+| ACTION_SYNC          |                             |                               | EXTRA_REMOTE_INTENT_TOKEN    |
+| ACTION_PICK_ACTIVITY |                             |                               | EXTRA_REPLACING              |
+| ACTION_SEARCH        |                             |                               | EXTRA_SHORTCUT_ICON          |
+| ACTION_WEB_SEARCH    |                             |                               | EXTRA_SHORTCUT_ICON_RESOURCE |
+| ACTION_FACTORY_TEST  |                             |                               | EXTRA_SHORTCUT_INTENT        |
+|                      |                             |                               | EXTRA_STREAM                 |
+|                      |                             |                               | EXTRA_SHORTCUT_NAME          |
+|                      |                             |                               | EXTRA_SUBJECT                |
+|                      |                             |                               | EXTRA_TEMPLATE               |
+|                      |                             |                               | EXTRA_TEXT                   |
+|                      |                             |                               | EXTRA_TITLE                  |
+|                      |                             |                               | EXTRA_UID                    |
+  
+=== 示例代码 ===
+{{{class="brush:xml"
+<activity android:name="NotesList" android:label="@string/title_notes_list">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <action android:name="com.foxconn.ebook.noteslist" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+    
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <action android:name="android.intent.action.EDIT" />
+        <action android:name="android.intent.action.PICK" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.dir/vnd.google.note" />
+    </intent-filter>
+    
+    <intent-filter>
+        <action android:name="android.intent.action.GET_CONTENT" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="vnd.android.cursor.item/vnd.google.note" />
+        <extra android:name="from" android:value="place">
+    </intent-filter>
+</activity>
+}}}
+
+=== 添加标识符 ===
+- 通过`getFlags`, `setFlags`和`addFlags`添加标识符
+| 类型 | 标识                                | 描述                                                                                               |
+|------+-------------------------------------+----------------------------------------------------------------------------------------------------|
+| int  | FLAG_ACTIVITY_BROUGHT_TO_FRONT      | 和singleTask模式相同                                                                               |
+| int  | FLAG_ACTIVITY_CLEAR_TOP             | 清除任务栈中被调用的Activity之上的所有Activity                                                     |
+| int  | FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET | 当下次重置时清除被调用的Activity。例如从Home返回时，清除该标志的Activity                           |
+| int  | FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS  | 该标志的Activity将排除在最近启动的Activity列表之外                                                 |
+| int  | FLAG_ACTIVITY_FORWARD_RESULT        | 如果重新启一个已存在的Activity，则新的Activity将调用setResult(int)方法，将结果返回给原始的Activity |
+| int  | FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY | 该Activity将从历史堆栈中启动，响应Home键的常按事件                                                 |
+| int  | FLAG_ACTIVITY_MULTIPLE_TASK         | 无论是否已存在该Activity，系统都将启动一个新的Activity                                             |
+| int  | FLAG_ACTIVITY_NEW_TASK              | 在一个新的任务堆栈中启动该Activity                                                                 |
+| int  | FLAG_ACTIVITY_NO_ANIMATION          | 禁用动画过渡效果                                                                                   |
+| int  | FLAG_ACTIVITY_NO_HISTORY            | 该Activity不会保存在任务堆栈中                                                                     |
+| int  | FLAG_ACTIVITY_NO_USER_ACTION        | 该标志将阻止onUserLeaveHint()的回调                                                                |
+| int  | FLAG_ACTIVITY_PREVIOUS_IS_TOP       |                                                                                                    |
+| int  | FLAG_ACTIVITY_REORDER_TO_FRONT      | 如果已经存在该Activity，则被调用到前台                                                             |
+| int  | FLAG_ACTIVITY_RESET_TASK_IF_NEEDED  | 如果需要，则重置该任务                                                                             |
+| int  | FLAG_ACTIVITY_SINGLE_TOP            | 如果该任务在栈顶，则不会再启动                                                                     |
+| int  | FLAG_DEBUG_LOG_RESOLUTION           | 该标志将启用debug模式                                                                              |
+| int  | FLAG_FROM_BACKGROUND                | 该标志指明该任务是来自后台，而不是来自用户的交互                                                   |
+| int  | FLAG_GRANT_READ_URI_PERMISSION      | 赋予读取URI的权限                                                                                  |
+| int  | FLAG_GRANT_WRITE_URI_PERMISSION     | 赋予写入URI的权限                                                                                  |
+| int  | FLAG_RECEIVER_REGISTERED_ONLY       | 当发送一个广播时，只有注册的接收者能够被呼叫                                                       |
+| int  | FLAG_RECEIVER_REPLACE_PENDING       | 当发送一个广播时，新的广播将替换符合条件的已存在的广播。该条件通过Intent.filterEquals来判断        |
+
+== 应用示例 ==
+- [[获取指定Web页面]]
+- [[启动外部应用程序]]
+- [[显示地图]]
+- [[拨打电话]]
+- [[发送短信]]
+- [[发送email]]
+- [[Install和Uninstall程序]]
+- [[播放多媒体]]
+- [[启动多个Broadcast]]
+- [[Intent传递对象]]

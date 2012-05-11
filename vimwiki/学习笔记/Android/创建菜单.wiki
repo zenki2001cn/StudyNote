@@ -1,0 +1,186 @@
+= 创建菜单 =
+
+== 相关方法和变量 ==
+=== 与Activity相关 ===
+_boolean onCreateOptionsMenu(Menu menu)_ :: 创建Options菜单,在Activity中重写
+
+_boolean onCreateContextMenu(Menu menu)_ :: 创建Context菜单,在Activity中重写
+
+_boolean onOptionsItemSelected(MenuItem item)_ :: Options菜单被选中的动作方法,在Activity中重写
+
+_boolean onContextItemSelected(MenuItem item)_ :: Context菜单被选中的动作方法,在Activity中重写
+
+_MenuInflater getMenuInflater()_ :: 获取菜单的触发器,由Activity调用
+
+=== Menu相关的方法 ===
+_MenuItem add(int titleRes)_ :: 根据资源ID添加一个菜单项
+
+_MenuItem add(CharSequence  title)_ :: 根据字符串添加一个菜单项
+
+_MenuItem add(int groupId, int itemId, int order, CharSequence  title)_ :: 添加一个子菜单到菜单组中
+
+_SubMenu addSubMenu(int titleRes)_ :: 根据资源ID添加一个子菜单
+
+_SubMenu addSubMenu(int groupId, int itemId, int order, int titleRes)_ :: 添加一个子菜单到菜单组中
+
+=== MenuItem相关的方法 ===
+_Intent getIntent()_ :: 获取相关的Intent
+
+_MenuItem setCheckable(boolean checkable)_ :: 设置可选属性
+
+_MenuItem setIntent(Intent  intent)_ :: 设置相关的Intent
+
+== 如何创建菜单 ==
+=== 菜单的种类 ===
+Options Menu :: 包括Icon Menu和Expanded Menu
+
+Context Menu :: 浮动列表形式的菜单
+
+Submenu :: 子菜单
+
+=== 在XML中定义菜单 ===
+{{{class="brush: xml"
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/new_game"
+          android:title="New Game" />
+    <item android:id="@+id/quit"
+          android:title="Quit" />
+</menu>
+}}}
+
+=== 在Activity中创建菜单 ===
+1.需要重写onCreateOptionsMenu或onCreateContextMenu,并通过getMenuInflater来获取菜单的初始化工具
+{{{class="brush: java"
+// 创建OptionsMenu
+public boolean onCreateOptionsMenu(Menu menu) {
+    super.onCreateOptionsMenu(menu);
+    MenuInflater inflater = getMenuInflater();
+    inflater.inflate(R.menu.menu, menu);
+    return true;
+}
+
+// 创建ContextMenu
+public void onCreateContextMenu(ContextMenu menu, View v,
+                                ContextMenuInfo menuInfo) {
+  super.onCreateContextMenu(menu, v, menuInfo);
+  menu.add(0, EDIT_ID, 0, "Edit");
+  menu.add(0, DELETE_ID, 0,  "Delete");
+}
+}}}
+*1.需要调用super.onCreateOptionsMenu*
+
+*2.通过MenuInflater的inflate方法关联菜单*
+
+2.通过add方法加入菜单项
+{{{class="brush: java"
+/* Creates the menu items */
+public boolean onCreateOptionsMenu(Menu menu) {
+    menu.add(0, MENU_NEW_GAME, 0, "New Game");
+    menu.add(0, MENU_QUIT, 0, "Quit");
+    return true;
+}
+}}}
+
+=== 触发菜单事件 ===
+通过重写onOptionsItemSelected或onContextItemSelected方法来执行菜单动作
+{{{class="brush: java"
+// 响应OptionsMenu
+public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+    case MENU_NEW_GAME:
+        newGame();
+        return true;
+    case MENU_QUIT:
+        quit();
+        return true;
+    }
+    return false;
+}
+
+// 响应ContextMenu
+public boolean onContextItemSelected(MenuItem item) {
+  AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+  switch (item.getItemId()) {
+  case EDIT_ID:
+    editNote(info.id);
+    return true;
+  case DELETE_ID:
+    deleteNote(info.id);
+    return true;
+  default:
+    return super.onContextItemSelected(item);
+  }
+}
+}}}
+*在ContextMenu中,需要默认调用super.onContextItemSelected*
+
+=== 添加图标 ===
+通过setIcon方法来添加图标
+{{{class="brush: java"
+menu.add(0, MENU_QUIT, 0, "Quit")
+menu.setIcon(R.drawable.menu_quit_icon);
+}}}
+
+=== 修改菜单 ===
+通过重写onPrepareOptionsMenu来动态修改菜单
+{{{class="brush: java"
+public boolean onPrepareOptionsMenu(Menu menu) {
+    super.onPrepareOptionsMenu(menu);
+    MenuInflater inflater = getMenuInflater();
+    inflater.inflate(R.menu.menu, menu);
+    return true;
+}
+}}}
+
+=== 添加子菜单 ===
+通过addSubMenu添加子菜单
+{{{class="brush: java"
+public boolean onCreateOptionsMenu(Menu menu) {
+  boolean result = super.onCreateOptionsMenu(menu);
+
+  SubMenu fileMenu = menu.addSubMenu("File");
+  SubMenu editMenu = menu.addSubMenu("Edit");
+  fileMenu.add("new");
+  fileMenu.add("open");
+  fileMenu.add("save");
+  editMenu.add("undo");
+  editMenu.add("redo");
+
+  return result;
+}
+}}}
+
+=== 设置菜单组和checkable属性 ===
+{{{class="brush: java"
+// 设置单个菜单选项checkable
+menu.setCheckable(true);
+
+// 设置一组菜单checkable
+SubMenu subMenu = menu.addSubMenu("Color");
+subMenu.add(COLOR_MENU_GROUP, COLOR_RED_ID, 0, "Red");
+subMenu.add(COLOR_MENU_GROUP, COLOR_BLUE_ID, 0, "Blue");
+subMenu.setGroupCheckable(COLOR_MENU_GROUP, true, true);
+
+// 获取checkable属性值
+switch (item.getItemId()) {
+case VIBRATE_SETTING_ID:
+  if (item.isChecked()) 
+      item.setChecked(false);
+  else 
+      item.setChecked(true);
+      
+  return true;
+}
+}}}
+
+=== 设置快捷键 ===
+{{{class="brush: java"
+menu.setAlphabeticShortcut('q');
+}}}
+
+=== 为菜单项设置Intent ===
+{{{class="brush: java"
+MenuItem menuItem = menu.add(0, PHOTO_PICKER_ID, 0, "Select Photo");
+menuItem.setIntent(new Intent(this, PhotoPicker.class));
+}}}
+

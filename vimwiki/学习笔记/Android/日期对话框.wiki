@@ -1,0 +1,26 @@
+= Calendar使用 =
+
+[pic/datedialog.png]
+
+- 按下设置（Set）按钮的时候，调用DatePickerDialog.OnDateSetListener()处理。
+
+例程源码(Java)
+{{{class="brush: java"
+final Calendar calendar = Calendar.getInstance();
+final int year = calendar.get(Calendar.YEAR);
+final int month = calendar.get(Calendar.MONTH);
+final int day = calendar.get(Calendar.DAY_OF_MONTH);
+ 
+final DatePickerDialog datePickerDialog = new DatePickerDialog(
+    this,
+    new DatePickerDialog.OnDateSetListener() {
+        @Override
+        public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {                
+            Log.v("Test", year + "/" + monthOfYear + "/" + dayOfMonth);
+        }
+    },
+    year,
+    month + 1,
+    day);
+}}}
+

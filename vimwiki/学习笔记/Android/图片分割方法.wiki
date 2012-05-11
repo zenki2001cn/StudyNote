@@ -1,0 +1,53 @@
+= 图片平均分割 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import android.content.Context;
+}}}
+
+方法一
+{{{class="brush:java"
+/**
+ * 图片分割
+ * @param g
+ *            ：画布
+ * @param paint
+ *            ：画笔
+ * @param imgBit
+ *            ：图片
+ * @param x
+ *            ：X轴起点坐标
+ * @param y
+ *            ：Y轴起点坐标
+ * @param w
+ *            ：单一图片的宽度
+ * @param h
+ *            ：单一图片的高度
+ * @param line
+ *            ：第几列
+ * @param row
+ *            ：第几行
+ */
+public final void cuteImage(Canvas g, Paint paint, Bitmap imgBit, int x,
+                            int y, int w, int h, int line, int row) {
+    g.clipRect(x, y, x + w, h + y);
+    g.drawBitmap(imgBit, x - line * w, y - row * h, paint);
+    g.restore();
+}
+}}}
+
+方法二
+{{{class="brush:java"
+public final Bitmap cuteImage(Bitmap _imgBit, int _startX, int width,
+                              int _startY, int height) {
+    Bitmap tempMap = null;
+    tempMap = Bitmap.createBitmap(_imgBit, _startX, _startY, width, height);
+
+    return tempMap;
+}
+}}}

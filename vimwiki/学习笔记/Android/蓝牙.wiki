@@ -1,0 +1,38 @@
+= 蓝牙 =
+
+%toc
+
+== 相关类及功能描述 ==
+{{{class="brush:java"
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+}}}
+
+| 类名称                      | 功能描述                     |
+|-----------------------------+------------------------------|
+| BluetoothAdapter            | 本地的蓝牙适配器设备类       |
+| BluetoothClass              | 描述设备通用特性和功能       |
+| BluetoothClass.Device       | 定义所有设备类的常量         |
+| BluetoothClass.Device.Major | 定义所有主要设备类的常量     |
+| BluetoothClass.Service      | 定义所有服务类的常量         |
+| BluetoothDevice             | 代表一个远程的蓝牙设备       |
+| BluetoothServerSocket       | 监听蓝牙服务的端口           |
+| BluetoothSocket             | 一个双向连接的蓝牙端口socket |
+
+== 类方法调用和说明 ==
+- [[BluetoothAdapter]]
+- [[BluetoothClass]]
+- [[BluetoothDevice]]
+- [[BluetoothServerSocket]]
+- [[BluetoothSocket]]
+
+== 权限声明 ==
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />  
+<uses-permission android:name="android.permission.BLUETOOTH" />  
+}}}
+
+== 示例代码 ==

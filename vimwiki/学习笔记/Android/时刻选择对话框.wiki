@@ -1,0 +1,30 @@
+= TimePickerDialog使用 =
+
+[pic/timedialog.png]
+
+# is24HourView = true 
+# is24HourView = false
+ 
+- 按下设置（Set）按钮的时候，调用TimePickerDialog.OnTimeSetListener()处理。
+
+例程源码(Java)
+{{{class="brush: java"
+final Calendar calendar = Calendar.getInstance();
+final int hour = calendar.get(Calendar.HOUR_OF_DAY);
+final int minute = calendar.get(Calendar.MINUTE);
+ 
+final TimePickerDialog timePickerDialog = new TimePickerDialog(
+    this,
+    new TimePickerDialog.OnTimeSetListener() {
+        @Override
+        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+            Log.v("Test", hourOfDay + ":" + minute);
+        }
+    },
+    hour,
+    minute,
+    true);
+ 
+timePickerDialog.show();
+}}}
+

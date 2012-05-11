@@ -1,0 +1,30 @@
+= AccessPointState =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.net.wifi.WifiInfo;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.net.wifi.SupplicantState;
+import android.net.NetworkInfo.DetailedState;
+}}}
+
+== 主要功能和元素描述 ==
+- `AccessPointState`是自定义的类，描述连接点的状态。该结构主要用于存储Wifi连接点的各种信息，并为`WifiController`提供参数
+- 提供各种方法读取和存储元素点信息
+- 通过`ScanResult`获取相关信息，并通过该部分信息生成`WifiConfiguration`
+
+=== AccessPointState ===
+| 标识      | 描述           |
+|-----------+----------------|
+| networkId | Wifi连接网络ID |
+| ssid      | ssid名         |
+| bssid     | bssid名        |
+| security  | 安全认证标识   |
+| frequency | 频率           |
+| password  | 密码           |
+| sign      | 信号强度       |
+| linkspeed | 连接速度       |
+

@@ -1,0 +1,323 @@
+= Android工具集 =
+
+%toc
+
+== 自定义adb驱动 ==
+- 查看特殊adb驱动的ID，如以下命令获得的ID为17ef
+
+{{{class="brush:bash"
+$ lsusb
+Bus 001 Device 014: ID 17ef:7423 Lenovo 
+}}}
+
+- 添加/etc/udev/rules.d/51-android.rules文件，并添加以下内容：
+
+{{{class="brush:bash"
+# 17ef为vendorID，使用lsusb查看
+SUBSYSTEM=="usb",SYSFS{idVendor}=="17ef",MODE="0666"
+}}}
+
+- 添加~/.android/adb_usb.ini，并添加以下内容：
+
+{{{class="brush:text"
+# 17ef为vendorID
+17ef
+}}}
+
+== 随机输入测试 ==
+{{{class="brush: bash"
+# 运行monkey程序，进行随机输入测试
+$ adb shell monkey -v -p com.android.email 500
+}}}
+
+== 查看log及重定向 ==
+{{{class="brush:bash"
+# 将printf函数重定向到Android log系统
+# 使用logwrapper，将需要运行的应用作为参数传递给它
+$ /system/bin/logwrapper /sbin/adbd
+
+# 查看Android的log信息
+$ adb logcat
+
+# 查看标准输出和错误输出
+$ adb shell stop
+$ adb shell setprop log.redirect-stdio true
+$ adb shell start
+
+$ adb shell stop
+$ adb shell setprop libc.debug.malloc 10
+$ adb shell start
+
+# 打开JNI检查
+$ adb shell setprop dalvik.vm.checkjni true
+# give CheckJNI "forcecopy" mode a try:
+$ adb shell setprop dalvik.vm.jniopts forcecopy
+
+# view a log buffer containing radio and telephony messages
+$ adb logcat -b radio           # radio, events, main is default
+$ adb logcat -b main            # radio, events, main is default
+$ adb logcat -b system          # radio, events, main is default
+$ adb logcat -b events          # radio, events, main is default
+
+# 根据关键字筛选log信息
+$ adb logcat ActivityManager:I MyApp:D *:S
+}}}
+
+== 包管理和手动运行Activity ==
+{{{class="brush:bash"
+# 包管理工具
+$ usage: pm [list|path|install|uninstall]
+  pm list packages [-f]
+  pm list permission-groups
+  pm list permissions [-g] [-f] [-d] [-u] [GROUP]
+  pm list instrumentation [-f] [TARGET-PACKAGE]
+  pm list features
+  pm path PACKAGE
+  pm install [-l] [-r] [-t] [-i INSTALLER_PACKAGE_NAME] PATH
+  pm uninstall [-k] PACKAGE
+  pm enable PACKAGE_OR_COMPONENT
+  pm disable PACKAGE_OR_COMPONENT
+
+# 发送intent
+$ am start -D <INTENT>
+$ am broadcast <INTENT>
+
+# 启动组件
+$ am instrument <COMPONENT>
+    -r: print raw results (otherwise decode REPORT_KEY_STREAMRESULT)
+    -e <NAME> <VALUE>: set argument <NAME> to <VALUE>
+    -p <FILE>: write profiling data to <FILE>
+    -w: wait for instrumentation to finish before returning
+
+
+# 启动一个应用
+$ am start -a android.intent.action.MAIN -n org.example.test/org.example.test.MyTest
+# 添加数据URL
+$ am start -n org.example.test/org.example.test.MyTest -d file:///a.mp3
+# 添加调试选项
+$ am start -D -a android.intent.action.MAIN -n org.example.test/org.example.test.MyTest
+
+# 开启profile功能
+# start profiling: 
+$ am profile <PROCESS> start <FILE>
+# stop profiling: 
+$ am profile <PROCESS> stop
+
+# 查看某个apk的主activity
+# 进入模拟器的调试工具，通过activity浏览工具查看
+}}}
+
+== 解析Dex文件 ==
+{{{class="brush:bash"
+$ dexdump
+dexdump: [-c] [-d] [-f] [-h] [-i] [-l layout] [-m] [-t tempfile] dexfile...
+    -c : verify checksum and exit
+    -d : disassemble code sections
+    -f : display summary information from file header
+    -h : display file header details
+    -i : ignore checksum failures
+    -l : output layout, either 'plain' or 'xml'
+    -m : dump register maps (and nothing else)
+    -t : temp file name (defaults to /sdcard/dex-temp-*)
+}}}
+
+== H.264解码器 ==
+{{{class="brush:bash"
+$ decoder
+Usage: decoder [-Nn] [-Ooutfile] [-P] [-U] [-C] [-R] [-T] file.h264
+    -Nn forces decoding to stop after n pictures
+    -Ooutfile write output to "outfile" (default out_wxxxhyyy.yuv)
+    -Onone does not write output
+    -P packet-by-packet mode
+    -U NAL unit stream mode
+    -C display cropped image (default decoded image)
+    -R disable DPB output reordering
+    -T to print tag name and exit
+}}}
+
+== 管理电源，WIFI，移动数据连接服务 ==
+{{{class="brush:bash"
+# svc可用来管理wifi,power和移动数据
+$ svc -h
+Available commands:
+    help     Show information about the subcommands
+    power    Control the power manager
+    data     Control mobile data connectivity
+    wifi     Control the Wi-Fi manager
+
+# 打开或者关闭wifi
+$ svc wifi
+usage: svc wifi [enable|disable]
+
+# 打开或关闭电源
+$ svc power
+usage: svc power stayon [true|false|usb|ac]
+    -true：电源一直保持stay on的状态
+    -usb：插上usb才保持stay on
+    -ac：充电的时候
+
+# 打开或关闭移动数据连接
+$ svc data
+usage: svc data [enable|disable]
+         Turn mobile data on or off.
+}}}
+
+== 显示开机动画 ==
+{{{class="brush:bash"
+$ adb shell bootanimation
+}}}
+
+== 打印系统信息 ==
+{{{class="brush:bash"
+# 打印所有系统配置信息，包括CPU，内存等
+$ adb shell dumpstate > dumpstate.log
+
+# 打印所有系统运行服务和内存分布状态
+$ adb shell dumpsys > dumpsys.log
+$ adb shell dumpsys meminfo > meminfo.log
+$ adb shell dumpsys cpuinfo > cpuinfo.log
+$ adb shell dumpsys account > account.log
+$ adb shell dumpsys activity > activity.log
+$ adb shell dumpsys window > window.log
+$ adb shell dumpsys wifi > wifi.log
+
+# 打印相关库信息
+$ adb shell librank > librank.log
+
+# 进程相关的内存信息
+$ adb shell procmem pid > procmem.log
+
+# proc相关信息
+$ adb shell procrank > procrank.log
+}}}
+
+== 查看全局变量定义 ==
+{{{class="brush:bash"
+$ adb shell nameref
+}}}
+
+== 显示进程的内存映射 ==
+{{{class="brush:bash"
+$ adb shell showmap pid
+}}}
+
+== 获取系统属性和监测系统属性 ==
+=== 查看属性信息 ===
+{{{class="brush:bash"
+$ adb shell getprop
+}}}
+
+=== 监测属性信息 ===
+{{{class="brush:bash"
+# 当属性被修改后会打印出相关的信息
+$ adb shell watchprops
+}}}
+
+== 清除数据 ==
+{{{class="brush:bash"
+# wipe表示清除模拟器或者真机上的数据,比如你的模拟器用了很久,装了很多软件就可以用这个来清除
+# system表示清除/system下的数据
+# data表示清除/data下的数据
+$ wipe <system|data|all>
+}}}
+
+== emulator ==
+{{{class="brush: bash"
+# 运行模拟器
+$ emulator -system system.img -data userdata.img -ramdisk ramdisk.img @my_avd
+$ emulator @my_avd
+
+# 运行模拟器，并显示Linux kernel启动时的message
+$ emulator -show-kernel @my_avd
+
+# enable root shell on current terminal
+$ emulator -shell @my_avd
+
+# -wipe-data delete the emulator's user-data partition
+emulator -wipe-data @my_avd
+
+# on windows
+emulator -partition-size 256 -system D:\rom\system.img -data d:\rom\userdata.img -kernel d:\rom\kernel-qemu -ramdisk d:\rom\ramdisk.img -sdcard D:\android\sdk\1.6\sd64.img -cpu-delay 0 -scale 160dpi -dpi-device 240 -skin WVGA800 -skindir D:\android\sdk\1.6\platforms\android-2.1\skins -memory 512 -prop dalvik.vm.heapsize=32m
+}}}
+
+=== 参数解析 ===
+{{{class="brush: bash"
+$ emulator -help
+    -partition-size 可以设置分区的大小，是system和data两个分区，一起设置
+    -cpu-delay 可以模拟速度慢的cpu
+    -scale 可以缩小或扩大其显示dpi
+    -dpi-device 可以设置hdpi或者mdpi等
+    -skin必须配合-skindir使用
+    -memory是设置内存大小，缺省是96m，如果不设置大一些，大家都很看到不停地kill and start
+    -prop dalvik.vm.heapsize=32m 这个是非常重要的设置，在我们的hdpi下，不设置成24m+就会系统无法启动
+}}}
+
+== trace ==
+=== 通过代码开启trace功能 ===
+- 在onCreate()中添加如下代码将信息保存在"/sdcard/calc.trace"
+
+{{{class="brush:java"
+Debug.startMethodTracing("calc");
+}}}
+
+- 在onDestroy()中添加如下代码停止dump信息
+
+{{{class="brush:java"
+Debug.stopMethodTracing();
+}}}
+
+=== 通过工具开启trace功能 ===
+
+{{{class="brush:bash"
+# 按F9启动/停止trace记录，在~/.android/avd/my_avd.avd/traces/目录下可以找到trace文件
+$ emulator -trace trace_log
+# 进入android源代码目录
+$ cd $ANDROID_HOME
+$ source build/envsetup.sh
+# 运行envsetup.sh中的tracedmdump函数
+# 会在~/.android/avd/my_avd.avd/traces /trace_log下产生dmtrace和dmtrace.html文件
+$ tracedmdump ~/.android/avd/my_avd.avd/traces/trace_log
+}}}
+
+=== 导出并查看trace信息 ===
+
+{{{class="brush: bash"
+$ adb pull /sdcard/calc.trace /tmp
+$ traceview /tmp/calc
+}}}
+
+== apk管理 ==
+{{{class="brush: bash"
+# 导入apk
+$ adb install xxx/xxx.apk
+$ adb push xxx/xxx.apk /data/app
+
+# 删除apk
+$ adb uninstall xxx.apk
+$ adb shell rm xxx/xxx.apk
+
+# 将apk/目录下的所有文件打包成apk
+$ apkbuilder jfo.apk -rf apk/
+# 或者使用aapt
+$ aapt p -F jfo2.apk apk/
+
+# 打印APK包信息
+$ aapt dump badging jfo.apk
+
+# 添加文件到apk
+$ aapt a jfo.apk libcharset.so
+# 从apk删除文件
+$ aapt r jfo.apk libcharset.so
+}}}
+
+== 查看应用程序的视图布局 ==
+{{{class="brush: bash"
+# provides a visual representation of the layout's View hierarchy (the Layout View)
+$ hierarchyviewer
+}}}
+
+== astyle ==
+{{{class="brush: bash"
+# 代码格式化工具 astyle
+find ./ -name *.java -exec astyle --style=ansi {} \;
+}}}

@@ -1,0 +1,39 @@
+1、建立表
+create table table_name(field1, field2, field3, ...);
+
+2、建立索引
+create index index_name on table_name(field_to_be_indexed);
+
+3、插入内容
+insert into table_name values(data1, data2, data3, ...);
+
+4、查询
+select columns from table_name where expression_r_r;
+select title, year from film where starring like 'Jodie%' and year >= 1985 order by year desc limit 10;
+select count(*) from film where year >= 1985;
+select title, year from film order by year desc limit 10;
+select * from film order by year desc limit 10;
+
+5、修改和删除
+update film set starring='Jodie Foster' where starring='Jodee Foster';
+delete from film where year < 1970;
+
+6、其他sqlite的特别用法
+1),sqlite可以在shell底下直接执行命令：
+sqlite3 film.db "select * from film;"
+
+2),输出 HTML 表格：
+sqlite3 -html film.db "select * from film;"
+
+3),将数据库「倒出来」：
+sqlite3 film.db ".dump" > output.sql
+
+4),利用输出的资料，建立一个一模一样的数据库（加上以上指令，就是标准的SQL数据库备份了）：
+sqlite3 film.db < output.sql
+
+5),在大量插入资料时，你可能会需要先打这个指令：
+begin;
+
+6),插入完资料后要记得打这个指令，资料才会写进数据库中：
+commit;
+

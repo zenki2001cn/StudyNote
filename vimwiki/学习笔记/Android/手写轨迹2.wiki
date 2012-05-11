@@ -1,0 +1,134 @@
+= 手写轨迹2 =
+
+== 代码示例 ==
+{{{class="brush:java"
+public class CommentEngine {
+    static private final String TAG = "CommentEngine";
+
+    private View mContext;
+    private Paint paint;
+    private Bitmap bmp;
+    private boolean isModifyable = true;
+    private int paintStrokeWidth = 2;
+    private float mCurveEndX;
+    private float mCurveEndY;
+    private int mInvalidateExtraBorder = 10;
+    private float mX, mY;
+    private final Rect mInvalidRect = new Rect();
+    private final Path mPath = new Path();
+
+    public interface ICommentCall {
+        public void action();
+    }
+
+    protected CommentEngine(View context) {
+        mContext = context;
+        
+        init();
+    }
+
+    public void init() {
+        initPaint();
+    }
+
+    public void free() {
+        
+    }
+
+    private void initPaint() {
+        paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(paintStrokeWidth);
+    }
+
+    public void setBackgroundBitmap(Bitmap bkbmp)
+    {
+        bmp = bkbmp;
+    }
+
+    public void draw(Canvas canvas) {
+    //		canvas.drawColor(Color.WHITE);
+        if (bmp != null)
+            canvas.drawBitmap(bmp, new Matrix(), paint);
+        
+        canvas.drawPath(mPath, paint);
+    }
+
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+
+        Point point = new Point((int)event.getX(), (int)event.getY());
+        
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                Log.d(TAG, "Action down x = " + x + " y = " + y);
+                mX = point.x;
+                mY = point.y;
+                mCurveEndX = mX;
+                mCurveEndY = mY;
+                mPath.moveTo(mX, mY);
+                if (mContext != null) {
+                    mContext.invalidate();
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                Log.d(TAG, "Action move x = " + x + " y = " + y);
+                Rect rect = touchMove(event);
+                if (mContext != null) {
+                    mContext.invalidate(rect);
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                Log.d(TAG, "Action up x = " + x + " y = " + y);
+                if (mContext != null) {
+                    mContext.invalidate();
+                }
+                break;
+        }
+        
+        return true;
+    }
+
+    private Rect touchMove(MotionEvent event) {
+        Rect areaToRefresh = null;
+
+        final float x = event.getX();
+        final float y = event.getY();
+
+        final float previousX = mX;
+        final float previousY = mY;
+
+        final float dx = Math.abs(x - previousX);
+        final float dy = Math.abs(y - previousY);
+
+        areaToRefresh = mInvalidRect;
+
+        // start with the curve end
+        final int border = mInvalidateExtraBorder;
+        areaToRefresh.set((int) mCurveEndX - border, (int) mCurveEndY - border,
+                (int) mCurveEndX + border, (int) mCurveEndY + border);
+
+        float cX = mCurveEndX = (x + previousX) / 2;
+        float cY = mCurveEndY = (y + previousY) / 2;
+
+        mPath.quadTo(previousX, previousY, cX, cY);
+
+        // union with the control point of the new curve
+        areaToRefresh.union((int) previousX - border, (int) previousY - border,
+                (int) previousX + border, (int) previousY + border);
+
+        // union with the end point of the new curve
+        areaToRefresh.union((int) cX - border, (int) cY - border,
+                (int) cX + border, (int) cY + border);
+
+        mX = x;
+        mY = y;
+
+        return areaToRefresh;
+    }
+    }
+}}}
+

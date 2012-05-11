@@ -1,0 +1,181 @@
+= Android模拟器示例 =
+
+%toc
+
+== Android模擬器命令列啟動模式 ==
+{{{class="brush:bash"
+# 在android-sdk-windows-1.1\tools執行emulator以執行模擬器
+# 加上-skin參數，指定顯示模式為HVGA-L，則可轉為橫向
+$ emulator -skin HVGA-L 480*320，水平顯示
+$ emulator -skin HVGA-L 320*480，垂直顯示，模擬器預設模式
+$ emulator -skin HVGA-L 320*240，水平顯示
+$ emulator -skin HVGA-L 240*320，垂直顯示
+}}}
+
+== 使用mksdcard指令模擬1GB的記憶卡 ==
+{{{class="brush:bash"
+$ mksdcard 1024M sacard.img
+}}}
+
+== 模擬插入SD卡的模擬器 ==
+{{{class="brush:bash"
+$ emulator -sdcard sdcard.img
+}}}
+
+== 使用adb+push上載檔案到SD記憶卡 ==
+{{{class="brush:bash"
+#複製檔案到/sdcard目錄下
+$ adb push 001.jpg /sdcard 
+
+#複製picture照片目錄到/sdcard目錄下
+$ adb push pictures /sdcard 
+
+#複製mp3音樂目錄到/sdcard目錄下
+$ adb push mp3 /sdcard 
+
+#Android模擬器啟動命令列模式
+$ adb shell 
+$ cd /sdcard 
+$ ls 
+}}}
+
+== 使用adb+pull從SD記憶卡下載檔案 ==
+{{{class="brush:bash"
+#下載/sdcard目錄下的檔案
+$ adb pull /sdcard/001.jpg . 
+
+#下載sdcard目錄下的pictures目錄
+$ adb pull /sdcard/pictures . 
+}}}
+
+== 刪除SD卡裡面的檔案 ==
+{{{class="brush:bash"
+$ adb shell
+$ cd /sdcard
+$ rm 001.jpg 
+$ rm -r * 
+}}}
+
+== Android模擬器影片播放方法 ==
+{{{class="brush:bash"
+#製作一個影像檔的SD記憶卡
+$ mksdcard 4096M video.img 
+
+#從電腦複製影像檔到SD卡中
+$ adb push video.avi /sdcard 
+
+#啟動模擬器並載入SD卡
+$ emulator -sdcard video.img 
+
+#下載免費的影片播放軟體，ex: Meridian VideoPlayer iiivpa.apk
+#http://sites.google.com/site/eternalsandbox/Home/meridian-video-player
+#接下來就可以用裝上去的player播放.mp4、3gp與.wmv三種檔案格式
+$ adb install iiivpa.apk 安裝Meridian Video Player
+}}}
+
+== 安裝APK應用程式 ==
+{{{class="brush:bash"
+#安裝 filename.apk
+$ adb install filename.apk 
+
+#保留已設定資料，重新安裝filename.apk
+$ adb install -r filename.apk 
+
+#指定安裝APK套件在5554的Android模擬器中
+$ adb -s emulator-5554 install filename.apk 
+}}}
+
+== 移除APK應用程式 ==
+{{{class="brush:bash"
+#移除程式時，保留資料
+$ adb uninstall package
+$ adb uninstall -k package 
+
+#此package名稱不是安裝APK套裝時的檔名或顯示在模擬器中的應用程式名稱
+#可以先到/data/data或data/app目錄下，查詢想移除的package名稱
+$ adb shell
+#查詢 Package 名稱
+$ ls /data/data 
+$ exit
+
+#移除查詢到的Package
+$ adb uninstall package 
+}}}
+
+== ADB系統除錯與連結工具 ==
+{{{class="brush:bash"
+#顯示目前有多少個模擬器正在執行
+$ adb devices 
+
+#指定模擬器來操作
+$ adb -s <serialNumber><command> 
+$ adb -s emulator-5554 install email.apk
+
+#監控模擬器運作紀錄，以Ctrl+c離開監控模式
+$ adb logcat 
+
+#產生adb除錯報告
+$ adb bugreport 
+
+#獲得adb伺服器運作狀態
+$ adb get-state 
+
+#啟動adb伺服器
+$ adb start-server 
+
+#關掉adb伺服器
+$ adb kill-server 
+
+#更改模擬器網路TCP通訊埠
+$ adb forward tcp:6100 tcp:7100 
+
+#顯示Android上所有正在執行的行程
+$ adb shell ps -x 
+
+#顯示adb版本
+$ adb version 
+
+#顯示adb指令參數
+$ adb help 
+}}}
+
+== emulator命令列啟動參數 ==
+{{{class="brush:bash"
+#指定時區
+$ emulator -timezone Asia/Taipei 
+
+#省略開機小機器人動畫畫面
+$ emulator -no-boo-anim 
+
+#調整模擬器視窗大小
+$ emulator -scale auto 
+$ emulator -scale factor factor: 0.1-3.0
+
+#更改模擬器的解析度，default為 165dpi
+$ emulator -dpi-device 300 
+
+#更改模擬器顯示模式
+$ emulator -skin <skinID> 
+
+#顯示鍵盤快速鍵說明
+$ emulator -help-keys 
+
+#相當於adb shell功能
+$ emulator -shell 
+
+#使/data目錄使用data.img的檔案空間
+$ emulator -data data.img 
+
+#使/sdcard目錄使用sdcard.img的檔案空間
+$ emulator -sdcard sdcard.img 
+
+#瀏覽器暫存檔儲存空間
+$ emulator -cache cache.img 
+
+#使模擬器恢復到原廠設定
+$ emulator -wipe-data 
+
+#顯示emulator指令參數
+$ emulator -help 
+}}}
+

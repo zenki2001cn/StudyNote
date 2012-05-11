@@ -1,0 +1,44 @@
+= 电源管理 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// 电源管理类
+frameworks\base\core\java\android\os\PowerManager.java
+
+// 电源管理的服务类
+frameworks\base\services\java\com\android\server\PowerManagerService.java
+
+// 
+frameworks\base\core\java\android\os\Power.java
+
+// 
+frameworks\base\core\jni\android_os_power.cpp
+
+// 
+hardware\libhardware\power\power.c
+}}}
+
+== 系统信息文件 ==
+{{{class="brush:text"
+提供给Android Framework层的proc文件如下:
+
+// 申请partial wake lock
+/sys/android_power/acquire_partial_wake_lock
+
+// 申请full wake lock
+/sys/android_power/acquire_full_wake_lock
+
+// 释放相应的wake lock
+/sys/android_power/release_wake_lock
+
+// 请求改变系统状态,进standby和回到wakeup两种状态
+/sys/android_power/request_state
+
+// 指示当前系统的状态
+/sys/android_power/state
+}}}
+
+== 相关类分析 ==
+

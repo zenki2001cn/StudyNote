@@ -1,0 +1,126 @@
+= 本地Service =
+
+== Binding Service ==
+
+=== client端 ===
+
+- 需要实现ServiceConnection接口的两个方法：`onServiceConnected`和`onServiceDisconnected`，用来监控Service的状态，该方法通过IBinder参数获取服务端方法。
+- 通过bindService进行绑定
+- 通过unbindService解除绑定
+
+例程源码(JAVA) --- ServiceConnection
+{{{class="brush:java"
+private ILocalService mBoundService;
+
+private ServiceConnection mConnection = new ServiceConnection() {
+    public void onServiceConnected(ComponentName className, IBinder service) {
+        // 当与Service建立连接时，会调用此方法
+        mBoundService = (ILocalService) service;
+    }
+
+    public void onServiceDisconnected(ComponentName className) {
+        // 当与连接断开时，会调用此方法
+        mBoundService = null;
+    }
+};
+}}}
+
+例程源码(JAVA) --- bindService和unbindService
+{{{class="brush:java"
+bindService(new Intent(LocalServiceBinding.this, 
+            LocalService.class), mConnection, Context.BIND_AUTO_CREATE);
+
+unbindService(mConnection);
+}}}
+
+=== Service端 ===
+
+- 从Service类派生对象，实现onCreate，onDestroy和onBind方法。
+- 从Binder类派生对象，该类可以实现一个自定义的接口，用户可以在这里实现接口的方法，之后客户端通过该接口调用该方法。
+- onCreate在启动Service时调用。
+- onDestroy在销毁Service时调用。
+- onBind在onCreate之后调用，将会返回给客户端一个IBinder接口，客户端通过该接口通信。
+
+例程源码(JAVA) --- 自定义接口
+{{{class="brush:java"
+interface ILocalService {
+    int getCount();
+}
+}}}
+例程源码(JAVA) --- Service
+{{{class="brush:java"
+private NotificationManager mNM;
+
+private LocalBinder mBinder = new LocalBinder();
+
+// 派生Binder类
+public class LocalBinder extends Binder implements ILocalService {
+    // 实现接口的方法
+    int getCount() {
+        return 100;
+    }
+}
+
+@Override
+public void onCreate() {
+    // do some thing
+}
+
+@Override
+public void onDestroy() {
+    // do some thing
+}
+
+@Override
+public IBinder onBind(Intent intent) {
+    // 返回Binder对象
+    return mBinder;
+}
+
+@Override
+public boolean onUnbind(Intent intent) {
+    return true;
+}
+}}}
+
+== Start Service ==
+=== client端 ===
+
+- startService用来启动一个Service
+- stopService用来停止一个Service
+
+例程源码(JAVA)
+{{{class="brush:java"
+startService(new Intent(LocalServiceController.this, LocalService.class));
+
+stopService(new Intent(LocalServiceController.this, LocalService.class));
+}}}
+
+=== Service端 ===
+
+- 旧方法`onStart`和新方法`onStartCommand`将在每次执行startService时调用，而onCreate只调用一次
+- 参见Binding Service
+
+例程源码(JAVA)
+{{{class="brush:java"
+@Override
+public void onStart(Intent intent, int startId) {
+    handleCommand(intent);
+}
+
+@Override
+public int onStartCommand(Intent intent, int flags, int startId) {
+    handleCommand(intent);
+    // We want this service to continue running until it is explicitly
+    // stopped, so return sticky.
+    return START_STICKY;
+}
+}}}
+
+== Manifest ==
+- 在xml中添加Service服务
+
+例程源码(XML)
+{{{class="brush:xml"
+<service android:name=".LocalService" />
+}}}

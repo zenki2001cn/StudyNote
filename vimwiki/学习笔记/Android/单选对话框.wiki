@@ -1,0 +1,61 @@
+= 单选对话框 =
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class AlertDialogSamples extends Activity {
+
+    private static final int DIALOG_SINGLE_CHOICE = 5;
+
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        switch (id) {
+        case DIALOG_SINGLE_CHOICE:
+            return new AlertDialog.Builder(AlertDialogSamples.this)
+                .setIcon(R.drawable.alert_dialog_icon)
+                .setTitle(R.string.alert_dialog_single_choice)
+                .setSingleChoiceItems(R.array.select_dialog_items2, 0, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // do something
+                    }
+                })
+                .setPositiveButton(R.string.alert_dialog_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // do something
+                    }
+                })
+                .setNegativeButton(R.string.alert_dialog_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // do something
+                    }
+                })
+               .create();
+       
+        default :
+            return null;
+    }
+    
+    @Override
+	protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.alert_dialog);
+        
+        /* Display a radio button group */
+        Button radioButton = (Button) findViewById(R.id.radio_button);
+        radioButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog(DIALOG_SINGLE_CHOICE);
+            }
+        });
+    }
+}}}
+
+例程源码(XML) --- R.array.select_dialog_items2
+{{{class="brush:xml"
+<string-array name="select_dialog_items2">
+    <item>Map</item>
+    <item>Satellite</item>
+    <item>Traffic</item>
+    <item>Street view</item>
+</string-array>
+}}}

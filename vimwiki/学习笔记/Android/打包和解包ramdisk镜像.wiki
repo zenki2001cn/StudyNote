@@ -1,0 +1,43 @@
+= 打包和解包ramdisk.img =
+
+%toc
+
+== 解包过程 ==
+=== 1.创建tmp目录 ===
+{{{class="brush:bash"
+$ mkdir tmp
+}}}
+
+=== 2.重命名ramdisk.img ===
+{{{class="brush:bash"
+$ mv ramdisk.img ramdisk.cpio.gz
+}}}
+
+=== 3.gzip解压 ===
+{{{class="brush:bash"
+$ gzip -d ramdisk.cpio.gz
+# 完成后会在当前目录看见ramdisk.cpio
+}}}
+
+=== 4.cpio解压 ===
+{{{class="brush:bash"
+$ mv ramdisk.cpio tmp
+$ cd tmp
+$ cpio -i -F ramdisk.cpio
+}}}
+
+== 打包过程 ==
+{{{class="brush:bash"
+# 进入tmp目录，tmp目录为需要打包的root文件夹
+$ cd tmp
+$ find . | cpio -o -H newc | gzip > ../ramdisk.img
+# 完成后在tmp目录上一级目录生成文件ramdisk.img
+}}}
+
+=== 制作uboot启动的ramdisk ===
+{{{class="brush:bash"
+# 进入tmp目录，tmp目录为需要打包的root文件夹
+$ cd tmp
+# 如果没有mkimage，需要安装：apt-get install uboot-mkimage
+$ mkimage -A arm -O linux -T ramdisk -C none -a 0x80800000 -e 0x80800000 -n 'ramdisk-uboot' -d ../ramdisk.img ../ramdisk-uboot.img
+}}}

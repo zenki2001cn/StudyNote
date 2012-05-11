@@ -1,0 +1,71 @@
+= 编写Android测试程序 =
+
+{{{class="brush:java"
+import android.test.ActivityInstrumentationTestCase;
+}}}
+
+== 基本流程 ==
+- 生成项目，在项目的根目录新建文件夹tests
+- 在tests文件夹中生成测试工程，使用`android create test-project -m .. -p . -n unittest`
+- 通过继承几个测试类的子类，实现自定义类的测试用例，测试用例的方法以`test`开头，返回值为`public void`，并且需要将上一层源代码拷贝到测试工程目录中
+- 编译测试工程文件，并安装到模拟器中，可以使用`adb shell pm list packages`查看是否加入了测试程序apk
+- `adb shell am instrument -w org.example.test.tests/android.test.InstrumentationTestRunner`命令来运行测试程序
+
+== 示例代码 ==
+
+=== Manifest配置 ===
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<!!-- 包名中加入tests以和源工程的包区别开 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="org.example.test.tests"
+          android:versionCode="1"
+          android:versionName="1.0">
+    <!!-- 加入必须的库 -->
+    <application>
+        <uses-library android:name="android.test.runner" />
+    </application>
+    <!!-- name表示执行的测试类，targetPackage表示测试的目标类 -->
+    <instrumentation android:name="android.test.InstrumentationTestRunner"
+                     android:targetPackage="org.example.test"
+                     android:label="Tests for MyTest"/>
+</manifest>
+}}}
+
+=== 测试代码 ===
+{{{class="brush:java"
+public class MyTestTest extends ActivityInstrumentationTestCase<MyTest> {
+
+    private MyTest activity = null;
+
+    // 构造方法
+    public MyTestTest() {
+        super("org.example.test", MyTest.class);
+    }
+
+    // 初始化方法
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        // 获取Activity
+        activity = getActivity();
+    }
+
+    // 测试用例一
+    public void testIsFinished() {
+        assertTrue("activity is finished", a.isFinishing());
+    }
+
+    // 测试用例二
+    public void testIsNotFinished() {
+        assertEquals(false, !a.isFinishing());
+    }
+}
+}}}
+
+== 运行测试 ==
+{{{class="brush:bash"
+# -e class 自定义需要测试的类
+# -w 包 / android.test.InstrumentationTestRunner类或继承类名
+adb shell am instrument -e class org.example.test.MyTestTest -w org.example.test.tests/android.test.InstrumentationTestRunner
+}}}

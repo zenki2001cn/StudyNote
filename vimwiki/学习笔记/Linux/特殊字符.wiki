@@ -1,0 +1,89 @@
+= 特殊字符 =
+
+%toc
+
+== 特殊字符 ==
+=== # ===
+描述 :: 注释,行首以#开头为注释(#!是个例外).标准的引用和转义字符("\")可以用来转义#。
+示例 ::
+{{{class="brush:bash"
+echo "The # here does not begin a comment."
+echo 'The # here does not begin a comment.'
+echo The \# here does not begin a comment.
+echo The # 这里开始一个注释
+echo ${PATH#*:}         # 参数替换,不是一个注释
+echo $(( 2#101011 ))    # 数制转换,不是一个注释
+}}}
+
+=== ; ===
+描述 :: 命令分隔符,可以用来在一行中来写多个命令。
+示例 ::
+{{{class="brush:bash"
+echo hello; echo there
+
+if [ -x "$filename" ]; then     # 注意:"if"和"then"需要分隔
+    echo "File $filename exists."; cp $filename $filename.bak
+else
+    echo "File $filename not found."; touch $filename
+fi; 
+
+echo "File test complete."
+}}}
+
+=== : ===
+描述 :: 空命令,它的返回值为0,就是shell返回的true。
+示例 ::
+{{{class="brush:bash"
+:
+echo $?   #0
+}}}
+
+=== $@ ===
+描述 :: 表示以空格隔开的参数的列表。
+示例 ::
+
+=== $? ===
+描述 :: 退出状态变量.$?保存一个命令/一个函数或者脚本本身的退出状态。
+
+=== $$ ===
+描述 :: 进程 ID 变量.这个$$变量保存运行脚本进程 ID。
+
+=== $! ===
+描述 :: 在后台运行的最后的工作的PID(进程ID)。
+
+=== $_ ===
+描述 :: 保存之前执行的命令的最后一个参数。
+
+=== () ===
+描述 :: 表示一个命令组。在()中的命令列表,将作为一个子shell来运行。在()中的变量,由于是在子shell 中,所以对于脚本剩下的部分是不可用的。
+示例 ::
+{{{class="brush:bash"
+a=123
+(a=321;)        # 在圆括号中a变量,更像是一个局部变量
+
+echo "a = $a"   # a = 123
+}}}
+
+=== {} ===
+描述 :: 代码块，又被称为内部组。事实上，这个结构创建了一个匿名的函数。但是与函数不同的是，在其中声明的变量，对于脚本其他部分的代码来说还是可见的。
+示例 ::
+{{{class="brush:bash"
+a=123
+{ a=321; }
+echo "a = $a"   # a = 321(说明在代码块中对变量a所作的修改,影响了外边的变量a)
+}}}
+
+=== {}\; ===
+描述 :: 表示路径名，一般都在find命令中使用。这不是一个shell内建命令。
+
+=== [] ===
+描述 :: test语句。test的表达式将在[]中。
+
+=== ~ ===
+描述 :: home目录，相当于$HOME变量。
+
+=== ~+ ===
+描述 :: 当前工作目录，相当于$PWD变量。
+
+=== ~- ===
+描述 :: 之前的工作目录，相当于$OLDPWD内部变量。

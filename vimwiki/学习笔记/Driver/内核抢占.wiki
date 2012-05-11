@@ -1,0 +1,55 @@
+= 内核抢占 =
+
+%toc
+
+== 2.6内核的抢占特性 ==
+- 抢占内核的主要特点是：一个在内核态运行的进程，可能在执行内核函数期间被另一个进程取代。
+- Linux 2.6内核通过current_thread_info()宏所引用的thread_info描述符的preempt_count字段大于0时，就禁止内核抢占。禁止抢占内核的情况如下：
+    - 内核正在执行中断服务例程。
+    - 可延迟函数被执行（当内核正在执行软中断和tasklet时）。
+    - 通过把抢占计数器设置为正值显式地禁用内核抢占。
+- 发生抢占内核的情况如下：
+    - 当内核正在执行异常处理程序（尤其是系统调用），而且内核抢占没有被显式地禁用。
+    - 本地CPU必须打开本地中断。
+
+=== thread_info ===
+{{{class="brush:c"
+struct thread_info {
+	struct pcb_struct	pcb;		    /* palcode state */
+
+	struct task_struct	*task;		    /* main task structure */
+	unsigned int		flags;		    /* low level flags */
+	unsigned int		ieee_state;	    /* see fpu.h */
+
+	struct exec_domain	*exec_domain;	/* execution domain */
+	mm_segment_t		addr_limit;	    /* thread address space */
+	unsigned		    cpu;		    /* current CPU */
+	int			        preempt_count;  /* 0 => preemptable, <0 => BUG */
+
+	int bpt_nsaved;
+	unsigned long bpt_addr[2];		    /* breakpoint handling  */
+	unsigned int bpt_insn[2];
+
+	struct restart_block	restart_block;
+};
+}}}
+
+=== preempt_count字段描述 ===
+| 位    | 描述                                                                                   |
+|-------+----------------------------------------------------------------------------------------|
+| 0~7   | 抢占计数器，最大255。表示禁用本地内核抢占的次数，值等于0表示允许内核抢占。             |
+| 8~15  | 软中断计数器，最大255。表示可延迟函数被禁用的次数，值等于0表示可延迟函数处于激活状态。 |
+| 16~27 | 硬中断计数器，最大4096。表示本地CPU上中断处理程序的嵌套数。                            |
+| 28    | PREEMPT_ACTIVE标志                                                                     |
+
+=== 处理内核抢占的宏 ===
+| 宏                          | 描述                                                                                      |
+|-----------------------------+-------------------------------------------------------------------------------------------|
+| preempt_count()             | 获取thread_info中的preempt_count字段                                                      |
+| preempt_disable()           | 使抢占计数器加1                                                                           |
+| preempt_enable_no_resched() | 使抢占计数器减1                                                                           |
+| preempt_enable()            | 使抢占计数器减1，并在thread_info描述符的TIF_NEED_RESCHED标志为1时，调用preempt_schedule() |
+| get_cpu()                   | 与preempt_disable()相似，并返回cpu数量                                                    |
+| put_cpu()                   | 与preempt_enable()相同                                                                    |
+| put_cpu_no_resched()        | 与preempt_enable_no_resched()相同                                                         |
+ 

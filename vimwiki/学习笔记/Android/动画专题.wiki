@@ -1,0 +1,30 @@
+= 动画专题 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.view.animation.AlphaAnimation;
+import android.view.animation.ScaleAnimation;
+import android.view.animation.TranslateAnimation;
+import android.view.animation.RotateAnimation;
+
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.AnimationUtils;
+
+import android.graphics.drawable.AnimationDrawable;
+}}}
+
+== 动画类型 ==
+| XML标签   | JAVA类             | 模式         | 描述                   |
+|-----------+--------------------+--------------+------------------------|
+| alpha     | AlphaAnimation     | 渐变效果     | 渐变透明度效果的动画   |
+| scale     | ScaleAnimation     | 渐变效果     | 渐变尺寸伸缩效果的动画 |
+| translate | TranslateAnimation | 画面转动效果 | 画面位置移动效果的动画 |
+| rotate    | RotateAnimation    | 画面转动效果 | 画面旋转效果的动画     |
+
+- [[渐变透明度效果]]
+- [[渐变尺寸效果]]
+- [[画面位置移动效果]]
+- [[画面位置旋转效果]]
+- [[帧动画]]
+

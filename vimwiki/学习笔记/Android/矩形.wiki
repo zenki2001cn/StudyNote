@@ -1,0 +1,31 @@
+= 画矩形 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+}}}
+
+- 矩形的描画，调用Canvas.drawRect()方法。
+ 
+需要设定2个参数，指定了left,top,right,bottom的Rect（RectF）实例，以及指定了颜色的Paint实例
+
+例程源码(Java)
+{{{class="brush:java"
+@Override
+protected void onDraw(Canvas canvas) {
+    Paint paint = new Paint();
+    paint.setColor(Color.argb(255, 255, 255, 255));
+    
+    Rect rect = new Rect(10, 20, 30, 40);
+    canvas.drawRect(rect, paint);
+    
+    RectF rectF = new RectF(40.5f, 20.5f, 60.5f, 40.5f);
+    canvas.drawRect(rectF, paint);
+    
+    paint.setStyle(Style.STROKE);
+    canvas.drawRect(10, 50, 30, 80, paint);
+}
+}}}
+

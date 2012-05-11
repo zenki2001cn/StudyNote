@@ -1,0 +1,176 @@
+= 新IO =
+
+- 新IO的结构采用`通道`和`缓冲器`的概念，通道从缓冲器获取和发送数据
+- 很多流类型都有getChannel()方法，它将会产生一个FileChannel对象，我们可以用来读写ByteBuffer
+ 
+{{{class="brush:text"
+java.nio
+java.nio.channels
+java.nio.channels.spi
+java.nio.charset
+java.nio.charset.spi 
+}}}
+
+== 缓冲器Buffer和底层数据类型ByteBuffer ==
+- Buffer派生类
+ 
+{{{class="brush:text"
+Buffer
+  +-ByteBuffer
+  +-ByteOrder
+  +-CharBuffer
+  +-DoubleBuffer
+  +-FloatBuffer
+  +-IntBuffer
+  +-LongBuffer
+  +-MappedByteBuffer
+  +-ShortBuffer
+}}}
+
+- ByteBuffer的常用方法
+
+{{{class="brush:java"
+static ByteBuffer allocate(int capacity)
+          分配一个新的字节缓冲区。
+abstract CharBuffer asCharBuffer()
+          创建此字节缓冲区的视图，作为 char 缓冲区。
+abstract byte get()
+          相对 get 方法。
+abstract ByteBuffer put(byte b)
+          相对 put 方法。
+static ByteBuffer wrap(byte[] array)
+          将 byte 数组包装到缓冲区中
+boolean hasRemaining()
+          告知在当前位置和限制之间是否有元素。
+int position()
+          返回此缓冲区的位置。
+int capacity()
+          返回此缓冲区的容量。
+Buffer clear()
+          清除此缓冲区。
+Buffer flip()
+          反转此缓冲区。
+Buffer rewind()
+          重绕此缓冲区。
+}}}
+
+- ByteBuffer作为最底层的Buffer，可以映射出不同类型的视图
+
+{{{class="brush:java"
+abstract CharBuffer asCharBuffer()
+          创建此字节缓冲区的视图，作为 char 缓冲区。
+abstract DoubleBuffer asDoubleBuffer()
+          创建此字节缓冲区的视图，作为 double 缓冲区。
+abstract FloatBuffer asFloatBuffer()
+          创建此字节缓冲区的视图，作为 float 缓冲区。
+abstract IntBuffer asIntBuffer()
+          创建此字节缓冲区的视图，作为 int 缓冲区。
+abstract LongBuffer asLongBuffer()
+          创建此字节缓冲区的视图，作为 long 缓冲区。
+abstract ByteBuffer asReadOnlyBuffer()
+          创建共享此缓冲区内容的新的只读字节缓冲区。
+abstract ShortBuffer asShortBuffer()
+          创建此字节缓冲区的视图，作为 short 缓冲区。
+}}}
+
+- ByteBUffer是一个被包装过的“8字节”数组，数据在不同类型的缓冲器中，显示方式也不同
+[pic/buffer_map.png]
+
+= 通道Channels =
+- Channels派生类
+ 
+{{{class="brush:text"
+DatagramChannel
+FileChannel
+FileChannel.MapMode
+FileLock
+Pipe
+Pipe.SinkChannel
+Pipe.SourceChannel
+SelectableChannel
+SelectionKey
+Selector
+ServerSocketChannel
+SocketChannel
+}}}
+
+- FileChannel常用方法
+
+{{{class="brush:java"
+abstract int read(ByteBuffer dst)
+          将字节序列从此通道读入给定的缓冲区。
+abstract long size()
+          返回此通道的文件的当前大小。
+abstract long transferFrom(ReadableByteChannel src, long position, long count)
+          将字节从给定的可读取字节通道传输到此通道的文件中。
+abstract long transferTo(long position, long count, WritableByteChannel target)
+          将字节从此通道的文件传输到给定的可写入字节通道。
+abstract int write(ByteBuffer src)
+          将字节序列从给定的缓冲区写入此通道。
+abstract long position()
+          返回此通道的文件位置。          
+}}}
+
+== 字节顺序 ==
+- 当存储大于一个字节的数据时，需要考虑endians
+- 使用带参数ByteOrder.BIG_ENDIAN和ByteOrder.LITTLE_ENDIAN的order()方法改变ByteBuffer的字节顺序
+- 通常默认为BIG_ENDIAN，即下图以(00000000 01100001)的形式读取
+- LITTLE_ENDIAN以(01100001 00000000)的形式读取
+
+[pic/endians.png]
+
+{{{class="brush:java"
+ByteBuffer bb = ByteBuffer.wrap(new byte[12]);
+bb.asCharBuffer().put("abcdef");
+
+bb.order(ByteOrder.BIG_ENDIAN);
+bb.order(ByteOrder.LITTLE_ENDIAN);
+}}}
+
+== 基于缓冲器的处理流程 ==
+- ByteBuffer是数据进出缓冲器的唯一方式
+
+[pic/nio_handle.png]
+
+== 文件映射 ==
+- 通过channel的map方法，可以将文件映射为一个很大的数组
+- MappedByteBuffer继承自ByteBuffer，它可以使用所有ByteBuffer的方法，并且可以转换成其他类型的视图
+- 映射写需要RandomAccessFile类
+
+{{{class="brush:java"
+MappedByteBuffer out = new RandomAccessFile("test.dat", "rw").getChannel()
+                       .map(FileChannel.MapMode.READ_WRITE, 0, length);
+
+for(int i = 0; i < length; i++)
+    out.put((byte)'x');
+
+for(int i = length/2; i < length/2 + 6; i++)
+    System.out.print((char)out.get(i));
+
+}}}
+
+== 文件加锁 ==
+- FileChannel类调用lock()或tryLock()方法获取FileLock
+- 带参数的固定尺寸的锁不会随文件尺寸的变化而变化
+- FileLock类的release()方法释放锁
+
+FileLock类的方法
+{{{class="brush:java"
+FileChannel channel()
+          返回文件通道，此锁定保持在该通道的文件上。
+boolean isShared()
+          判断此锁定是否为共享的。
+abstract boolean isValid()
+          判断此锁定是否有效。
+boolean overlaps(long position, long size)
+          判断此锁定是否与给定的锁定区域重叠。
+long position()
+          返回文件内锁定区域中第一个字节的位置。
+abstract void release()
+          释放此锁定。
+long size()
+          返回锁定区域的大小，以字节为单位。
+String toString()
+          返回描述此锁定的范围、类型和有效性的字符串。
+}}}
+

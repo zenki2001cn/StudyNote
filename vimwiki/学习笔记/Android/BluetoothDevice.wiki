@@ -1,0 +1,48 @@
+= BluetoothDevice =
+
+== 功能描述 ==
+{{{class="brush:text"
+    该类是一个远程蓝牙设备。我们可以创建一个带有各自设备的BluetoothDevice或者查询其皆如名称、地址、类和连接状态等信息。
+对于蓝牙硬件地址而言，这个类仅仅是一个包装器。这个类的对象是不可改变的。这个类上的操作会使用这个用来创建BluetoothDevice类的 
+BluetoothAdapter类执行在远程蓝牙硬件上。为了获得BluetoothDevice类，我们可以使用BluetoothAdapter.getRemoteDevice(String)
+方法去创建一个指定MAC地址的设备（用户可以通过带有 BluetoothAdapter类来完成对设备的查找）或者从一个通过
+BluetoothAdapter.getBondedDevices()得到返回值的有联系的设备集合来得到该设备。注意：使用该类需要加入BLUETOOTH权限。
+}}}
+
+== 相关方法说明 ==
+=== 常量说明 ===
+| 类型   | 名称                            | 描述                                                                                 |
+|--------+---------------------------------+--------------------------------------------------------------------------------------|
+| String | ACTION_ACL_CONNECTED            | 广播活动：指明一个与远程设备建立的低级别（ACL）连接。                                |
+| String | ACTION_ACL_DISCONNECTED         | 广播活动：指明一个来自于远程设备的低级别（ACL）连接的断开。                          |
+| String | ACTION_ACL_DISCONNECT_REQUESTED | 广播活动：指明一个为远程设备提出的低级别（ACL）的断开连接请求，并即将断开连接。      |
+| String | ACTION_BOND_STATE_CHANGED       | 广播活动：指明一个远程设备的连接状态的改变。                                         |
+| String | ACTION_CLASS_CHANGED            | 广播活动：一个已经改变的远程设备的蓝牙类。                                           |
+| String | ACTION_FOUND                    | 广播活动：发现远程设备。                                                             |
+| String | ACTION_NAME_CHANGED             | 广播活动：指明一个远程设备的名称第一次找到，或者自从最后一次找到该名称开始已经改变。 |
+| int    | BOND_BONDED                     | 表明远程设备已经匹配。                                                               |
+| int    | BOND_BONDING                    | 表明和远程设备的匹配正在进行中。                                                     |
+| int    | BOND_NONE                       | 表明远程设备并未匹配。                                                               |
+| int    | ERROR                           | 错误信息。                                                                           |
+| String | EXTRA_BOND_STATE                | 作为一个ACTION_BOND_STATE_CHANGED的整型附加域。                                      |
+| String | EXTRA_CLASS                     | 作为一个ACTION_FOUND and和ACTION_CLASS_CHANGED的Parcelabe BluetoothClass附加域。     |
+| String | EXTRA_DEVICE                    | 每次通过该类进行广播时，作为Parcelable BluetoothDevice的附加域。                     |
+| String | EXTRA_NAME                      | 作为ACTION_NAME_CHANGED和ACTION_FOUND的字符串附加域。                                |
+| String | EXTRA_PREVIOUS_BOND_STATE       | 作为ACTION_BOND_STATE_CHANGED的整型附加域。                                          |
+| String | EXTRA_RSSI                      | 作为ACTION_FOUND的可选短整型附加域。                                                 |
+
+=== 方法说明 ===
+| 类型            | 名称                                         | 描述                                                                       |
+|-----------------+----------------------------------------------+----------------------------------------------------------------------------|
+| BluetoothSocket | createRfcommSocketToServiceRecord(UUID uuid) | 创建一个RFCOMM 以准备开始一个对使用uuid的SDP查找的远程设备进行安全而连接。 |
+| int             | describeContents()                           | 描述了包含在Parcelable's marshalled representation中的特殊对象的种类。     |
+| String          | getAddress()                                 | 返回该蓝牙设备的硬件地址。                                                 |
+| BluetoothClass  | getBluetoothClass()                          | 获得远程设备的蓝牙类。                                                     |
+| int             | getBondState()                               | 获得远程设备的连接状态                                                     |
+| String          | getName()                                    | 获得远程蓝牙设备的名称                                                     |
+
+    注意：toSting()函数会返回该蓝牙设备的字符串表达式。当我们在取得蓝牙地址时，一般会得到一个类似于"00:11:22:AA:BB:CC" 的字符串，
+    如果用户明确需要蓝牙硬件地址以防以后toString()表达式会改变的话，用户总是需要使用getAddress()方法来获取蓝牙的地址。
+    getName()函数也只获取远程蓝牙设备的名称，当执行设备扫描的时候，本地适配器将自动寻找远程名称。该方法只返回来自存储器中该设备的名称。
+    该类中大多数方法的使用都需要获得BLUETOOTH权限。
+

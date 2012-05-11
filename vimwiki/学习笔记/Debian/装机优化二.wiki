@@ -1,0 +1,134 @@
+= 装机优化二 =
+
+%toc
+
+== 添加源 ==
+{{{class="brush: text"
+deb ftp://ftp.tw.debian.org/debian/ testing main #contrib non-free
+deb-src ftp://ftp.tw.debian.org/debian/ testing main #contrib non-free
+
+#firefox 3
+#deb http://ppa.launchpad.net/fta/ubuntu hardy main
+
+deb http://download.virtualbox.org/virtualbox/debian lenny non-free
+}}}
+
+== 1、安装中文支持 == 
+{{{class="brush: text"
+apt-get install kde-i18n-zhcn
+}}}
+
+== 2、dpkg-reconfigure locales == 
+{{{class="brush: text"
+选择默认locale为中文的，如zh_CN.UTF-8。
+}}}
+
+== 3、设置vim ==
+{{{class="brush: text"
+拷贝~/.vim ~/.vimrc至~文件夹，配置vim插件
+如果插件无法使用，在.vimrc中添加 filetype plugin on
+}}}
+
+== 4、安装fcitx输入法 ==
+{{{class="brush: text"
+apt-get install fcitx im-switch
+im-switch -s fcitx -z default
+
+新版fcitx的配置文件在~/.config/fcitx下，用fcitx -c生成配置文件
+}}}
+
+== 5、设置sudo并加快sudo执行速度 ==
+{{{class="brush: text"
+编辑/etc/sudoer
+添加 %adm ALL=(ALL) ALL
+
+编辑/etc/hosts
+
+添加 127.0.0.1 zenki-laptop.localdomain zenki-laptop
+}}}
+
+== 6、美化字体 ==
+{{{class="brush: text"
+拷贝字体文件到/usr/share/font文件夹
+运行sudo dpkg-reconfigure fontconfig
+在系统设置里设置字体
+}}}
+
+== 7、安装w32codes ==
+{{{class="brush: text"
+apt-get install w32codecs
+如果mplayer无法播放，在.bashrc中添加
+alias mplayer='mplayer -vo x11 -zoom'
+}}}
+
+== 8、导入公钥的方法 ==
+{{{class="brush: text"
+gpg --keyserver hkp://wwwkeys.eu.pgp.net --recv-keys 1F41B907
+gpg --armor --export 1F41B907 | sudo apt-key add -
+}}}
+
+== 9、安装主题 ==
+{{{class="brush: text"
+apt-get install gtk2-engines-clearlooks gtk-qt-engine
+这样在你的KDE控制中心里面将多一项GTK Styles and fonts 选项，可以为GTK程序选择主题和字体。
+}}}
+
+== 10、上网浏览 ==
+{{{class="brush: text"
+#方法一
+sudo apt-get install flashplugin-installer
+
+#方法二
+#下载官方flash插件，并解压，获取.so文件
+sudo cp libFlashplayer.so /usr/lib/mozilla/plugins/
+}}}
+
+== 11、mplayer禁用IPV6 ==
+{{{class="brush: text"
+mplayer在播放在线电影的时候可能提示你 Couldn't resolve name for AF_INET6: ................
+那么 sudo vi /etc/mplayer/mplayer.conf 在里面加入
+# Disable IPV6
+prefer-ipv4 = yes
+}}}
+
+== 12、安装pdf查看 ==
+{{{class="brush: text"
+apt-get install evince
+apt-get install xpdf-chinese-simplified xpdf-chinese-traditional
+}}}
+
+== 13、安装nvidia显卡驱动 ==
+{{{class="brush: text"
+sudo apt-get install nvidia-xconfig
+sudo apt-get install nvidia-settings
+}}}
+
+== 14、安装主题插件管理工具superkaramba ==
+
+== 15、安装meld代码比较工具 ==
+
+== 16、安装3D桌面 ==
+{{{class="brush: text"
+compiz，Linux下的3D桌面，直接apt-get安装运行即可。可选择安装一些其他的插件。
+}}}
+
+== 17、无线网卡配置 ==
+{{{class="brush: text"
+apt-get install b43-fwcutter
+无线网卡的官方地址
+http://linuxwireless.org/
+
+}}}
+
+== 18、安装模块管理工具 ==
+{{{class="brush: text"
+apt-get install module-assistant
+}}}
+
+== 19、无法进入X ==
+{{{class="brush: text"
+运行X
+再运行startkde
+更换窗口管理器GDM
+}}}
+

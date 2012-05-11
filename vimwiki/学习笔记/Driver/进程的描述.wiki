@@ -1,0 +1,200 @@
+= 进程的描述 =
+
+%toc
+
+== 什么是进程 ==
+- 进程是程序执行时的一个实例，可以把它看作充分描述程序已经执行到何种程度的数据结构的汇集。
+- 从内核观点看，进程的目的就是担当分配系统资源（CPU时间、内存等）的实体。
+
+== Linux如何描述进程 ==
+
+=== struct task_struct ===
+- Linux中描述进程的数据结构定义为task_struct，它包含了所有与进程相关的资源信息。
+
+{{{class="brush:c"
+struct task_struct {
+	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+	void *stack;
+	
+	struct list_head tasks;
+	struct mm_struct *mm, *active_mm;
+	
+	struct task_struct *parent;         /* recipient of SIGCHLD, wait4() reports */
+	struct list_head children;	        /* list of my children */
+	struct list_head sibling;	        /* linkage in my parent's children list */
+	struct task_struct *group_leader;	/* threadgroup leader */
+
+    int exit_state;
+	int exit_code, exit_signal;
+	
+    struct fs_struct *fs;
+    /* open file information */
+	struct files_struct *files;
+    /* namespaces */
+	struct nsproxy *nsproxy;
+    /* signal handlers */
+	struct signal_struct *signal;
+	struct sighand_struct *sighand;
+	
+    ......
+}
+}}}
+
+=== struct thread_info ===
+- thread_info结构表示线程描述符，用来保存进程相关信息，包括进程描述符指针。
+
+{{{class="brush:c"
+struct thread_info {
+	struct pcb_struct	pcb;		/* palcode state */
+
+	struct task_struct	*task;		/* main task structure */
+	unsigned int		flags;		/* low level flags */
+	unsigned int		ieee_state;	/* see fpu.h */
+
+	struct exec_domain	*exec_domain;	/* execution domain */
+	mm_segment_t		addr_limit;	    /* thread address space */
+	unsigned		    cpu;		    /* current CPU */
+	int			        preempt_count;  /* 0 => preemptable, <0 => BUG */
+
+	int bpt_nsaved;
+	unsigned long bpt_addr[2];		    /* breakpoint handling  */
+	unsigned int bpt_insn[2];
+
+	struct restart_block	restart_block;
+};
+
+/*
+ * Macros/functions for gaining access to the thread information structure.
+ */
+#define INIT_THREAD_INFO(tsk)			    \
+{						                    \
+	.task		= &tsk,			            \
+	.exec_domain	= &default_exec_domain,	\
+	.addr_limit	= KERNEL_DS,		        \
+	.preempt_count	= INIT_PREEMPT_COUNT,	\
+	.restart_block = {			            \
+		.fn = do_no_restart_syscall,	    \
+	},					                    \
+}
+}}}
+
+=== current宏定义 ===
+- current宏定义用来获取当前进程描述符指针。
+
+{{{class="brush:c"
+#define get_current()	(current_thread_info()->task)
+#define current		    get_current()
+}}}
+
+== 进程的状态 ==
+- 进程描述符中的state字段描述了进程当前所处的状态，这些状态是互斥的。可能的状态如下：
+
+| 状态标识             | 描述                                                                             | 备注 |
+|----------------------+----------------------------------------------------------------------------------+------|
+| TASK_RUNNING         | 进程要么在CPU上执行，要么准备执行                                                |      |
+| TASK_INTERRUPTIBLE   | 进程被挂起，直到某个条件为真被唤醒（如产生硬件中断、释放系统资源或传递一个信号） |      |
+| TASK_UNINTERRUPTIBLE | 进程被挂起，并且不能被信号唤醒                                                   |      |
+| TASK_STOPPED         | 进程的执行被暂停                                                                 |      |
+| TASK_TRACED          | 进程的执行被debugger程序暂停                                                     |      |
+| EXIT_ZOMBIE          | 进程的执行被终止，但是父进程还没有回收死亡进程的信息                             |      |
+| EXIT_DEAD            | 死亡进程的信息被父进程回收，并且系统删除该进程                                   |      |
+
+== 如何组织进程 ==
+- Linux以链表的形式将不同状态的进程组织在一起。如运行队列链表包含了所有状态为TASK_RUNNING的进程。
+
+=== 等待队列的数据结构 ===
+- 等待队列实现了在事件上的条件等待：希望等待特定事件的进程把自己放在合适的等待队列，并放弃控制权。
+- 等待队列表示一组睡眠进程，当某一条件变为真时，由内核唤醒它们。
+- 等待队列由双向链表实现，每个队列包含一个等待队列头，其中task_list成员指向wait_queue_t结构的链表。
+
+{{{class="brush:c"
+struct __wait_queue_head {
+	spinlock_t lock;
+	struct list_head task_list;
+};
+typedef struct __wait_queue_head wait_queue_head_t;
+}}}
+
+- 等待队列的元素类型为wait_queu_t，其每个元素代表一个睡眠进程，task_list指向等待相同事件的进程链表。
+
+{{{class="brush:c"
+struct __wait_queue {
+	unsigned int flags;
+#define WQ_FLAG_EXCLUSIVE	0x01
+	void *private;
+	wait_queue_func_t func;
+	struct list_head task_list;
+};
+typedef struct __wait_queue wait_queue_t;
+}}}
+
+=== 等待队列的操作 ===
+- 定义等待队列和等待队列头
+
+{{{class="brush:c"
+#define __WAITQUEUE_INITIALIZER(name, tsk) {		\
+	.private	= tsk,						        \
+	.func		= default_wake_function,			\
+	.task_list	= { NULL, NULL } }
+
+#define DECLARE_WAITQUEUE(name, tsk)					\
+	wait_queue_t name = __WAITQUEUE_INITIALIZER(name, tsk)
+
+#define __WAIT_QUEUE_HEAD_INITIALIZER(name) {			\
+	.lock		= __SPIN_LOCK_UNLOCKED(name.lock),		\
+	.task_list	= { &(name).task_list, &(name).task_list } }
+
+#define DECLARE_WAIT_QUEUE_HEAD(name)                   \
+	wait_queue_head_t name = __WAIT_QUEUE_HEAD_INITIALIZER(name)
+}}}
+
+- 操作等待队列的方法列表
+
+| 方法名                         | 描述                                                                               | 备注 |
+|--------------------------------+------------------------------------------------------------------------------------+------|
+| sleep_on                       | 将进程状态设置为TASK_UNINTERRUPTIBLE，并将它插入到特定等待队列                     |      |
+| sleep_on_timeout               | 与sleep_on相似，但可以定义一个时间间隔，超时后由内核唤醒                           |      |
+| interruptible_sleep_on         | 将进程状态设置为TASK_INTERRUPTIBLE，并将它插入到特定等待队列                       |      |
+| interruptible_sleep_on_timeout | 与interruptible_sleep_on相似，但可以定义一个时间间隔，超时后由内核唤醒             |      |
+| prepare_to_wait                | 设置进程为非互斥标志，并根据参数标识进程的状态                                     |      |
+| prepare_to_wait_exclusive      | 设置进程为互斥标志，并根据参数标识进程的状态                                       |      |
+| finish_wait                    | 进程从prepare_to_wait或prepare_to_wait_exclusive唤醒后调用                         |      |
+| wait_event                     | 将进程状态设置为TASK_UNINTERRUPTIBLE，以条件变量为参数将进程挂起，并等待条件变为真 |      |
+| wait_event_interruptible       | 将进程状态设置为TASK_INTERRUPTIBLE，以条件变量为参数将进程挂起，并等待条件变为真   |      |
+| wake_up                        | 唤醒TASK_UNINTERRUPTIBLE和TASK_INTERRUPTIBLE状态的进程                             |      |
+| wake_up_interruptible          | 只唤醒TASK_INTERRUPTIBLE状态的进程                                                 |      |
+
+== 进程资源限制 ==
+- 每个进程都有一组相关的资源限制，限制指定了进程能使用的系统资源数量。这些限制避免用户过分使用系统资源（CPU、磁盘空间等）。
+
+=== 资源限制的数据结构 ===
+- 资源限制存放在current->signal->rlim字段，即进程的信号描述符的一个字段。
+- rlim_cur字段表示当前资源限制的值，rlim_max表示最大值，可通过getrlimit()和setrlimit()系统调用调整资源最大值。
+
+{{{class="brush:c"
+struct rlimit {
+	unsigned long	rlim_cur;
+	unsigned long	rlim_max;
+};
+}}}
+
+=== 资源限制的类型 ===
+
+| 标识              | 描述                    | 备注 |
+|-------------------+-------------------------+------|
+| RLIMIT_AS         | 进程地址空间的最大数    |      |
+| RLIMIT_CORE       | 内核信息转储文件的大小  |      |
+| RLIMIT_CPU        | 进程使用CPU的最长时间   |      |
+| RLIMIT_DATA       | 堆大小的最大值          |      |
+| RLIMIT_FSIZE      | 文件大小的最大值        |      |
+| RLIMIT_LOCKS      | 文件锁的最大值          |      |
+| RLIMIT_MEMLOCK    | 非交换内存的最大值      |      |
+| RLIMIT_MSGQUEUE   | POSIX消息队列中的最大值 |      |
+| RLIMIT_NOFILE     | 打开文件描述符的最大数  |      |
+| RLIMIT_NPROC      | 用户能拥有的进程最大数  |      |
+| RLIMIT_RSS        | 进程所拥有的页框最大数  |      |
+| RLIMIT_SIGPENDING | 进程挂起信号的最大数    |      |
+| RLIMIT_STACK      | 栈大小的最大数          |      |
+
+== Linux进程思维导图 ==
+[[pic/Linux进程.png]]

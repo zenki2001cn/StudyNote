@@ -1,0 +1,85 @@
+= AndroidManifest.xml解析 =
+
+== 各节点描述 ==
+| 节点标识        | 数量    | 描述                                                                            |
+|-----------------+---------+---------------------------------------------------------------------------------|
+| manifest        | 一个    | 根节点，描述了package中所有的内容                                               |
+| uses-permission | 0或多个 | 请求你的package正常运作所需赋予的安全许可。参考[[]]                             |
+| uses-library    | 0或多个 | 需要使用的自定义java库                                                          |
+| permission      | 0或多个 | 声明了安全许可来限制哪些程序能用你package中的组件和功能                         |
+| instrumentation | 0或多个 | 声明了用来测试此package或其他package指令组件的代码                              |
+| application     | 0或一个 | 包含package中application级别组件声明的根节点                                    |
+| activity        | 0或多个 | Activity是用来与用户交互的主要工具                                              |
+| intent-filter   | 0或多个 | 声明了指定的一组组件支持的Intent值，从而形成了IntentFilter                      |
+| action          | 0或多个 | 组件支持的Intent action                                                         |
+| category        | 0或多个 | 组件支持的Intent Category                                                       |
+| type            | 0或多个 | 组件支持的Intent data MIME type                                                 |
+| schema          | 0或多个 | 组件支持的Intent data URI scheme                                                |
+| authority       | 0或多个 | 组件支持的Intent data URI authority                                             |
+| path            | 0或多个 | 组件支持的Intent data URI path                                                  |
+| receiver        | 0或多个 | IntentReceiver能使的application获得数据的改变或者发生的操作，即使它当前不在运行 |
+| service         | 0或多个 | Service是能在后台运行任意时间的组件                                             |
+| provider        | 0或多个 | ContentProvider是用来管理持久化数据并发布给其他应用程序使用的组件               |
+
+== 示例代码 ==
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>  
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"  
+    package="com.my_domain.app.helloactivity"
+    android:versionCode="1
+    android:versionName="1.0" >  
+   
+    <!!-- 应用程序节点 -->
+    <application 
+        android:icon="@drawable/icon"
+        android:label="@string/app_name"
+        android:theme="@style/Em1.Base.Theme">  
+        
+        <!!-- Activity节点 -->
+        <activity class=".HelloActivity">  
+            <!!-- Intent过滤器 -->
+            <intent-filter>  
+                <!!-- Intent动作 -->
+                <action android:value="android.intent.action.MAIN"/>  
+                <!!-- Intent属性 -->
+                <category android:value="android.intent.category.LAUNCHER"/>  
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>  
+        </activity>
+
+        <!!-- provider节点 -->
+        <provider android:name=".MyProvider"
+            android:authorities="com.zenki.myprovider" />
+
+        <!!-- receiver节点 -->
+        <receiver android:name=".ConnectionStatus" />
+        
+        <!!-- 本地service节点 -->
+        <service android:name=".LocalService" />
+
+        <!!-- 远程service节点 -->
+        <service android:name=".app.RemoteService" android:process=":remote">
+            <intent-filter>
+                <action android:name="com.example.android.apis.app.IRemoteService" />
+                <action android:name="com.example.android.apis.app.ISecondary" />
+                <action android:name="com.example.android.apis.app.REMOTE_SERVICE" />
+            </intent-filter>
+        </service>
+
+    </application>  
+    
+    <!!-- 用户权限设置 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    
+    <!!-- 用户权限设置 -->
+    <uses-library android:name="com.mokoid.led"/>
+    
+    <!!-- SDK版本 -->
+    <uses-sdk android:minSdkVersion="5" android:targetSdkVersion="5"/>
+    
+</manifest>
+}}}

@@ -1,0 +1,466 @@
+= 守护进程的驱动者 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+frameworks/base/include/binder/IServiceManager.h
+frameworks/base/libs/binder/IServiceManager.cpp
+frameworks/base/cmds/runtime/ServiceManager.h
+frameworks/base/cmds/runtime/ServiceManager.cpp
+frameworks/base/include/binde/IInterface.h
+frameworks/base/libs/binde/IInterface.cpp
+frameworks/base/include/binde/BpBinder.h
+frameworks/base/libs/binde/BpBinder.cpp
+}}}
+
+== 框架图 ==
+[pic/Binder_frame.png]
+
+== 要点分析 ==
+- 之所以分离这一部分内容，是因为Android存在一个特殊的，也是基于Binder实现的一个守护进程ServiceManager。服务端如何注册？客户端又如何去查询？这是本章要解决的问题。Android提供了与进程ServiceManager交互的机制，它是ServiceManager的驱动者，服务端通过它来注册服务，客户端又通过它来查询服务。
+- 注册和查询的功能主要是通过`IServiceManager`、`BpServiceManager`来完成。这一机制自身也是通过Binder来实现，它与系统进程ServiceManager合作来完成服务的注册、查询等等功能。
+- 参见[[服务端守护进程]]
+
+=== 示例代码 ===
+{{{class="brush:c++"
+void CameraService::instantiate() {
+    defaultServiceManager()->addService(
+            String16("media.camera"), new CameraService());
+}
+}}}
+
+== IServiceManager.h ==
+- IServiceManager为Android的基础服务，它用来完成添加各种其他服务的功能并为客户端提供查询接口。它是一个完整Binder机制的C++实现。
+- IServiceManager定义了几个接口方法`getService`、`checkService`、`addService`和`listServices`。
+- BnServiceManager为该服务的实现类。
+- BpServiceManager为该服务的代理类。
+- 分析从defaultServiceManager()方法开始。
+
+=== IServiceManager ===
+{{{class="brush:c++"
+class IServiceManager : public IInterface
+{
+public:
+    DECLARE_META_INTERFACE(ServiceManager);
+
+    virtual sp<IBinder>         getService( const String16& name) const = 0;
+    virtual sp<IBinder>         checkService( const String16& name) const = 0;
+    virtual status_t            addService( const String16& name, const sp<IBinder>& service) = 0;
+    virtual Vector<String16>    listServices() = 0;
+
+    enum {
+        GET_SERVICE_TRANSACTION = IBinder::FIRST_CALL_TRANSACTION,
+        CHECK_SERVICE_TRANSACTION,
+        ADD_SERVICE_TRANSACTION,
+        LIST_SERVICES_TRANSACTION,
+    };
+};
+
+sp<IServiceManager> defaultServiceManager();
+
+template<typename INTERFACE>
+status_t getService(const String16& name, sp<INTERFACE>* outService)
+{
+    const sp<IServiceManager> sm = defaultServiceManager();
+    if (sm != NULL) {
+        *outService = interface_cast<INTERFACE>(sm->getService(name));
+        if ((*outService) != NULL) return NO_ERROR;
+    }
+    return NAME_NOT_FOUND;
+}
+
+bool checkCallingPermission(const String16& permission);
+bool checkCallingPermission(const String16& permission, int32_t* outPid, int32_t* outUid);
+bool checkPermission(const String16& permission, pid_t pid, uid_t uid);
+}}}
+
+=== BnServiceManager ===
+{{{class="brush:c++"
+class BnServiceManager : public BnInterface<IServiceManager>
+{
+public:
+    virtual status_t onTransact( uint32_t code,
+                                    const Parcel& data,
+                                    Parcel* reply,
+                                    uint32_t flags = 0);
+};
+}}}
+
+== IServiceManager.cpp ==
+=== defaultServiceManager ===
+- 首先通过`ProcessState::self()->getContextObject(NULL)`获取`0`号句柄的`BpBinder`对象。
+- 通过interface_cast()方法转换成`BpServiceManager`，INTERFACE::asInterface(obj)的实现需查看`IMPLEMENT_META_INTERFACE`宏。这里有一个要点：基于Binder的接口还需要继承自IInterface类。该类的宏定义提供了一系列关于Binder与接口之间的转换。
+- 随后BpServiceManager会通过代理方法，访问驱动层，从而实现addService()功能。
+
+{{{class="brush:c++"
+sp<IServiceManager> defaultServiceManager()
+{
+    if (gDefaultServiceManager != NULL) return gDefaultServiceManager;
+    
+    {
+        AutoMutex _l(gDefaultServiceManagerLock);
+        if (gDefaultServiceManager == NULL) {
+            gDefaultServiceManager = interface_cast<IServiceManager>(
+                ProcessState::self()->getContextObject(NULL));
+        }
+    }
+    
+    return gDefaultServiceManager;
+}
+}}}
+
+=== interface_cast ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+inline sp<INTERFACE> interface_cast(const sp<IBinder>& obj)
+{
+    return INTERFACE::asInterface(obj);
+}
+}}}
+
+=== BpServiceManager ===
+- 该类为ServiceManager方法的代理类，它实现了一套自己的`*Service()`方法。
+- 代理类的*Service()方法会使用remote()->transact()方法调用远程对象的实现。
+- remote()返回的是BpBinder的对象，由此调用BpBinder的transact()方法。
+
+{{{class="brush:c++"
+// 实现代理端的方法
+class BpServiceManager : public BpInterface<IServiceManager>
+{
+public:
+    BpServiceManager(const sp<IBinder>& impl)
+        : BpInterface<IServiceManager>(impl)
+    {
+    }
+        
+    virtual sp<IBinder> getService(const String16& name) const
+    {
+        unsigned n;
+        for (n = 0; n < 5; n++){
+            sp<IBinder> svc = checkService(name);
+            if (svc != NULL) return svc;
+            sleep(1);
+        }
+        return NULL;
+    }
+    
+    virtual sp<IBinder> checkService( const String16& name) const
+    {
+        Parcel data, reply;
+        // 写入接口描述
+        data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());
+        // 写入服务名
+        data.writeString16(name);
+        // 调用BpBinder对象的transact()方法
+        remote()->transact(CHECK_SERVICE_TRANSACTION, data, &reply);
+        return reply.readStrongBinder();
+    }
+
+    virtual status_t addService(const String16& name, const sp<IBinder>& service)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());
+        data.writeString16(name);
+        data.writeStrongBinder(service);
+        status_t err = remote()->transact(ADD_SERVICE_TRANSACTION, data, &reply);
+        return err == NO_ERROR ? reply.readInt32() : err;
+    }
+
+    virtual Vector<String16> listServices()
+    {
+        Vector<String16> res;
+        int n = 0;
+
+        for (;;) {
+            Parcel data, reply;
+            data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());
+            data.writeInt32(n++);
+            status_t err = remote()->transact(LIST_SERVICES_TRANSACTION, data, &reply);
+            if (err != NO_ERROR)
+                break;
+            res.add(reply.readString16());
+        }
+        return res;
+    }
+};
+
+IMPLEMENT_META_INTERFACE(ServiceManager, "android.os.IServiceManager");
+}}}
+
+=== BnServiceManager ===
+{{{class="brush:c++"
+// 该类为抽象类，会调用它的子类BServiceManager来实现Server端的功能
+status_t BnServiceManager::onTransact(
+    uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
+{
+    //printf("ServiceManager received: "); data.print();
+    switch(code) {
+        case GET_SERVICE_TRANSACTION: {
+            CHECK_INTERFACE(IServiceManager, data, reply);
+            String16 which = data.readString16();
+            sp<IBinder> b = const_cast<BnServiceManager*>(this)->getService(which);
+            reply->writeStrongBinder(b);
+            return NO_ERROR;
+        } break;
+        case CHECK_SERVICE_TRANSACTION: {
+            CHECK_INTERFACE(IServiceManager, data, reply);
+            String16 which = data.readString16();
+            sp<IBinder> b = const_cast<BnServiceManager*>(this)->checkService(which);
+            reply->writeStrongBinder(b);
+            return NO_ERROR;
+        } break;
+        case ADD_SERVICE_TRANSACTION: {
+            CHECK_INTERFACE(IServiceManager, data, reply);
+            String16 which = data.readString16();
+            sp<IBinder> b = data.readStrongBinder();
+            status_t err = addService(which, b);
+            reply->writeInt32(err);
+            return NO_ERROR;
+        } break;
+        case LIST_SERVICES_TRANSACTION: {
+            CHECK_INTERFACE(IServiceManager, data, reply);
+            Vector<String16> list = listServices();
+            const size_t N = list.size();
+            reply->writeInt32(N);
+            for (size_t i=0; i<N; i++) {
+                reply->writeString16(list[i]);
+            }
+            return NO_ERROR;
+        } break;
+        default:
+            return BBinder::onTransact(code, data, reply, flags);
+    }
+}
+}}}
+
+== IInterface.h ==
+=== DECLARE_META_INTERFACE ===
+{{{class="brush:c++"
+#define DECLARE_META_INTERFACE(INTERFACE)                               \
+    static const String16 descriptor;                                   \
+    static sp<I##INTERFACE> asInterface(const sp<IBinder>& obj);        \
+    virtual const String16& getInterfaceDescriptor() const;             \
+    I##INTERFACE();                                                     \
+    virtual ~I##INTERFACE(); 
+}}}
+
+=== IMPLEMENT_META_INTERFACE ===
+{{{class="brush:c++"
+#define IMPLEMENT_META_INTERFACE(INTERFACE, NAME)                       \
+    const String16 I##INTERFACE::descriptor(NAME);                      \
+    const String16& I##INTERFACE::getInterfaceDescriptor() const {      \
+        return I##INTERFACE::descriptor;                                \
+    }                                                                   \
+    sp<I##INTERFACE> I##INTERFACE::asInterface(const sp<IBinder>& obj)  \
+    {                                                                   \
+        sp<I##INTERFACE> intr;                                          \
+        if (obj != NULL) {                                              \
+            intr = static_cast<I##INTERFACE*>(                          \
+                obj->queryLocalInterface(                               \
+                        I##INTERFACE::descriptor).get());               \
+            if (intr == NULL) {                                         \
+                intr = new Bp##INTERFACE(obj);                          \
+            }                                                           \
+        }                                                               \
+        return intr;                                                    \
+    }                                                                   \
+    I##INTERFACE::I##INTERFACE() { }                                    \
+    I##INTERFACE::~I##INTERFACE() { }                                   \
+}}}
+
+== ProcessState.cpp ==
+=== getContextObject 方法1 ===
+{{{class="brush:c++"
+sp<IBinder> ProcessState::getContextObject(const sp<IBinder>& caller)
+{
+    if (supportsProcesses()) {
+        // 根据0句柄查找ServiceManager
+        return getStrongProxyForHandle(0);
+    } else {
+        return getContextObject(String16("default"), caller);
+    }
+}
+}}}
+
+=== getContextObject 方法2 ===
+{{{class="brush:c++"
+sp<IBinder> ProcessState::getContextObject(const String16& name, const sp<IBinder>& caller)
+{
+    mLock.lock();
+    sp<IBinder> object(
+        mContexts.indexOfKey(name) >= 0 ? mContexts.valueFor(name) : NULL);
+    mLock.unlock();
+    
+    if (object != NULL) return object;
+
+    // Don't attempt to retrieve contexts if we manage them
+    if (mManagesContexts) {
+        return NULL;
+    }
+    
+    // 取得IPC通信渠道
+    IPCThreadState* ipc = IPCThreadState::self();
+    {
+        // 封装Binder的请求数据
+        Parcel data, reply;
+        data.writeString16(name);
+        data.writeStrongBinder(caller);
+        // 向0号引用的ServiceManager发送请求
+        status_t result = ipc->transact(0 /*magic*/, 0, data, &reply, 0);
+        if (result == NO_ERROR) {
+            object = reply.readStrongBinder();
+        }
+    }
+    
+    ipc->flushCommands();
+    
+    if (object != NULL) setContextObject(object, name);
+    return object;
+}
+}}}
+
+=== getStrongProxyForHandle ===
+{{{class="brush:c++"
+sp<IBinder> ProcessState::getStrongProxyForHandle(int32_t handle)
+{
+    sp<IBinder> result;
+
+    AutoMutex _l(mLock);
+
+    handle_entry* e = lookupHandleLocked(handle);
+
+    if (e != NULL) {
+        // We need to create a new BpBinder if there isn't currently one, OR we
+        // are unable to acquire a weak reference on this current one.  See comment
+        // in getWeakProxyForHandle() for more info about this.
+        IBinder* b = e->binder;
+        if (b == NULL || !e->refs->attemptIncWeak(this)) {
+            b = new BpBinder(handle); 
+            e->binder = b;
+            if (b) e->refs = b->getWeakRefs();
+            result = b;
+        } else {
+            // This little bit of nastyness is to allow us to add a primary
+            // reference to the remote proxy when this team doesn't have one
+            // but another team is sending the handle to us.
+            result.force_set(b);
+            e->refs->decWeak(this);
+        }
+    }
+
+    return result;
+}
+}}}
+
+== BpBinder.cpp ==
+- BpBinder构造方法会通过IPCThreadState将自身的引用计数加一。
+- 当代理类调用BpBinder的transact()方法时，它会调用IPCThreadState的transact()方法与驱动交互。参见[[驱动适配层]]。
+- ServiceManager是一个特殊的服务，它的服务端实现其实就是进程ServiceManager。因此，当BpServiceManager访问驱动时，进程ServiceManager会处理这些请求。参见[[服务端守护进程]]。
+
+=== BpBinder::BpBinder ===
+{{{class="brush:c++"
+BpBinder::BpBinder(int32_t handle)
+    : mHandle(handle)
+    , mAlive(1)
+    , mObitsSent(0)
+    , mObituaries(NULL)
+{
+    extendObjectLifetime(OBJECT_LIFETIME_WEAK);
+    // 最终调用IPCThreadState来添加引用计数
+    IPCThreadState::self()->incWeakHandle(handle);
+}
+}}}
+
+=== transact ===
+{{{class="brush:c++"
+status_t BpBinder::transact(
+    uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
+{
+    // Once a binder has died, it will never come back to life.
+    if (mAlive) {
+        // 最终通过IPCThreadState调用transact()方法
+        status_t status = IPCThreadState::self()->transact(
+            mHandle, code, data, reply, flags);
+        if (status == DEAD_OBJECT) mAlive = 0;
+        return status;
+    }
+
+    return DEAD_OBJECT;
+}
+}}}
+
+== ServiceManager.h ==
+- BServiceManager继承自BnServiceManager，它是`*Service()`方法的本地实现，主要是通过KeyedVector<String16, sp<IBinder>>记录服务名与对应的IBinder对象。
+
+=== BServiceManager ===
+{{{class="brush:c++"
+// BnServiceManager的继承类
+class BServiceManager : public BnServiceManager
+{
+public:
+                                BServiceManager();
+    
+    virtual sp<IBinder>         getService( const String16& name) const;
+    virtual sp<IBinder>         checkService( const String16& name) const;
+    virtual status_t            addService( const String16& name,
+                                            const sp<IBinder>& service);
+    virtual Vector<String16>    listServices();
+
+    
+private:
+    mutable Mutex               mLock;
+    mutable Condition           mChanged;
+    sp<IPermissionController>   mPermissionController;
+    KeyedVector<String16, sp<IBinder> > mServices;
+};
+}}}
+
+== ServiceManager.cpp ==
+=== BServiceManager ===
+{{{class="brush:c++"
+// 真正的IServiceManager接口方法实现
+BServiceManager::BServiceManager()
+{
+}
+
+sp<IBinder> BServiceManager::getService(const String16& name) const
+{
+    AutoMutex _l(mLock);
+    ssize_t i = mServices.indexOfKey(name);
+    if (i >= 0) return mServices.valueAt(i);
+    return NULL;
+}
+
+sp<IBinder> BServiceManager::checkService(const String16& name) const
+{
+    AutoMutex _l(mLock);
+    ssize_t i = mServices.indexOfKey(name);
+    if (i >= 0) return mServices.valueAt(i);
+    return NULL;
+}
+
+status_t BServiceManager::addService(const String16& name, const sp<IBinder>& service)
+{
+    AutoMutex _l(mLock);
+    const ssize_t res = mServices.add(name, service);
+    if (res >= NO_ERROR) {
+        mChanged.broadcast();
+        return NO_ERROR;
+    }
+    return res;
+}
+
+Vector<String16> BServiceManager::listServices()
+{
+    Vector<String16> res;
+
+    AutoMutex _l(mLock);
+    const size_t N = mServices.size();
+    for (size_t i=0; i<N; i++) {
+        res.add(mServices.keyAt(i));
+    }
+
+    return res;
+}
+}}}

@@ -1,0 +1,36 @@
+= 画弧线 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+}}}
+
+- 圆弧的描画，调用Canvas.drawArc()方法。
+    # 第1个参数startAngle是指开始的角度。比如，钟表中3点的时候是0度，6点的时候是90度
+    # 第2个参数sweepAngle是指圆弧的角度。
+    # 第3个参数useCenter是指卖描画的图形包不包括圆心（下面例子的oval3（包括圆心），oval4(不包括圆心)）、
+    # 第4个参数是Paint的实例。
+
+例程源码(Java)
+{{{class="brush:java"
+@Override
+protected void onDraw(Canvas canvas) {
+    Paint paint = new Paint();
+    paint.setAntiAlias(true);
+    paint.setColor(Color.argb(255, 255, 255, 255));
+    
+    RectF oval1 = new RectF(20.0f, 20.0f, 60.0f, 60.0f);
+    canvas.drawArc(oval1, 0, 45, true, paint);
+    
+    RectF oval2 = new RectF(100.0f, 20.0f, 140.0f, 60.0f);
+    canvas.drawArc(oval2, 0, 90, true, paint);
+    
+    RectF oval3 = new RectF(180.0f, 20.0f, 220.0f, 60.0f);
+    canvas.drawArc(oval3, 90, 135, true, paint);
+    
+    RectF oval4 = new RectF(260.0f, 20.0f, 300.0f, 60.0f);
+    canvas.drawArc(oval4, 90, 135, false, paint);
+}
+}}}
+

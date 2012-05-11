@@ -1,0 +1,204 @@
+= WifiController =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Context;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiConfiguration.KeyMgmt;
+import android.net.wifi.WifiConfiguration.AuthAlgorithm;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.SupplicantState;
+import android.net.NetworkInfo.DetailedState;
+import android.net.DhcpInfo;
+}}}
+
+== 基本流程 ==
+- `WifiManager.isWifiEnabled()`判断本地Wifi功能是否启用，`WifiManager.setWifiEnabled()`方法开启本地Wifi功能
+- 通过`WifiManager.startScan()`方法来扫描热点，并返回`ScanResult`的列表
+- 配置`WifiConfiguration`对象，通过`WifiManager.addNetwork()`方法添加网络连接，`WifiManager.enableNetwork()`方法开启网络连接，在网络连接成功后记录当前连接状态
+- 通过`WifiManager.removeNetwork()`移除网络连接，`WifiManager.disableNetwork()`方法禁用网络连接
+
+== 主要类说明 ==
+=== ScanResult --- 扫描结果 ===
+| 类型   | 标识         | 描述                       |
+|--------+--------------+----------------------------|
+| String | BSSID        | 进入点的地址               |
+| String | SSID         | 网络名称                   |
+| String | capabilities | 描述进入点的权限、安全类型 |
+| int    | frequency    | 与热点连接的速率，单位MHz  |
+| int    | level        | 信号等级                   |
+
+=== WifiConfiguration --- 连接配置 ===
+| 类型     | 标识                   | 描述                  |
+|----------+------------------------+-----------------------|
+| String   | BSSID                  | 根据特定的AP地址      |
+| String   | SSID                   | 网络名称              |
+| BitSet   | allowedAuthAlgorithms  | IEEE 802.11认证支持   |
+| BitSet   | allowedGroupCiphers    | SSL支持               |
+| BitSet   | allowedKeyManagement   | Key管理协议           |
+| BitSet   | allowedPairwiseCiphers | WPA支持               |
+| boolean  | hiddenSSID             | 隐藏SSID              |
+| int      | networkId              | 网络ID                |
+| String   | preSharedKey           | 验证密码              |
+| int      | priority               | 连接优先等级          |
+| int      | status                 | 连接状态              |
+| String[] | wepKeys                | WEP密码               |
+| int      | wepTxKeyIndex          | 默认WEP密码序号，0至3 |
+
+=== SupplicantState --- Supplicant状态 ===
+| 类型            | 标识               | 描述         |
+|-----------------+--------------------+--------------|
+| SupplicantState | ASSOCIATED         | 关联完成     |
+| SupplicantState | ASSOCIATING        |              |
+| SupplicantState | COMPLETED          | 验证完成     |
+| SupplicantState | DISCONNECTED       | 断开连接     |
+| SupplicantState | DORMANT            |              |
+| SupplicantState | FOUR_WAY_HANDSHAKE |              |
+| SupplicantState | GROUP_HANDSHAKE    |              |
+| SupplicantState | INACTIVE           | 未激活状态   |
+| SupplicantState | INVALID            |              |
+| SupplicantState | SCANNING           | 正在扫描网络 |
+| SupplicantState | UNINITIALIZED      |              |
+
+== 示例代码 ==
+=== 扫描热点 ===
+{{{class="brush:java"
+// 获取WifiManager实例
+WifiManager mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+
+// 判断Wifi是否开启
+if (!mWifiManager.isWifiEnabled()) {
+    // 设置
+    mWifiManager.setWifiEnabled(true);
+}
+mWifiManager.startScan();
+
+// 获取扫描结果
+ArrayList<ScanResult> mScanList = (ArrayList<ScanResult>) mWifiManager.getScanResults();
+for (int i = mScanList.size() - 1; i >= 0; i--) {
+    ScanResult scan = mScanList.get(i);
+    Log.i(TAG, String.format("ScanResult_%d = SSID:%-20s, BSSID:%-20s, Level:%-5d, Sign:%1d, Frequency:%-6d, Capabilities:%-50s",
+            new Object[]{i, scan.SSID, scan.BSSID,
+            scan.level, WifiManager.calculateSignalLevel(scan.level, 5),
+            scan.frequency, scan.capabilities,}));
+}
+}}}
+
+=== 配置连接 ===
+{{{class="brush:java"
+private WifiConfiguration getConfig(AccessPointState ap) {
+    WifiConfiguration wc = new WifiConfiguration();
+
+    // 获取密码和密码长度
+    String passWord = ap.getPassword();
+    int passwordLen = passWord.length();
+
+    wc.SSID = "\"" + ap.getSsid() + "\"";
+    wc.hiddenSSID = true;
+    wc.status = WifiConfiguration.Status.ENABLED;        
+
+    // 开放网络类型
+    if ( ap.securityIsOpen() ) {
+        wc.allowedKeyManagement.set(KeyMgmt.NONE);
+    }
+    // WEP加密类型
+    else if ( ap.securityIsWep() ) {
+        wc.allowedKeyManagement.set(KeyMgmt.NONE);
+        wc.allowedAuthAlgorithms.set(AuthAlgorithm.OPEN);
+        wc.allowedAuthAlgorithms.set(AuthAlgorithm.SHARED);
+
+        if (passwordLen != 0) {
+            // WEP-40, WEP-104, and 256-bit WEP (WEP-232?)
+            if ((passwordLen == 10 || passwordLen == 26 || passwordLen == 58) &&
+                    passWord.matches("[0-9A-Fa-f]*")) {
+                wc.wepKeys[0] = passWord;
+            } else {
+                wc.wepKeys[0] = '"' + passWord + '"';
+            }
+        }
+    }
+    // PSK加密类型
+    else if ( ap.securityIsPsk() ) {
+        wc.allowedKeyManagement.set(KeyMgmt.WPA_PSK);
+
+        if (passwordLen != 0) {
+            if (passWord.matches("[0-9A-Fa-f]{64}")) {
+                wc.preSharedKey = passWord;
+            } else {
+                wc.preSharedKey = '"' + passWord + '"';
+            }
+        } 
+    }
+    // EAP加密类型
+    else if ( ap.securityIsEap() ) {
+    }
+    
+    return wc;
+}
+}}}
+
+=== 连接Wifi ===
+{{{class="brush:java"
+public boolean connectWifi(AccessPointState ap) {
+    int networkID = -1;
+    boolean enableWifi = false;
+
+    WifiConfiguration wc = getConfig(ap);
+
+    // 获取网络ID
+    networkID = mWifiManager.addNetwork(wc);
+    if ( -1 == networkID ) {
+        return false;
+    }
+
+    // 添加网络连接
+    enableWifi = mWifiManager.enableNetwork(networkID, true);
+
+    return enableWifi;
+}
+}}}
+
+=== 断开Wifi ===
+{{{class="brush:java"
+public boolean disconnectWifi(AccessPointState ap) {
+    mWifiManager.disconnect(); 
+    boolean disabled = mWifiManager.disableNetwork(ap.getNetworkId()); 
+
+    return disabled;
+}
+}}}
+
+=== 获取Wifi连接信息 ===
+{{{class="brush:java"
+public boolean updateConnectedWifiInfo(AccessPointState ap) {
+    WifiInfo info = mWifiManager.getConnectionInfo();
+    SupplicantState state;
+    DetailedState detailState;
+
+    if ( info != null ) {
+        if ( isWifiEnabled() ) {
+            // 获取连接速度
+            ap.setLinkSpeed(info.getLinkSpeed());
+
+            // 获取连接状态
+            state = info.getSupplicantState();
+            detailState = info.getDetailedStateOf(state);
+            ap.setState(detailState);
+
+            // 获取信号强度
+            ap.setSign(WifiManager.calculateSignalLevel(info.getRssi(), 5));
+
+            // 获取dhcp信息
+            DhcpInfo dhcpInfo = mWifiManager.getDhcpInfo();
+
+            return true;
+        }
+    } 
+
+    return false;
+}
+}}}

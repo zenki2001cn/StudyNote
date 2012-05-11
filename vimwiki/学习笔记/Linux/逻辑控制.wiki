@@ -1,0 +1,173 @@
+= 逻辑控制 =
+
+%toc
+
+== 条件控制 ==
+=== if ===
+语法 ::
+{{{class="brush:bash"
+if [ condition ];then 
+    COMMAND;
+fi
+}}}
+
+主表达式 ::
+{{{class="brush:text"
+[ -a 文件 ] 如果文件存在为真。
+[ -b 文件 ] 如果文件存在而且是一个块-特殊文件为真。
+[ -c 文件 ] 为真如果文件存在而且是一个字-特殊文件。
+[ -d 文件 ] 为真如果文件存在而且是一个目录。
+[ -e 文件 ] 为真如果文件存在。
+[ -f 文件 ] 为真如果文件存在而且是一个普通文件。
+[ -g 文件 ] 为真如果文件存在而且已经设置了他的SGID 位。
+[ -h 文件 ] 为真如果文件存在而且是一个符号连接。
+[ -k 文件 ] 为真如果文件存在而且他的粘住位已经设置。
+[ -p 文件 ] 为真如果文件存在而且是一个已经命名的管道 (F 如果 O)。
+[ -r 文件 ] 为真如果文件存在而且是可读的。
+[ -s 文件 ] 为真如果文件存在而且比零字节大。
+[ -t FD ] 为真如果文件文件描述符已经打开而且指向一个终端。
+[ -u 文件 ] 为真如果文件存在而且已经设置了他的SUID (set user ID)位。
+[ -w 文件 ] 为真如果文件为真如果文件存在而且是可写的。
+[ -x 文件 ] 为真如果文件存在而且是可执行的。
+[ -O 文件 ] 为真如果文件存在而且属于有效用户ID。
+[ -G 文件 ] 为真如果文件存在而且属于有效组ID。
+[ -L 文件 ] 为真如果文件存在而且是一个符号连接。
+[ -N 文件 ] 为真如果文件存在而且has been mod 如果 ied since it was last read。
+[ -S 文件 ] 为真如果文件存在而且是一个socket。
+[ -z STRING ] 为真如果"STRING"的长度是零。
+[ -n STRING ] 或者[ STRING ]为真
+[ STRING1 == STRING2 ] "STRING"的长度是非零值，如果两个字符串相等为真。
+[ STRING1 != STRING2 ] 为真如果两两个字符串不相等。
+[ STRING1 < STRING2 ] 为真如果STRING1小于STRING2。
+[ STRING1 > STRING2 ] 为真如果STRING1大于STRING2。 
+}}}
+
+示例 ::
+{{{class="brush:bash"
+if [[ "$gender" == "f*" ]];then 
+    echo "Pleasure to meet you, Madame."
+else 
+    echo "How come the lady hasn't got a drink yet?"
+fi
+}}}
+
+=== if/then/else ===
+语法 ::
+{{{class="brush:bash"
+if [ condition ]; then
+    COMMAND1 
+else
+    COMMAND2
+fi
+}}}
+
+=== if/then/elif/else ===
+语法 ::
+{{{class="brush:bash"
+if [ condition ];then
+    COMMAND1
+elif [ another-condition ]; then
+    COMMAND2
+else
+    COMMAND3
+fi
+}}}
+
+=== case ===
+语法 :: 每个子句必须以`;;`结尾。每个case语句以`esac`语句结束。
+{{{class="brush:bash"
+case EXPRESSION in
+    CASE1) COMMAND1;;
+    CASE2) COMMAND2;;
+    CASE3) COMMAND3;;
+    *)     COMMAND4;;
+esac
+}}}
+
+示例 ::
+{{{class="brush:bash"
+case $rental in
+   "car") echo "For $rental Rs.20 per k/m";;
+   "van") echo "For $rental Rs.10 per k/m";;
+   "jeep") echo "For $rental Rs.5 per k/m";;
+   "bicycle") echo "For $rental 20 paisa per k/m";;
+   *) echo "Sorry, I can not gat a $rental for you";;
+esac
+}}}
+
+== 循环控制 ==
+=== for ===
+语法 ::
+{{{class="brush:bash"
+for { variable name } in { list }
+do
+    execute one for each item in the list until the list is
+    not finished (And repeat all statement between do and done)
+done
+}}}
+
+示例 ::
+{{{class="brush:bash"
+for i in 1 2 3 4 5
+do
+    echo "Welcome $i times"
+done
+}}}
+
+=== while ===
+语法 ::
+{{{class="brush:bash"
+while [ condition ]
+do
+     COMMAND1
+     COMMAND2
+     COMMAND3
+     ....
+done
+}}}
+
+示例 ::
+{{{class="brush:bash"
+while [ $i -le 10 ]
+do
+    echo "$n * $i = `expr $i \* $n`"
+    i=`expr $i + 1`
+done
+}}}
+
+== 函数 ==
+=== function ===
+语法 :: 函数是一种为后续操作组织命令的方法，使用单个名字来命名这些命令组或者过程。函数体必须以分号或者新行结尾。
+{{{class="brush:bash"
+# 不使用function关键字，需要加括号
+FUNCTION()
+{
+    COMMAND1
+    COMMAND2
+    ...
+}
+# 或者使用function关键字
+function FUNCTION
+{
+    COMMAND1
+    COMMAND2
+    ...
+}
+}}}
+
+示例 ::
+{{{class="brush:bash"
+FILES=`ls`
+
+show_files()
+{
+    # $@代表函数的参数列表
+    for FILE in $@
+    do
+        echo $FILE
+    done
+}
+
+# 直接调用函数名，$FILES为函数的参数
+show_files $FILES
+}}}

@@ -1,0 +1,147 @@
+= PreferenceActivity的使用 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Activity;
+
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
+import android.content.SharedPreferences;
+}}}
+
+== 使用XML构建 ==
+- 使用<PreferenceScreen>设置布局，其中android:key属性用来定义Preference的Key。
+- 从PreferenceActivity继承子类，在onCreate()方法中使用`addPreferencesFromResource()`方法加载布局。
+- `SharedPreferences`使用参见[[持久化]]
+
+=== 示例代码 ===
+==== XML布局 ====
+{{{class="brush:xml"
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <intent android:action="android.intent.action.VIEW"
+        android:data"http://www.android.com" />
+
+    <PreferenceCategory android:title="@string/preference_attributes">
+        <CheckBoxPreference
+            android:key="key_name"
+            android:title="@string/key_title"
+            android:summary="@string/key_summary"
+            android:defaultValue="true" 
+        />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+            android:title="@string/dialog_based_preferences">
+            
+        <CheckBoxPreference
+                android:key="checkbox_preference"
+                android:title="@string/title_toggle_preference"
+                android:summary="@string/summary_toggle_preference" />
+
+
+        <EditTextPreference
+                android:key="edittext_preference"
+                android:title="@string/title_edittext_preference"
+                android:summary="@string/summary_edittext_preference"
+                android:dialogTitle="@string/dialog_title_edittext_preference" />
+                
+        <ListPreference
+                android:key="list_preference"
+                android:title="@string/title_list_preference"
+                android:summary="@string/summary_list_preference"
+                android:entries="@array/entries_list_preference"
+                android:entryValues="@array/entryvalues_list_preference"
+                android:dialogTitle="@string/dialog_title_list_preference" />
+
+        </PreferenceCategory>
+</PreferenceScreen>
+}}}
+
+==== JAVA代码 ====
+{{{class="brush:java"
+public class MyTest extends PreferenceActivity {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        addPreferencesFromResource(R.xml.setting);
+        
+        // 获取SharedPreferences引用
+        SharedPreferences sp = getPreferenceManager().getDefaultSharedPreferences(this);
+    }
+}
+}}}
+
+== 使用代码构建 ==
+- 需要从PreferenceActivity类继承
+- 在onCreate方法中使用setPreferenceScreen(PreferenceScreen preference)
+
+=== 示例代码 ===
+==== JAVA代码 ====
+{{{class="brush:java"
+public class PreferencesFromCode extends PreferenceActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        setPreferenceScreen(createPreferenceHierarchy());
+    }
+
+    private PreferenceScreen createPreferenceHierarchy() {
+        // Root
+        PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
+        
+        // Inline preferences 
+        PreferenceCategory inlinePrefCat = new PreferenceCategory(this);
+        inlinePrefCat.setTitle(R.string.inline_preferences);
+        root.addPreference(inlinePrefCat);
+        
+        // Toggle preference
+        CheckBoxPreference togglePref = new CheckBoxPreference(this);
+        togglePref.setKey("toggle_preference");
+        togglePref.setTitle(R.string.title_toggle_preference);
+        togglePref.setSummary(R.string.summary_toggle_preference);
+        inlinePrefCat.addPreference(togglePref);
+                
+        // Dialog based preferences
+        PreferenceCategory dialogBasedPrefCat = new PreferenceCategory(this);
+        dialogBasedPrefCat.setTitle(R.string.dialog_based_preferences);
+        root.addPreference(dialogBasedPrefCat);
+
+        // Edit text preference
+        EditTextPreference editTextPref = new EditTextPreference(this);
+        editTextPref.setDialogTitle(R.string.dialog_title_edittext_preference);
+        editTextPref.setKey("edittext_preference");
+        editTextPref.setTitle(R.string.title_edittext_preference);
+        editTextPref.setSummary(R.string.summary_edittext_preference);
+        dialogBasedPrefCat.addPreference(editTextPref);
+        
+        // List preference
+        ListPreference listPref = new ListPreference(this);
+        listPref.setEntries(R.array.entries_list_preference);
+        listPref.setEntryValues(R.array.entryvalues_list_preference);
+        listPref.setDialogTitle(R.string.dialog_title_list_preference);
+        listPref.setKey("list_preference");
+        listPref.setTitle(R.string.title_list_preference);
+        listPref.setSummary(R.string.summary_list_preference);
+        dialogBasedPrefCat.addPreference(listPref);
+        
+        return root;
+    }
+}
+}}}
+
+== 生成的配置文件 ==
+- 查看程序生成的`/data/data/[PACKAGE_NAME]/shared_prefs/[PACKAGE_NAME]_preferences.xml`参数配置文件。
+
+{{{class="brush:xml"
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+<string name="eoe">book1</string>
+<boolean name="android" value="true" />
+</map>
+}}}

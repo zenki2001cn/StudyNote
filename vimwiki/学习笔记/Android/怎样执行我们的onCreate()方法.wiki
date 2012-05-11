@@ -1,0 +1,416 @@
+= 怎样执行我们的onCreate()方法 =
+
+%toc
+
+== 流程分析 ==
+- 整个流程用到至少4次IPC
+- 无论哪种模式，Process.start都会载入`android.app.ActivityThread`这个类，并执行`main()`方法作为新Activity的启动入口
+- main()方法调用`attach()`方法载入相应的Activity
+- ActivityThread.attach()调用时传入一个`ApplicationThread`类对象作为回调，该对象用来完成实际对Activity的操作，如`scheduleExit`、`bindApplication`
+-  ActivityThread.attach()的启动分两种情况：根据参数判断是系统进程还是用户进程。如果是系统进程，则通过`Instrumentation`直接产生一个app，并运行它的onCreate()方法；如果不是系统进程，则通过`IActivityManager`再次`回到ActivityManagerService`中的`attachApplicationLocked()`方法。(`第一次IPC`)
+
+关键点一 绑定应用 :: 
+- ActivityManagerService.attachApplicationLocked()调用`ApplicationThread.bindApplication()`，并`回到ApplicationThread`类。(`第二次IPC`)
+- ApplicationThread通过消息处理类`H`，调用`handleBindApplication()`方法，最终调用Instrumentation.`callApplicationOnCreate()`方法进入`Application.onCreate()`
+
+关键点二 启动Activity ::
+- ActivityManagerService.attachApplicationLocked()调用`realStartActivityLocked()`，继而调用ApplicationThread.`scheduleLaunchActivity()`方法，并`回到ApplicationThread`类。(`第三次IPC`)
+- ApplicationThread通过消息处理类`H`，调用`handleLaunchActivity()`方法，继而调用`performLaunchActivity()`方法，最终通过Instrumentation调用onCreate()、onStart()...
+
+关键点三 启动Service和BroadCast ::
+- ActivityManagerService.attachApplicationLocked()在启动Activity后还要查看是否有Service和BroadCast需要处理，并分别调用`realStartServiceLocked()`和`scheduleBroadcastsLocked()`，调用Service和BroadCast的过程和调用Activity的过程大同小异，都是使用同一个消息处理。(`第四次IPC`)
+
+== 参考代码 ==
+=== ActivityThread类 ===
+{{{class="brush:java"
+private final class ApplicationThread extends ApplicationThreadNative
+}}}
+
+==== 方法：main ====
+{{{class="brush:java"
+// 入口方法
+public static final void main(String[] args) {
+    SamplingProfilerIntegration.start();
+
+    Process.setArgV0("<pre-initialized>");
+
+    Looper.prepareMainLooper();
+
+    ActivityThread thread = new ActivityThread();
+    thread.attach(false);
+
+    Looper.loop();
+}
+}}}
+
+==== 方法：attach ====
+{{{class="brush:java"
+// 参数true代表是系统进程，否则为用户进程
+private final void attach(boolean system) {
+    sThreadLocal.set(this);
+    mSystemThread = system;
+    AndroidHttpClient.setThreadBlocked(true);
+    if (!system) {
+        android.ddm.DdmHandleAppName.setAppName("<pre-initialized>");
+        RuntimeInit.setApplicationObject(mAppThread.asBinder());
+        IActivityManager mgr = ActivityManagerNative.getDefault();
+        try {
+            // 调用ActivityManagerService方法
+            mgr.attachApplication(mAppThread);
+        } catch (RemoteException ex) {
+        }
+    } else {
+        // Don't set application object here -- if the system crashes,
+        // we can't display an alert, we just want to die die die.
+        android.ddm.DdmHandleAppName.setAppName("system_process");
+        try {
+            mInstrumentation = new Instrumentation();
+            ApplicationContext context = new ApplicationContext();
+            context.init(getSystemContext().mPackageInfo, null, this);
+            Application app = Instrumentation.newApplication(Application.class, context);
+            mAllApplications.add(app);
+            mInitialApplication = app;
+            app.onCreate();
+        } catch (Exception e) {
+            ......
+        }
+    }
+}
+}}}
+    
+==== 方法：bindApplication ====
+{{{class="brush:java"
+// 外部调用的绑定应用的方法
+public final void bindApplication(String processName,
+                                    ApplicationInfo appInfo, List<ProviderInfo> providers,
+                                    ComponentName instrumentationName, String profileFile,
+                                    Bundle instrumentationArgs, IInstrumentationWatcher instrumentationWatcher,
+                                    int debugMode, boolean isRestrictedBackupMode, Configuration config,
+                                    Map<String, IBinder> services) {
+
+    if (services != null) {
+        // Setup the service cache in the ServiceManager
+        ServiceManager.initServiceCache(services);
+    }
+
+    AppBindData data = new AppBindData();
+    data.processName = processName;
+    data.appInfo = appInfo;
+    data.providers = providers;
+    data.instrumentationName = instrumentationName;
+    data.profileFile = profileFile;
+    data.instrumentationArgs = instrumentationArgs;
+    data.instrumentationWatcher = instrumentationWatcher;
+    data.debugMode = debugMode;
+    data.restrictedBackupMode = isRestrictedBackupMode;
+    data.config = config;
+    
+    // 发送消息给Handle
+    queueOrSendMessage(H.BIND_APPLICATION, data);
+}
+}}}
+    
+==== 方法：scheduleLaunchActivity ====
+{{{class="brush:java"
+// 外部调用的启动Activity的方法
+public final void scheduleLaunchActivity(Intent intent, IBinder token, int ident,
+            ActivityInfo info, Bundle state, List<ResultInfo> pendingResults,
+            List<Intent> pendingNewIntents, boolean notResumed, boolean isForward) {
+    ActivityRecord r = new ActivityRecord();
+
+    r.token = token;
+    r.ident = ident;
+    r.intent = intent;
+    r.activityInfo = info;
+    r.state = state;
+
+    r.pendingResults = pendingResults;
+    r.pendingIntents = pendingNewIntents;
+
+    r.startsNotResumed = notResumed;
+    r.isForward = isForward;
+
+    queueOrSendMessage(H.LAUNCH_ACTIVITY, r);
+}
+}}}
+    
+==== 方法：handleBindApplication ====
+{{{class="brush:java"
+// 内部调用的处理BIND_APPLICATION消息的方法
+private final void handleBindApplication(AppBindData data) {
+    ......
+
+    try {
+        // 启动onCreate()方法
+        mInstrumentation.callApplicationOnCreate(app);
+    } catch (Exception e) {
+    }
+    
+    ......
+}
+}}}
+    
+==== 方法：handleLaunchActivity ====
+{{{class="brush:java"
+// 内部调用的处理LAUNCH_ACTIVITY消息的方法
+private final void handleLaunchActivity(ActivityRecord r, Intent customIntent) {
+    // 省略......
+     
+    Activity a = performLaunchActivity(r, customIntent);
+    
+    // 省略......
+}
+}}}
+    
+==== 方法：performLaunchActivity ====
+{{{class="brush:java"
+// 最终调用的方法
+private final Activity performLaunchActivity(ActivityRecord r, Intent customIntent) {
+    // 省略......
+    
+    // 构造ComponentName
+    ComponentName component = new ComponentName(r.activityInfo.packageName,
+                                                r.activityInfo.targetActivity);
+
+    // 构造Activity
+    Activity activity = null;
+    try {
+        java.lang.ClassLoader cl = r.packageInfo.getClassLoader();
+        activity = mInstrumentation.newActivity(
+                cl, component.getClassName(), r.intent);
+        r.intent.setExtrasClassLoader(cl);
+    } catch (Exception e) {
+    }
+    
+    // 省略......
+
+    try {
+        Application app = r.packageInfo.makeApplication(false, mInstrumentation);
+
+        if (activity != null) {
+            ApplicationContext appContext = new ApplicationContext();
+            appContext.init(r.packageInfo, r.token, this);
+            appContext.setOuterContext(activity);
+            CharSequence title = r.activityInfo.loadLabel(appContext.getPackageManager());
+            Configuration config = new Configuration(mConfiguration);
+            activity.attach(appContext, this, getInstrumentation(), r.token,
+                    r.ident, app, r.intent, r.activityInfo, title, r.parent,
+                    r.embeddedID, r.lastNonConfigurationInstance,
+                    r.lastNonConfigurationChildInstances, config);
+            // 省略......
+            
+            // 设置主题
+            int theme = r.activityInfo.getThemeResource();
+            if (theme != 0) {
+                activity.setTheme(theme);
+            }
+
+            // 调用onCreate()
+            mInstrumentation.callActivityOnCreate(activity, r.state);
+            
+            // 调用onStart()
+            if (!r.activity.mFinished) {
+                activity.performStart();
+                r.stopped = false;
+            }
+            
+            // 调用onSaveInstanceState()
+            if (!r.activity.mFinished) {
+                if (r.state != null) {
+                    mInstrumentation.callActivityOnRestoreInstanceState(activity, r.state);
+                }
+            }
+            
+            // 调用onPostCreate()
+            if (!r.activity.mFinished) {
+                activity.mCalled = false;
+                mInstrumentation.callActivityOnPostCreate(activity, r.state);
+            }
+            
+            // 省略......
+        }
+        r.paused = true;
+    } catch (SuperNotCalledException e) {
+    } catch (Exception e) {
+    }
+}
+}}}
+
+==== 类：H ====
+{{{class="brush:java"
+// 用于消息处理的Handle
+private final class H extends Handler {
+    private H() {
+        SamplingProfiler.getInstance().setEventThread(mLooper.getThread());
+    }
+
+    public void handleMessage(Message msg) {
+        switch (msg.what) {
+            // 该ID标志为绑定应用
+            case BIND_APPLICATION: {
+                AppBindData data = (AppBindData)msg.obj;
+                handleBindApplication(data);
+            } break;
+            // 该ID标志为启动Activity
+            case LAUNCH_ACTIVITY: {
+                ActivityRecord r = (ActivityRecord)msg.obj;
+
+                r.packageInfo = getPackageInfoNoCheck(
+                        r.activityInfo.applicationInfo);
+                handleLaunchActivity(r, null);
+            } break;
+        }
+    }
+}
+}}}
+
+=== ActivityManagerService类 ===
+==== 方法：attachApplicationLocked ====
+{{{class="brush:java"
+private final boolean attachApplicationLocked(IApplicationThread thread,
+            int pid) {
+    // 省略......
+
+    // 添加属性
+    app.thread = thread;
+    app.curAdj = app.setAdj = -100;
+    app.curSchedGroup = app.setSchedGroup = Process.THREAD_GROUP_DEFAULT;
+    app.forcingToForeground = null;
+    app.foregroundServices = false;
+    app.debugging = false;
+    
+    mHandler.removeMessages(PROC_START_TIMEOUT_MSG, app);
+    
+    // 省略......
+    
+    // 绑定Application
+    thread.bindApplication(processName, app.instrumentationInfo != null
+        ? app.instrumentationInfo : app.info, providers,
+        app.instrumentationClass, app.instrumentationProfileFile,
+        app.instrumentationArguments, app.instrumentationWatcher, testMode, 
+        isRestrictedBackupMode || !normalMode,
+        mConfiguration, getCommonServicesLocked());
+    // 省略......
+    
+    // 查找是否有需要运行的Activity
+    HistoryRecord hr = topRunningActivityLocked(null);
+    if (hr != null) {
+        if (hr.app == null && app.info.uid == hr.info.applicationInfo.uid
+                && processName.equals(hr.processName)) {
+            try {
+                // 启动Activity
+                if (realStartActivityLocked(hr, app, true, true)) {
+                    didSomething = true;
+                }
+            } catch (Exception e) {
+                badApp = true;
+            }
+        } else {
+            ensureActivitiesVisibleLocked(hr, null, processName, 0);
+        }
+    }
+    
+    // 查找是否有需要启动的Service
+    if (!badApp && mPendingServices.size() > 0) {
+        ServiceRecord sr = null;
+        try {
+            for (int i=0; i<mPendingServices.size(); i++) {
+                sr = mPendingServices.get(i);
+                if (app.info.uid != sr.appInfo.uid
+                        || !processName.equals(sr.processName)) {
+                    continue;
+                }
+
+                mPendingServices.remove(i);
+                i--;
+                // 启动Service
+                realStartServiceLocked(sr, app);
+                didSomething = true;
+            }
+        } catch (Exception e) {
+        }
+    }
+
+    // 查找是否有BroadcastReceiver
+    BroadcastRecord br = mPendingBroadcast;
+    if (!badApp && br != null && br.curApp == app) {
+        try {
+            mPendingBroadcast = null;
+            processCurBroadcastLocked(br, app);
+            didSomething = true;
+        } catch (Exception e) {
+            Log.w(TAG, "Exception in new application when starting receiver "
+                  + br.curComponent.flattenToShortString(), e);
+            badApp = true;
+            logBroadcastReceiverDiscard(br);
+            finishReceiverLocked(br.receiver, br.resultCode, br.resultData,
+                    br.resultExtras, br.resultAbort, true);
+            scheduleBroadcastsLocked();
+        }
+    }
+}
+}}}
+
+==== 方法：realStartActivityLocked ====
+{{{class="brush:java"
+private final boolean realStartActivityLocked(HistoryRecord r, ProcessRecord app, boolean andResume, boolean checkConfig) {
+    ......
+    // 在这里跳转到ApplicationThread，开始LaunchActivity
+    app.thread.scheduleLaunchActivity(new Intent(r.intent), r, System.identityHashCode(r),
+                                      r.info, r.icicle, results, newIntents, !andResume, 
+                                      isNextTransitionForward());
+    ......
+}
+}}}
+
+=== IApplicationThread接口 ===
+- ApplicationThread类为ActivityThread的内部类，继承于ApplicationThreadNative并实现IApplicationThread接口
+
+==== 类：ApplicationThreadNative ====
+{{{class="brush:java"
+public abstract class ApplicationThreadNative extends Binder implements IApplicationThread
+}}}
+
+==== 接口：IApplicationThread ====
+{{{class="brush:java"
+public interface IApplicationThread extends IInterface {
+    // 处理Activity
+    void schedulePauseActivity(IBinder token, boolean finished, boolean userLeaving,
+                                int configChanges) throws RemoteException;
+    void scheduleStopActivity(IBinder token, boolean showWindow,
+                                int configChanges) throws RemoteException;
+    void scheduleResumeActivity(IBinder token, boolean isForward) throws RemoteException;
+    void scheduleSendResult(IBinder token, List<ResultInfo> results) throws RemoteException;
+    void scheduleLaunchActivity(Intent intent, IBinder token, int ident,
+                                ActivityInfo info, Bundle state, List<ResultInfo> pendingResults,
+                                List<Intent> pendingNewIntents, boolean notResumed, boolean isForward)
+                                throws RemoteException;
+    void scheduleNewIntent(List<Intent> intent, IBinder token) throws RemoteException;
+    void scheduleDestroyActivity(IBinder token, boolean finished,
+                                int configChanges) throws RemoteException;
+            
+    // 处理Receiver
+    void scheduleReceiver(Intent intent, ActivityInfo info, int resultCode,
+                                String data, Bundle extras, boolean sync) throws RemoteException;
+    void scheduleCreateService(IBinder token, ServiceInfo info) throws RemoteException;
+    void scheduleBindService(IBinder token,
+                                Intent intent, boolean rebind) throws RemoteException;
+    void scheduleUnbindService(IBinder token,
+                                Intent intent) throws RemoteException;
+    void scheduleServiceArgs(IBinder token, int startId, int flags, Intent args)
+                                throws RemoteException;
+    void scheduleStopService(IBinder token) throws RemoteException;
+    
+    // 处理Application
+    void bindApplication(String packageName, ApplicationInfo info, List<ProviderInfo> providers,
+                        ComponentName testName, String profileName, Bundle testArguments, 
+                        IInstrumentationWatcher testWatcher, int debugMode, boolean restrictedBackupMode,
+                        Configuration config, Map<String, IBinder> services) throws RemoteException;
+    void scheduleExit() throws RemoteException;
+    void scheduleRegisteredReceiver(IIntentReceiver receiver, Intent intent,
+                        int resultCode, String data, Bundle extras, boolean ordered, boolean sticky)
+                        throws RemoteException;
+    void scheduleLowMemory() throws RemoteException;
+    void scheduleActivityConfigurationChanged(IBinder token) throws RemoteException;
+}
+}}}

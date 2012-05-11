@@ -1,0 +1,19 @@
+= 继承类关系 =
+
+| 直接子类     | 间接子类                       | 间接子类           | 间接子类        | 间接子类          |
+|--------------+--------------------------------+--------------------+-----------------+-------------------|
+| AnalogClock  | AbsListView                    | Button             | ViewFlipper     | ViewAnimator      |
+| ImageView    | AbsSeekBar                     | CheckedTextView    | TwoLineListItem | VideoView         |
+| KeyboardView | AbsSpinner                     | CheckBox           | ToggleButton    | WebView           |
+| ProgressBar  | AbsoluteLayout                 | Chronometer        | TextSwitcher    | ZoomButton        |
+| SurfaceView  | AdapterView<T extends Adapter> | CompoundButton     | SlidingDrawer   | ZoomControls      |
+| TextView     | AppWidgetHostView              | DatePicker         | TableLayout     | TimePicker        |
+| ViewGroup    | AutoCompleteTextView           | DialerFilter       | TableRow        | ViewSwitcher      |
+| ViewStub     | RelativeLayout                 | EditText           | TabHost         | Spinner           |
+|              | FrameLayout                    | ExpandableListView | TabWidget       | QuickContactBadge |
+|              | LinearLayout                   | ExtractEditText    | SeekBar         | RatingBar         |
+|              | HorizontalScrollView           | DigitalClock       | ScrollView      | RadioGroup        |
+|              | GestureOverlayView             | GridView           |MultiAutoCompleteTextView      | RadioButton        |
+|              | GLSurfaceView                  | ImageButton        |MediaController                | ListView           |
+|              | Gallery                        | ImageSwitcher      |                 |                   |
+

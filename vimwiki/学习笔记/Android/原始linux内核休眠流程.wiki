@@ -1,0 +1,213 @@
+= 原始linux内核休眠流程 =
+
+%toc
+
+== 休眠的主要步骤 ==
+- 冻结用户态进程和内核态任务
+- 调用注册的设备的suspend的回调函数
+
+{{{class="brush:text"
+    休眠核心设备和使CPU进入休眠态，冻结进程是内核把进程列表中所有的进程的状态都设置为停止，
+并且保存下所有进程的上下文。当这些进程被解冻的时候，他们是不知道自己被冻结过的，只是简单的继续执行。
+如何让Linux进入休眠呢?用户可以通过读写sys文件/sys/power/state实现控制系统进入休眠。
+}}}
+
+== 相关文件 ==
+{{{class="brush:text"
+linux_soruce/kernel/power/main.c
+linux_source/kernel/arch/xxx/mach-xxx/pm.c
+linux_source/driver/base/power/main.c
+}}}
+
+== 代码分析 ==
+=== /sys/power/state状态的读写 ===
+用户对于/sys/power/state的读写会调用到main.c中的state_store()，用户可以写入const char * const pm_state[] 中定义的字符串，比如"mem"，"standby"。然后state_store()会调用enter_state()，它首先会检查一些状态参数，然后同步文件系统。
+
+{{{class="brush:c"
+/**
+ *      enter_state - Do common work of entering low-power state.
+ *      @state:         pm_state structure for state we're entering.
+ *
+ *      Make sure we're the only ones trying to enter a sleep state. Fail
+ *      if someone has beat us to it, since we don't want anything weird to
+ *      happen when we wake up.
+ *      Then, do the setup for suspend, enter the state, and cleaup (after
+ *      we've woken up).
+ */
+static int enter_state(suspend_state_t state)
+{
+    int error;
+
+    if (!valid_state(state))
+        return -ENODEV;
+
+    if (!mutex_trylock(&pm_mutex))
+        return -EBUSY;
+
+    sys_sync();
+
+    error = suspend_prepare();
+    if (error)
+        goto Unlock;
+
+    if (suspend_test(TEST_FREEZER))
+        goto Finish;
+
+    error = suspend_devices_and_enter(state);
+
+Finish:
+    suspend_finish();
+Unlock:
+    mutex_unlock(&pm_mutex);
+    return error;
+}
+}}}
+
+=== 准备冻结进程 ===
+当进入到suspend_prepare()中以后，它会给suspend分配一个虚拟终端来输出信息，然后广播一个系统要进入suspend的Notify，
+关闭掉用户态的helper进程，然后一次调用suspend_freeze_processes()冻结所有的进程，这里会保存所有进程当前的状态，
+也许有一些进程会拒绝进入冻结状态，当有这样的进程存在的时候，会导致冻结失败，此函数就会放弃冻结进程，并且解冻刚才冻结的所有进程。
+
+{{{class="brush:c"
+/**
+ *      suspend_prepare - Do prep work before entering low-power state.
+ *
+ *      This is common code that is called for each state that we're entering.
+ *      Run suspend notifiers, allocate a console and stop all processes.
+ */
+static int suspend_prepare(void)
+{
+    int error;
+    unsigned int free_pages;
+
+    if (!suspend_ops || !suspend_ops->enter)
+        return -EPERM;
+
+    pm_prepare_console();
+
+    error = pm_notifier_call_chain(PM_SUSPEND_PREPARE);
+    if (error)
+        goto Finish;
+
+    error = usermodehelper_disable();
+    if (error)
+        goto Finish;
+
+    if (suspend_freeze_processes()) {
+        error = -EAGAIN;
+        goto Thaw;
+    }
+
+    free_pages = global_page_state(NR_FREE_PAGES);
+    if (free_pages < FREE_PAGE_NUMBER) {
+        shrink_all_memory(FREE_PAGE_NUMBER - free_pages);
+        if (nr_free_pages() < FREE_PAGE_NUMBER) {
+            error = -ENOMEM;
+        }
+    }
+    if (!error)
+        return 0;
+
+Thaw:
+    suspend_thaw_processes();
+    usermodehelper_enable();
+Finish:
+    pm_notifier_call_chain(PM_POST_SUSPEND);
+    pm_restore_console();
+    return error;
+}
+}}}
+
+=== 外设进入休眠 ===
+现在，所有的进程(也包括workqueue/kthread)都已经停止了，内核态任务有可能在停止的时候握有一些信号量，所以如果这时候在外设里面去解锁这个信号量有可能会发生死锁，
+所以在外设的suspend()函数里面作lock/unlock锁要非常 小心，这里建议设计的时候就不要在suspend()里面等待锁。而且因为suspend的时候，有一些Log是无法输出的，
+所以一旦出现问题，非常难调试。
+
+然后kernel在这里会尝试释放一些内存。
+
+最后会调用suspend_devices_and_enter()来把所有的外设休眠，在这个函数中，如果平台注册了suspend_pos(通常是在板级定义中定义和注册)，
+这里就会调用suspend_ops->begin()，然后driver/base/power/main.c 中的device_suspend()->dpm_suspend()会被调用，他们会依次调用驱动的suspend()回调来休眠掉所有的设备。
+
+当所有的设备休眠以后，suspend_ops->prepare()会被调用，这个函数通常会作一些准备工作来让板机进入休眠。接下来Linux，在多核的CPU中的非启动CPU会被关掉，
+通过注释看到是避免这些其他的CPU造成race condion，接下来的以后只有一个CPU在运行了。
+
+suspend_ops是板级的电源管理操作，通常注册在文件arch/xxx/mach-xxx/pm.c中。
+
+接下来，suspend_enter()会被调用，这个函数会关闭arch irq，调用device_power_down()，它会调用suspend_late()函数，这个函数是系统真正进入休眠最后调用的函数，
+通常会在这个函数中作最后的检查。如果检查没问题，接 下来休眠所有的系统设备和总线，并且调用suspend_pos->enter()来使CPU进入省电状态。这时候，就已经休眠了。
+代码的执行也就停在这里了。
+
+{{{class="brush:c"
+/**
+ *      suspend_devices_and_enter - suspend devices and enter the desired system
+ *                                  sleep state.
+ *      @state:           state to enter
+ */
+int suspend_devices_and_enter(suspend_state_t state)
+{
+    int error, ftrace_save;
+
+    if (!suspend_ops)
+        return -ENOSYS;
+
+    if (suspend_ops->begin) {
+        error = suspend_ops->begin(state);
+        if (error)
+            goto Close;
+    }
+    suspend_console();
+    ftrace_save = __ftrace_enabled_save();
+    suspend_test_start();
+    error = device_suspend(PMSG_SUSPEND);
+    if (error) {
+        printk(KERN_ERR "PM: Some devices failed to suspend\n");
+        goto Recover_platform;
+    }
+    suspend_test_finish("suspend devices");
+    if (suspend_test(TEST_DEVICES))
+        goto Recover_platform;
+
+    if (suspend_ops->prepare) {
+        error = suspend_ops->prepare();
+        if (error)
+            goto Resume_devices;
+    }
+
+    if (suspend_test(TEST_PLATFORM))
+        goto Finish;
+
+    error = disable_nonboot_cpus();
+    if (!error && !suspend_test(TEST_CPUS))
+        suspend_enter(state);
+
+    enable_nonboot_cpus();
+Finish:
+    if (suspend_ops->finish)
+            suspend_ops->finish();
+Resume_devices:
+    suspend_test_start();
+    device_resume(PMSG_RESUME);
+    suspend_test_finish("resume devices");
+    __ftrace_enabled_restore(ftrace_save);
+    resume_console();
+Close:
+    if (suspend_ops->end)
+        suspend_ops->end();
+    return error;
+
+Recover_platform:
+    if (suspend_ops->recover)
+        suspend_ops->recover();
+    goto Resume_devices;
+}
+}}}
+
+=== 唤醒 ===
+如果在休眠中系统被中断或者其他事件唤醒，接下来的代码就会开始执行，这个唤醒的顺序是和休眠的循序相反的，所以系统设备和总线会首先唤醒，
+使能系统中断，使能休眠时候停止掉的非启动CPU，以及调用suspend_ops->finish()，而且在suspend_devices_and_enter()函数中也会继续唤醒每个设备，
+使能虚拟终端，最后调用suspend_ops->end()。
+
+在返回到enter_state()函数中的，当suspend_devices_and_enter()返回以后，外设已经唤醒了，但是进程和任务都还是冻结状态，这里会调用suspend_finish()
+来解冻这些进程和任务，而且发出Notify来表示系统已经从suspend状态退出，唤醒终端。
+
+到这里，所有的休眠和唤醒就已经完毕了，系统继续运行了。

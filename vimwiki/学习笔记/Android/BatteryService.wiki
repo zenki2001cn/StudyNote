@@ -1,0 +1,158 @@
+= BatteryService分析 =
+
+%toc
+
+== 代码分析 ==
+=== 定义用于JNI返回的变量 ===
+{{{class="brush:java"
+private boolean mAcOnline;
+private boolean mUsbOnline;
+private int mBatteryStatus;
+private int mBatteryHealth;
+private boolean mBatteryPresent;
+private int mBatteryLevel;
+private int mBatteryVoltage;
+private int mBatteryTemperature;
+private String mBatteryTechnology;
+private boolean mBatteryLevelCritical;
+}}}
+
+=== 构造方法 ===
+{{{class="brush:java"
+public BatteryService(Context context) {
+    mContext = context;
+    mBatteryStats = BatteryStatsService.getService();
+
+    mLowBatteryWarningLevel = mContext.getResources().getInteger(
+            com.android.internal.R.integer.config_lowBatteryWarningLevel);
+    mLowBatteryCloseWarningLevel = mContext.getResources().getInteger(
+            com.android.internal.R.integer.config_lowBatteryCloseWarningLevel);
+
+    
+    // 添加更新数据对象
+    mUEventObserver.startObserving("SUBSYSTEM=power_supply");
+
+    // 更新状态方法
+    update();
+}
+}}}
+
+=== 更新数据 ===
+- update()读取sysfs文件做到同步取得电池信息, 然后根据读到的状态更新BatteryService的成员变量，并广播一个Intent来通知其它关注电源状态的组件。
+- 当kernel有power_supply事件上报时，mUEventObserver调用update()函数，然后update()调用native_update从sysfs中读取相关状态。
+
+{{{class="brush:java"
+// 注册更新对象
+private UEventObserver mUEventObserver = new UEventObserver() {
+    @Override
+    public void onUEvent(UEventObserver.UEvent event) {
+        // 更新状态方法
+        update();
+    }
+};
+
+private native void native_update();
+
+// 更新状态
+private synchronized final void update() {
+    // 调用JNI的update方法
+    native_update();
+
+    ......
+    
+    if (mBatteryStatus != mLastBatteryStatus ||
+            mBatteryHealth != mLastBatteryHealth ||
+            mBatteryPresent != mLastBatteryPresent ||
+            mBatteryLevel != mLastBatteryLevel ||
+            mPlugType != mLastPlugType ||
+            mBatteryVoltage != mLastBatteryVoltage ||
+            mBatteryTemperature != mLastBatteryTemperature) {
+
+        if (mPlugType != mLastPlugType) {
+            if (mLastPlugType == BATTERY_PLUGGED_NONE) {
+                // 放电->充电状态转换
+                
+            } else if (mPlugType == BATTERY_PLUGGED_NONE) {
+                // 充电->放电状态转换 
+                
+            }
+        }
+        
+        if (mBatteryLevel != mLastBatteryLevel && mPlugType == BATTERY_PLUGGED_NONE) {
+            // 放电状态下更新电池的等级
+            
+        }
+        if (mBatteryLevelCritical && !mLastBatteryLevelCritical &&
+                mPlugType == BATTERY_PLUGGED_NONE) {
+            // 电池电量将要耗尽
+            
+        }
+
+        ......
+
+        // 通过Intent发送状态
+        sendIntent();
+
+        // 通过Intent方式通知电池状态信息
+        if (mPlugType != 0 && mLastPlugType == 0) {
+            statusIntent.setAction(Intent.ACTION_POWER_CONNECTED);
+            mContext.sendBroadcast(statusIntent);
+        }
+        else if (mPlugType == 0 && mLastPlugType != 0) {
+            statusIntent.setAction(Intent.ACTION_POWER_DISCONNECTED);
+            mContext.sendBroadcast(statusIntent);
+        }
+
+        if (sendBatteryLow) {
+            mSentLowBatteryBroadcast = true;
+            statusIntent.setAction(Intent.ACTION_BATTERY_LOW);
+            mContext.sendBroadcast(statusIntent);
+        } else if ((mSentLowBatteryBroadcast && mLastBatteryLevel >= mLowBatteryCloseWarningLevel) ||
+                   (mSentLowBatteryBroadcast && mBatteryStatus == BatteryManager.BATTERY_STATUS_CHARGING)) {
+            mSentLowBatteryBroadcast = false;
+            statusIntent.setAction(Intent.ACTION_BATTERY_OKAY);
+            mContext.sendBroadcast(statusIntent);
+        }
+
+        // 更新最后电池信息状态
+        mLastBatteryStatus = mBatteryStatus;
+        mLastBatteryHealth = mBatteryHealth;
+        mLastBatteryPresent = mBatteryPresent;
+        mLastBatteryLevel = mBatteryLevel;
+        mLastPlugType = mPlugType;
+        mLastBatteryVoltage = mBatteryVoltage;
+        mLastBatteryTemperature = mBatteryTemperature;
+        mLastBatteryLevelCritical = mBatteryLevelCritical;
+    }
+}
+}}}
+
+=== 数据传送 ===
+{{{class="brush:java"
+// 通过发送Intent方式来通知电池状态
+private final void sendIntent() {
+    //  Pack up the values and broadcast them to everyone
+    Intent intent = new Intent(Intent.ACTION_BATTERY_CHANGED);
+    intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
+    try {
+        mBatteryStats.setOnBattery(mPlugType == BATTERY_PLUGGED_NONE, mBatteryLevel);
+    } catch (RemoteException e) {
+        // Should never happen.
+    }
+
+    int icon = getIcon(mBatteryLevel);
+
+    intent.putExtra(BatteryManager.EXTRA_STATUS, mBatteryStatus);
+    intent.putExtra(BatteryManager.EXTRA_HEALTH, mBatteryHealth);
+    intent.putExtra(BatteryManager.EXTRA_PRESENT, mBatteryPresent);
+    intent.putExtra(BatteryManager.EXTRA_LEVEL, mBatteryLevel);
+    intent.putExtra(BatteryManager.EXTRA_SCALE, BATTERY_SCALE);
+    intent.putExtra(BatteryManager.EXTRA_ICON_SMALL, icon);
+    intent.putExtra(BatteryManager.EXTRA_PLUGGED, mPlugType);
+    intent.putExtra(BatteryManager.EXTRA_VOLTAGE, mBatteryVoltage);
+    intent.putExtra(BatteryManager.EXTRA_TEMPERATURE, mBatteryTemperature);
+    intent.putExtra(BatteryManager.EXTRA_TECHNOLOGY, mBatteryTechnology);
+
+    ActivityManagerNative.broadcastStickyIntent(intent, null);
+}
+}}}

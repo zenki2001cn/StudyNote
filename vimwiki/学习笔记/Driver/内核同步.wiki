@@ -1,0 +1,542 @@
+= 内核同步 =
+
+%toc
+
+== 相关头文件 ==
+{{{class="brush:c"
+#include <asm/atomic.h>
+#include <linux/semaphore.h>
+#include <linux/rwsem.h>
+#include <linux/spinlock.h>
+#include <linux/rwlock.h>
+#include <linux/percpu-defs.h>
+#include <linux/percpu.h>
+#include <linux/system.h>
+#include <linux/rcupdate.h>
+#include <linux/completion.h>
+}}}
+
+== 中断与异常处理方式的比较 ==
+| 访问共享数据的内核控制路径 | 单CPU同步方式  | 多CPU同步方式                    | 备注                                               |
+|----------------------------+----------------+----------------------------------+----------------------------------------------------|
+| 异常                       | 信号量         | 无                               | 在某些情况下需要禁用内核抢占特性                   |
+| 中断                       | 禁止本地中断   | 自旋锁+禁止本地中断+禁止内核抢占 | 中断可嵌套执行，因此需要禁用本地中断，并保护临界区 |
+| 软中断                     | 无             | 自旋锁+禁止本地中断+禁止内核抢占 | 软中断在单CPU上串行执行，在多CPU上可能并发         |
+| 一个tasklet                | 无             | 无                               | 同一tasklet只能在单CPU上串行执行                   |
+| 多个tasklet                | 无             | 自旋锁+禁止本地中断+禁止内核抢占 | 多个tasklet在单CPU上串行执行，在多CPU上可能并发    |
+| 异常与中断                 | 禁止本地中断   | 自旋锁+禁止本地中断+禁止内核抢占 |                                                    |
+| 异常与可延迟函数           | 禁止本地软中断 | 自旋锁+禁止本地中断+禁止内核抢占 | 禁止本地软中断避免竞争，并使用自旋锁防止多CPU访问  |
+| 中断与可延迟函数           | 禁止本地中断   | 自旋锁+禁止本地中断+禁止内核抢占 | 禁止本地中断避免竞争，并使用自旋锁防止多CPU访问    |
+| 异常、中断与可延迟函数     | 禁止本地中断   | 自旋锁+禁止本地中断+禁止内核抢占 | 禁止本地中断避免竞争，并使用自旋锁防止多CPU访问    |
+
+== 几种同步方式的比较 ==
+| 同步方式       | 产生的影响                                                                                         | 备注 |
+|----------------+----------------------------------------------------------------------------------------------------+------|
+| 禁止本地中断   | 禁止触发一个CPU上的中断，同时也禁止了软中断的发生                                                  |      |
+| 禁止本地软中断 | 禁止触发一个CPU上的软中断，但仍然可以触发硬件中断                                                  |      |
+| per-cpu变量    | 不同CPU可以并发访问，但不能保护中断和可延迟函数                                                    |      |
+| 内存屏障       | 确保汇编语言的顺序执行                                                                             |      |
+| 原子操作       | 对引用计数的操作为原子操作                                                                         |      |
+| 信号量         | 无法获取共享资源时使进程挂起等待（支持进程的可中断或不可中断状态），允许内核抢占                   |      |
+| 读写信号量     | 读者可共享资源，写者需要等待，并使进程挂起等待（支持进程的可中断或不可中断状态）                   |      |
+| 自旋锁         | 自动禁止内核抢占特性（自动禁止本地中断），导致系统忙等待                                           |      |
+| 读写锁         | 读者可共享资源，写者必须等待读者或另一个写释放锁才能获取共享资源，自动禁止内核抢占                 |      |
+| 顺序锁         | 写者不必等待读者释放锁，但是读者必须检查顺序计数器，并反复读取共享资源，使用内存屏障、禁止内核抢占 |      |
+| RCU            | 读者和写者不需要锁进行同步，它们都访问共享数据的副本，在某一个特定时刻，写者会更新该副本的链表     |      |
+| Completion     | 类似于信号量，不同的是Completion会使用自旋锁保护up()方法防止并发                                   |      |
+
+== per-cpu变量 ==
+- 最简单也是最重要的同步技术是内核变量声明成per-cpu变量。per-cpu变量主要是数据结构的数组，系统的每个CPU对应数组的一个元素。
+- 一个CPU不应该访问与其他CPU对应的数组元素，另外，它可以随意读或修改它自己的元素而不用担心出现竞争条件。
+- 虽然per-cpu变量为来自不同CPU的并发访问提供保护，但对来自异步函数（中断处理程序和可延迟函数）的访问不提供保护，在这种情况下需要另外的同步方法。
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 静态分配一个per-cpu数组，数组名为name，结构类型为type
+DEFINE_PER_CPU(type, name);
+
+// 为cpu选择一个per-cpu数组元素，CPU参数由cpu指定，数组名称为name
+per_cpu(name, cpu);
+
+// 选择per-cpu数组name的本地CPU元素
+__get_cpu_var(name);
+
+// 先禁用内核抢占，然后在per-cpu数组中为本地CPU选择元素
+get_cpu_var(name);
+
+// 启用内核抢占
+put_cpu_var(name);
+
+// 动态分配type类型的per-cpu的数组，并返回它的地址
+alloc_percpu(type);
+
+// 释放动态分配的per-cpu数组，pointer指向其地址
+free_percpu(pointer);
+
+// 返回per-cpu数组中与参数cpu对应的CPU元素地址，参数pointer指向其地址
+per_cpu_ptr(pointer, cpu);
+}}}
+
+== 优化屏障和内存屏障 ==
+- 优化屏障保证编译程序不会混淆放在原语操作之前的汇编语言指令。如volatile关键字禁止编译器把asm指令与程序中的其他指令重新组合，memory关键字强制编译器假定RAM中的所有内存单元已被汇编指令修改；因此，编译器不能使用存放在CPU寄存器中的内存单元的值来优化asm指令前的代码。优化屏障并不保证不使当前CPU把汇编语言指令混在一起执行——这是内存屏障的作用。
+- 内存屏障确保在原语之后的操作开始执行之前，原语之前的操作已经完成。因此，内存屏障类似防火墙，让任何汇编语言指令都不能通过。
+- 内存屏障的实现依赖于系统的体系结构。
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 适用于MP和UP的内存屏障
+mb();
+
+// 适用于MP和UP的读内存屏障
+rmb();
+
+// 适用于MP和UP的写内存屏障
+wmb();
+
+// 仅适用于MP和UP的内存屏障
+smp_mb();
+
+// 仅适用于MP和UP的读内存屏障
+smp_rmb();
+
+// 仅适用于MP和UP的写内存屏障
+smp_wmb();
+}}}
+
+== 原子操作 ==
+- 所谓原子操作，就是该操作绝不会在执行完毕前被任何其他任务或事件打断，也就说，它的最小的执行单位，不可能有比它更小的执行单位，因此这里的原子实际是使用了物理学里的物质微粒的概念。
+- 原子操作需要硬件的支持，因此是架构相关的，它们都使用汇编语言实现，因为C语言并不能实现这样的操作。
+- 原子操作主要用于实现资源计数，很多引用计数(refcnt)就是通过原子操作实现的。
+
+=== atomic_t ===
+{{{class="brush:c"
+typedef struct {
+	int counter;
+} atomic_t;
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 该函数对原子类型的变量进行原子读操作，它返回原子类型的变量v的值。
+atomic_read(atomic_t * v);
+
+// 该函数设置原子类型的变量v的值为i。
+atomic_set(atomic_t * v, int i);
+
+// 该函数给原子类型的变量v增加值i。
+void atomic_add(int i, atomic_t *v);
+
+// 该函数从原子类型的变量v中减去i。
+atomic_sub(int i, atomic_t *v);
+
+// 该函数从原子类型的变量v中减去i，并判断结果是否为0，如果为0，返回真，否则返回假。
+int atomic_sub_and_test(int i, atomic_t *v);
+
+// 该函数对原子类型变量v原子地增加1。
+void atomic_inc(atomic_t *v);
+
+// 该函数对原子类型的变量v原子地减1。
+void atomic_dec(atomic_t *v);
+
+// 该函数对原子类型的变量v原子地减1，并判断结果是否为0，如果为0，返回真，否则返回假。
+int atomic_dec_and_test(atomic_t *v);
+
+// 该函数对原子类型的变量v原子地增加1，并判断结果是否为0，如果为0，返回真，否则返回假。
+int atomic_inc_and_test(atomic_t *v);
+
+// 该函数对原子类型的变量v原子地增加I，并判断结果是否为负数，如果是，返回真，否则返回假。
+int atomic_add_negative(int i, atomic_t *v);
+
+// 该函数对原子类型的变量v原子地增加i，并且返回指向v的指针。
+int atomic_add_return(int i, atomic_t *v);
+
+// 该函数从原子类型的变量v中减去i，并且返回指向v的指针。
+int atomic_sub_return(int i, atomic_t *v);
+
+// 该函数对原子类型的变量v原子地增加1并且返回指向v的指针。
+int atomic_inc_return(atomic_t * v);
+
+// 该函数对原子类型的变量v原子地减1并且返回指向v的指针。
+int atomic_dec_return(atomic_t * v);
+}}}
+
+== 信号量 ==
+- Linux内核的信号量在概念和原理上与用户态的System V的IPC机制信号量是一样的，但是它绝不可能在内核之外使用，因此它与System V的IPC机制信号量毫不相干。
+- 信号量在创建时需要设置一个初始值，表示同时可以有几个任务可以访问该信号量保护的共享资源，初始值为1就变成互斥锁（Mutex），即同时只能有一个任务可以访问信号量保护的共享资源。
+- 一个任务要想访问共享资源，首先必须得到信号量，获取信号量的操作将把信号量的值减1，若当前信号量的值为负数，表明无法获得信号量，该任务必须挂起在该信号量的等待队列等待该信号量可用；若当前信号量的值为非负数，表示可以获得信号量，因而可以立刻访问被该信号量保护的共享资源。
+- 当任务访问完被信号量保护的共享资源后，必须释放信号量，释放信号量通过把信号量的值加1实现，如果信号量的值为非正数，表明有任务等待当前信号量，因此它也唤醒所有等待该信号量的任务。
+
+=== semaphore ===
+{{{class="brush:c"
+struct semaphore {
+	spinlock_t		    lock;       // 互斥互锁
+	unsigned int		count;      // 信号量的计数
+	struct list_head	wait_list;  // 该信号量上的进程等待队列
+};
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 该宏声明一个信号量name并初始化它的值为0，即声明一个互斥锁。
+DECLARE_MUTEX(name)
+
+// 该宏声明一个互斥锁name，但把它的初始值设置为0，即锁在创建时就处在已锁状态。
+// 因此对于这种锁，一般是先释放后获得。
+DECLARE_MUTEX_LOCKED(name)
+
+// 该函用于数初始化设置信号量的初值，它设置信号量sem的值为val。
+void sema_init (struct semaphore *sem, int val);
+
+// 该函数用于初始化一个互斥锁，即它把信号量sem的值设置为1。
+void init_MUTEX (struct semaphore *sem);
+
+// 该函数也用于初始化一个互斥锁，但它把信号量sem的值设置为0，即一开始就处在已锁状态。
+void init_MUTEX_LOCKED (struct semaphore *sem);
+
+// 该函数用于获得信号量sem，它会导致睡眠，因此不能在中断上下文（包括IRQ上下文和softirq上下文）
+// 使用该函数。该函数将把sem的值减1，如果信号量sem的值非负，就直接返回，否则调用者将被挂起，
+// 直到别的任务释放该信号量才能继续运行。
+void down(struct semaphore * sem);
+
+// 该函数功能与down类似，不同之处为，down不会被信号（signal）打断，但down_interruptible能被信号打断，
+// 因此该函数有返回值来区分是正常返回还是被信号中断，如果返回0，表示获得信号量正常返回，如果被信号打断，
+// 返回-EINTR。
+int down_interruptible(struct semaphore * sem);
+
+// 该函数试着获得信号量sem，如果能够立刻获得，它就获得该信号量并返回0，否则，表示不能获得信号量sem，
+// 返回值为非0值。因此，它不会导致调用者睡眠，可以在中断上下文使用。
+int down_trylock(struct semaphore * sem);
+
+// 该函数释放信号量sem，即把sem的值加1，如果sem的值为非正数，表明有任务等待该信号量，因此唤醒这些等待者。 
+void up(struct semaphore * sem);
+}}}
+
+
+== 读写信号量 ==
+- 读写信号量对访问者进行了细分，或者为读者，或者为写者，读者在保持读写信号量期间只能对该读写信号量保护的共享资源进行读访问，如果一个任务除了需要读，可能还需要写，那么它必须被归类为写者，它在对共享资源访问之前必须先获得写者身份，写者在发现自己不需要写访问的情况下可以降级为读者。读写信号量同时拥有的读者数不受限制，也就说可以有任意多个读者同时拥有一个读写信号量。
+- 如果一个读写信号量当前没有被写者拥有并且也没有写者等待读者释放信号量，那么任何读者都可以成功获得该读写信号量；否则，读者必须被挂起直到写者释放该信号量。如果一个读写信号量当前没有被读者或写者拥有并且也没有写者等待该信号量，那么一个写者可以成功获得该读写信号量，否则写者将被挂起，直到没有任何访问者。因此，写者是排他性的，独占性的。
+- 读写信号量有两种实现，一种是通用的，不依赖于硬件架构，因此，增加新的架构不需要重新实现它，但缺点是性能低，获得和释放读写信号量的开销大；另一种是架构相关的，因此性能高，获取和释放读写信号量的开销小，但增加新的架构需要重新实现。在内核配置时，可以通过选项去控制使用哪一种实现。
+
+=== rw_semaphore ===
+{{{class="brush:c"
+struct rw_semaphore {
+    rwsem_count_t		count;
+	spinlock_t		    wait_lock;
+	struct list_head	wait_list;
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+	struct lockdep_map  dep_map;
+#endif
+};
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 该宏声明一个读写信号量name并对其进行初始化。
+DECLARE_RWSEM(name)
+
+// 该函数对读写信号量sem进行初始化。
+void init_rwsem(struct rw_semaphore *sem);
+
+// 读者调用该函数来得到读写信号量sem。该函数会导致调用者睡眠，因此只能在进程上下文使用。
+void down_read(struct rw_semaphore *sem);
+
+// 该函数类似于down_read，只是它不会导致调用者睡眠。它尽力得到读写信号量sem，如果能够立即得到，
+// 它就得到该读写信号量，并且返回1，否则表示不能立刻得到该信号量，返回0。因此，它也可以在中断上下文使用。
+int down_read_trylock(struct rw_semaphore *sem);
+
+// 写者使用该函数来得到读写信号量sem，它也会导致调用者睡眠，因此只能在进程上下文使用。
+void down_write(struct rw_semaphore *sem);
+
+// 该函数类似于down_write，只是它不会导致调用者睡眠。该函数尽力得到读写信号量，如果能够立刻获得，
+// 就获得该读写信号量并且返回1，否则表示无法立刻获得，返回0。它可以在中断上下文使用。
+int down_write_trylock(struct rw_semaphore *sem);
+
+// 读者使用该函数释放读写信号量sem。它与down_read或down_read_trylock配对使用。
+// 如果down_read_trylock返回0，不需要调用up_read来释放读写信号量，因为根本就没有获得信号量。
+void up_read(struct rw_semaphore *sem);
+
+// 写者调用该函数释放信号量sem。它与down_write或down_write_trylock配对使用。
+// 如果down_write_trylock返回0，不需要调用up_write，因为返回0表示没有获得该读写信号量。
+void up_write(struct rw_semaphore *sem);
+
+// 该函数用于把写者降级为读者，这有时是必要的。因为写者是排他性的，因此在写者保持读写信号量期间，
+// 任何读者或写者都将无法访问该读写信号量保护的共享资源，对于那些当前条件下不需要写访问的写者，
+// 降级为读者将，使得等待访问的读者能够立刻访问，从而增加了并发性，提高了效率。 
+void downgrade_write(struct rw_semaphore *sem);
+}}}
+
+== 自旋锁 ==
+- 自旋锁与互斥锁有点类似，只是自旋锁不会引起调用者睡眠，如果自旋锁已经被别的执行单元保持，调用者就一直循环在那里看是否该自旋锁的保持者已经释放了锁，"自旋"一词就是因此而得名。
+- 由于自旋锁使用者一般保持锁时间非常短，因此选择自旋而不是睡眠是非常必要的，自旋锁的效率远高于互斥锁。
+- 信号量和读写信号量适合于保持时间较长的情况，它们会导致调用者睡眠，因此只能在进程上下文使用（_trylock的变种能够在中断上下文使用），而自旋锁适合于保持时间非常短的情况，它可以在任何上下文使用。
+- 如果被保护的共享资源只在进程上下文访问，使用信号量保护该共享资源非常合适，如果对共享资源的访问时间非常短，自旋锁也可以。但是如果被保护的共享资源需要在中断上下文访问（包括后半部即中断处理句柄和顶半部即软中断），就必须使用自旋锁。
+- 自旋锁保持期间是抢占失效的，而信号量和读写信号量保持期间是可以被抢占的。自旋锁只有在内核可抢占或SMP的情况下才真正需要，在单CPU且不可抢占的内核下，自旋锁的所有操作都是空操作。
+- 跟互斥锁一样，一个执行单元要想访问被自旋锁保护的共享资源，必须先得到锁，在访问完共享资源后，必须释放锁。如果在获取自旋锁时，没有任何执行单元保持该锁，那么将立即得到锁；如果在获取自旋锁时锁已经有保持者，那么获取锁操作将自旋在那里，直到该自旋锁的保持者释放了锁。
+- 无论是互斥锁，还是自旋锁，在任何时刻，最多只能有一个保持者，也就说，在任何时刻最多只能有一个执行单元获得锁。
+
+=== spinlock_t ===
+{{{class="brush:c"
+typedef struct spinlock {
+	union {
+		struct raw_spinlock rlock;
+
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+# define LOCK_PADSIZE (offsetof(struct raw_spinlock, dep_map))
+		struct {
+			u8 __padding[LOCK_PADSIZE];
+			struct lockdep_map dep_map;
+		};
+#endif
+	};
+} spinlock_t;
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 该宏用于初始化自旋锁x。自旋锁在真正使用前必须先初始化。该宏用于动态初始化。
+void spin_lock_init(x);
+
+// 该宏声明一个自旋锁x并初始化它。该宏在2.6.11中第一次被定义，在先前的内核中并没有该宏。
+DEFINE_SPINLOCK(x)
+
+// 该宏用于静态初始化一个自旋锁。
+spinlock_t my_lock = SPIN_LOCK_UNLOCKED
+
+// 等同于spinlock_t x = SPIN_LOCK_UNLOCKED
+DEFINE_SPINLOCK(x)
+
+// 该宏用于判断自旋锁x是否已经被某执行单元保持（即被锁），如果是，返回真，否则返回假。
+spin_is_locked(x)
+
+// 该宏用于等待自旋锁x变得没有被任何执行单元保持，如果没有任何执行单元保持该自旋锁，
+// 该宏立即返回，否则将循环在那里，直到该自旋锁被保持者释放。
+void spin_unlock_wait(x);
+
+// 该宏尽力获得自旋锁lock，如果能立即获得锁，它获得锁并返回真，否则不能立即获得锁，
+// 立即返回假。它不会自旋等待lock被释放。
+int spin_trylock(lock);
+
+// 该宏用于获得自旋锁lock，如果能够立即获得锁，它就马上返回，否则，它将自旋在那里，
+// 直到该自旋锁的保持者释放，这时，它获得锁并返回。总之，只有它获得锁才返回。
+void spin_lock(lock);
+
+// 该宏获得自旋锁的同时把标志寄存器的值保存到变量flags中并失效本地中断。
+spin_lock_irqsave(lock, flags)
+
+// 该宏类似于spin_lock_irqsave，只是该宏不保存标志寄存器的值。
+void spin_lock_irq(lock);
+
+// 该宏在得到自旋锁的同时失效本地软中断。
+void spin_lock_bh(lock);
+
+// 该宏释放自旋锁lock，它与spin_trylock或spin_lock配对使用。如果spin_trylock返回假，
+// 表明没有获得自旋锁，因此不必使用spin_unlock释放。
+void spin_unlock(lock);
+
+// 该宏释放自旋锁lock的同时，也恢复标志寄存器的值为变量flags保存的值。
+// 它与spin_lock_irqsave配对使用。
+void spin_unlock_irqrestore(lock, flags);
+
+// 该宏释放自旋锁lock的同时，也使能本地中断。它与spin_lock_irq配对应用。
+void spin_unlock_irq(lock);
+
+// 该宏释放自旋锁lock的同时，也使能本地的软中断。它与spin_lock_bh配对使用。
+void spin_unlock_bh(lock);
+
+// 该宏如果获得自旋锁lock，它也将保存标志寄存器的值到变量flags中，并且失效本地中断，
+// 如果没有获得锁，它什么也不做。因此如果能够立即获得锁，它等同于spin_lock_irqsave，
+// 如果不能获得锁，它等同于spin_trylock。如果该宏获得自旋锁lock，那需要使用
+// spin_unlock_irqrestore来释放。
+spin_trylock_irqsave(lock, flags)
+
+// 该宏类似于spin_trylock_irqsave，只是该宏不保存标志寄存器。如果该宏获得自旋锁lock，
+// 需要使用spin_unlock_irq来释放。
+int spin_trylock_irq(lock);
+
+// 该宏如果获得了自旋锁，它也将失效本地软中断。如果得不到锁，它什么也不做。因此，如果得到了锁，
+// 它等同于spin_lock_bh，如果得不到锁，它等同于spin_trylock。如果该宏得到了自旋锁，需要使用
+// spin_unlock_bh来释放。
+int spin_trylock_bh(lock);
+
+// 该宏用于判断自旋锁lock是否能够被锁，它实际是spin_is_locked取反。如果lock没有被锁，它返回真，
+// 否则，返回假。该宏在2.6.11中第一次被定义，在先前的内核中并没有该宏。 
+int spin_can_lock(lock);
+}}}
+
+== 读写锁 ==
+=== rwlock_t ===
+{{{class="brush:c"
+typedef struct {
+	arch_rwlock_t raw_lock;
+#ifdef CONFIG_GENERIC_LOCKBREAK
+	unsigned int break_lock;
+#endif
+#ifdef CONFIG_DEBUG_SPINLOCK
+	unsigned int magic, owner_cpu;
+	void *owner;
+#endif
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+	struct lockdep_map dep_map;
+#endif
+} rwlock_t;
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 初始化rwlock_t结构
+rwlock_t lock = RW_LOCK_UNLOCKED
+DEFINE_RWLOCK(x)
+
+rwlock_init(lock)
+
+// 读者自旋锁
+void read_lock(rwlock_t *lock);
+void read_lock_irqsave(rwlock_t *lock, unsigned long flags);
+void read_lock_irq(rwlock_t *lock);
+void read_lock_bh(rwlock_t *lock);
+
+void read_unlock(rwlock_t *lock);
+void read_unlock_irqrestore(rwlock_t *lock, unsigned long flags);
+void read_unlock_irq(rwlock_t *lock);
+void read_unlock_bh(rwlock_t *lock);
+
+// 写者自旋锁
+void write_lock(rwlock_t *lock);
+void write_lock_irqsave(rwlock_t *lock, unsigned long flags);
+void write_lock_irq(rwlock_t *lock);
+void write_lock_bh(rwlock_t *lock);
+int write_trylock(rwlock_t *lock);
+
+void write_unlock(rwlock_t *lock);
+void write_unlock_irqrestore(rwlock_t *lock, unsigned long flags);
+void write_unlock_irq(rwlock_t *lock);
+void write_unlock_bh(rwlock_t *lock);
+}}}
+
+== 顺序锁 ==
+- Linux 2.6内核引入了顺序锁，它与读/写自旋自锁相似，只是赋予了写者更高的优先级。好处是写者永远不必等待（除非另外一个写者正在写），缺点是读者必须反复多次读相同的数据。
+- 每个顺序锁包含两个字段：
+    - lock用来保护临界区的代码。
+    - sequence是一个顺序计数器，每个读者必须在读数据前后两次读顺序计数器，并检查两次读到的值是否相同，如果不同，说明写者正在写，需要重新读取该数据。
+- 通常在以下情况下使用顺序锁：
+    - 被保护的数据结构不包括被写者修改和被读者间接引用的指针。
+    - 读者的临界区代码没有副作用（多个读者的操作会得到不同的结果）。
+    - 写者不应经常获取顺序锁，否则，反复的读访问会引起严重的开销。
+
+=== seqlock_t ===
+{{{class="brush:c"
+typedef struct {
+	unsigned sequence;
+	spinlock_t lock;
+} seqlock_t;
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 定义一个seqlock_t变量
+DEFINE_SEQLOCK(name);
+
+// 获取写者顺序锁，并禁用硬件中断
+write_seqlock_irqsave(lock, flags);
+
+// 获取写者顺序锁
+write_seqlock_irq(lock);	
+
+// 获取写者顺序锁，并禁用软件中断
+write_seqlock_bh(lock);
+
+// 释放写者锁，并打开硬件中断
+write_sequnlock_irqrestore(lock, flags);
+
+// 释放写者锁，并打开硬件中断
+write_sequnlock_irq(lock);			
+
+// 释放写者锁，并打开硬件中断
+write_sequnlock_bh(lock);				
+
+// 读取顺序计数器，并禁用硬件中断
+read_seqbegin_irqsave(lock, flags);
+
+// 读取顺序计数器
+unsigned read_seqbegin(const seqlock_t *sl);
+
+// 获取一个写者锁，并增加顺序计数器
+void write_seqlock(seqlock_t *sl);
+
+// 释放一个写者锁，并增加顺序计数器
+void write_sequnlock(seqlock_t *sl)
+}}}
+
+== 读-拷贝-更新 ==
+- 读-拷贝-更新（RCU）允许多个读者和写者并发执行，而且RCU不使用锁。关键的思想如下：
+    - RCU只保护被动态分配并通过指针引用的数据结构。
+    - 在被RCU保护的临界区中，任何内核控制路径都不能睡眠。
+- 读者在进入RCU临界区时调用rcu_read_lock()，退出临界区时调用rcu_read_unlock()，退出的时机称为CPU经过了静止状态：
+    - CPU执行进程切换。
+    - CPU开始在用户态执行。
+    - CPU执行空循环。
+- 写者要更新数据结构时，它间接引用指针生成整个结构的副本。一旦修改完成，写者改变指针数据结构的指针，以使它们指向被修改后的副本。写者调用call_rcu()来释放数据结构的旧副本。
+    - 函数call_rcu()把回调函数和其参数的地址放在rcu_head描述符中，然后把描述符插入回调函数的per-cpu链表。当所有cpu都经过静止状态，rcu_tasklet就执行链表中的所有函数。
+
+=== rcu_head ===
+{{{class="brush:c"
+struct rcu_head {
+	struct rcu_head *next;
+	void (*func)(struct rcu_head *head);
+};
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 初始化一个rcu_head结构的变量
+RCU_HEAD(head);
+
+// 禁用内核抢占，标志RCU读开始
+rcu_read_lock();
+
+// 开启内核抢占，标志RCU读结束
+rcu_read_unlock();
+
+// 写者释放数据结构的旧副本
+call_rcu();
+}}}
+
+== completion ==
+- completion类似于信号量，与up()对应的方法叫做completion()，与down()对应的方法叫做wait_for_completion()。
+- completion与信号量的差别在于如何使用等待队列中包含的自旋锁：
+    - 在completion中，自旋锁保证了completion()和wait_for_completion()不会被并发调用。
+    - 在信号量中，自旋锁用于避免并发执行的down()函数弄乱信号量的数据结构。
+
+=== completion ===
+{{{class="brush:c"
+struct completion {
+	unsigned int done;
+	wait_queue_head_t wait;
+};
+}}}
+
+=== 方法列表 ===
+{{{class="brush:c"
+// 初始化completion结构变量
+DECLARE_COMPLETION(work);
+INIT_COMPLETION(x)
+void init_completion(struct completion *x)
+
+// 获取completion，类似于信号量的down()方法，不同的是该方法会使用自旋锁防止并发。
+void wait_for_completion(struct completion *x);
+int wait_for_completion_interruptible(struct completion *x);
+int wait_for_completion_killable(struct completion *x);
+unsigned long wait_for_completion_timeout(struct completion *x,
+						                  unsigned long timeout);
+unsigned long wait_for_completion_interruptible_timeout(
+			struct completion *x, unsigned long timeout);
+unsigned long wait_for_completion_killable_timeout(
+			struct completion *x, unsigned long timeout);
+bool try_wait_for_completion(struct completion *x);
+bool completion_done(struct completion *x);
+
+// 释放completion，类似于信号量的up()方法
+void complete(struct completion *x);
+void complete_all(struct completion *x);
+}}}
+

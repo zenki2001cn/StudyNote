@@ -1,0 +1,158 @@
+= 内置命令 =
+
+%toc
+
+== 内置命令 ==
+=== echo ===
+描述 :: 打印(到stdout)一个表达式或变量。
+示例 ::
+{{{class="brush:bash"
+if echo "$VAR" | grep -q txt        #if [[ $VAR = *txt* ]]
+then
+    echo "$VAR contains the substring sequence \"txt\""
+fi
+}}}
+
+=== printf ===
+描述 :: printf命令，格式化输出，是echo命令的增强。它是C语言printf()库函数的一个有限的变形。
+示例 ::
+{{{class="brush:bash"
+PI=3.14159265358979
+
+printf "Pi to 2 decimal places = %1.2f" $PI
+printf "Pi to 9 decimal places = %1.9f" $PI
+}}}
+
+=== read ===
+描述 :: 从stdin中读取一个变量的值，也就是与键盘交互取得变量的值。使用-a参数可以取得数组。
+示例 ::
+{{{class="brush:bash"
+# 从标准输入流中读取
+read var1       # 注意在 var1 前面没有'$',因为变量正在被设置.
+echo "var1 = $var1"
+
+# 从文件逐行读取
+while read line
+do
+    echo "$line"
+done < data-file
+}}}
+
+=== pushd ===
+描述 :: 把路径dir-name压入目录栈，同时修改当前目录到dir-name。
+
+=== popd ===
+描述 :: 将目录栈中最上边的目录弹出,同时修改当前目录到弹出来的那个目录。
+
+=== dirs ===
+描述 :: 列出所有目录栈的内容(与$DIRSTACK 便两相比较)。一个成功的pushd或者popd将会自动的调用dirs命令。
+
+=== let ===
+描述 :: let命令将执行变量的算术操作。在许多情况下，它被看作是复杂的expr版本的一个简化版。
+示例 ::
+{{{class="brush:bash"
+et a=11                 # 与'a=11'相同
+let a=a+5               # 等价于let "a = a + 5"
+                        # (双引号和空格是这句话更具可读性.)
+echo "11 + 5 = $a"
+}}}
+
+=== eval ===
+描述 :: 将表达式中的参数，或者表达式列表，组合起来，并且评估它们。包含在表达式中的任何变量都将被扩展。结果将会被转化到命令中，这对于从命令行或者脚本中产生代码是很有用的。
+示例 ::
+{{{class="brush:bash"
+y="eval ls -l"          # 与y=`ls -l`很相似
+echo $y
+}}}
+
+=== set ===
+描述 :: set命令用来修改内部脚本变量的值。一个作用就是触发选项标志位来帮助决定脚本的行为。另一个应用就是以一个命令的结果(set `command`)来重新设置脚本的位置参数，脚本将会从命令的输出中重新分析出位置参数。
+示例 ::
+{{{class="brush:bash"
+set `uname -a`          # 把`uname -a`的命令输出设置
+
+# $1, $2, $3, 等等，这些位置参数将被重新初始化为`uname -a`的结果
+echo "Field #1 of 'uname -a' = $1"
+echo "Field #2 of 'uname -a' = $2"
+echo "Field #3 of 'uname -a' = $3"
+}}}
+
+=== unset ===
+描述 :: unset命令用来删除一个shell变量，效果就是把这个变量设为null。注意:这个命令对位置参数无效。
+示例 ::
+{{{class="brush:bash"
+variable=hello          # 初始化
+echo "variable = $variable"
+
+unset variable          # Unset
+                        # 与variable= 的效果相同
+echo "(unset) variable = $variable"     # $variable设为null
+}}}
+
+=== export ===
+描述 :: export命令将会使得被export的变量在运行的脚本(或shell)的所有的子进程中都可用。不幸的是，没有办法将变量export到父进程(就是调用这个脚本或shell的进程)中。
+
+=== getopts ===
+描述 :: 可以说这是分析传递到脚本的命令行参数的最强力工具。这个命令与getopt外部命令,和C语言中的库函数getopt的作用是相同的。它允许传递和连接多个选项[2]到脚本中，并能分配多个参数到脚本中。
+功能说明 ::
+{{{class="brush:text"
+    getopts结构使用两个隐含变量:$OPTIND是参数指针(选项索引)和$OPTARG(选项参数)(可选的)，可以在选项后边附加一个参数。
+在声明标签中，选项名后边的冒号用来提示这个选项名已经分配了一个参数。getopts结构通常都组成一组放在一个while循环中，
+循环过程中每次处理一个选项和参数，然后增加隐含变量$OPTIND的值，再进行下一次的处理。
+    注意: 
+    1.通过命令行传递到脚本中的参数前边必须加上一个减号(-)。这是一个前缀，这样getopts命令将会认为这个参数是一个选项。
+事实上，getopts不会处理不带"-"前缀的参数，如果第一个参数就没有"-",那么将结束选项的处理。
+    2.使用getopts的while循环模版还是与标准的while循环模版有些不同，没有标准while循环中的[]判断条件。
+    3.getopts结构将会取代getopt外部命令。
+}}}
+示例 ::
+{{{class="brush:bash"
+while getopts ":abcde:fg" Option
+# Initial declaration.
+# 开始的声明.
+# a, b, c, d, e, f, 和 g 被认为是选项(标志).
+# e选项后边的:提示,这个选项带一个参数.
+do
+    case $Option in
+    a)          # Do something with variable 'a'.
+    a)          # 对选项'a'作些操作.
+    b)          # 对选项'b'作些操作.
+    ...
+    e)          # Do something with 'e', and also with $OPTARG,
+    e)          # 对选项'e'作些操作, 同时处理一下$OPTARG,
+                # which is the associated argument passed with option 'e'.
+                # 这个变量里边将保存传递给选项"e"的参数.
+    ...
+    g)          # 对选项'g'作些操作.
+    esac
+done
+shift $(($OPTIND - 1))      # 将参数指针向下移动.
+}}}
+
+=== source和.(点命令) ===
+描述 :: 这个命令在命令行上执行的时候，将会执行一个脚本。在一个文件内一个source file-name将会加载file-name文件。source一个文件(或点命令)将会在脚本中引入代码，并附加到脚本中(与C 语言中的#include指令的效果相同)。最终的结果就像是在使用"sourced"行上插入了相应文件的内容。这在多个脚本需要引用相同的数据，或函数库时非常有用。
+
+=== exit ===
+描述 :: 绝对的停止一个脚本的运行。exit命令可以随便找一个整数变量作为退出脚本返回shell时的退出码，使用exit 0对于退出一个简单脚本来说是种好习惯，表明成功运行。注意: 如果不带参数的使用exit来退出，那么退出码将是脚本中最后一个命令的退出码，等价于exit $?。
+
+=== exec ===
+描述 :: 这个shell内建命令将使用一个特定的命令来取代当前进程。一般的当shell遇到一个命令，它会fork off一个子进程来真正的运行命令。使用exec内建命令，shell就不会fork了，并且命令的执行将会替换掉当前shell。因此，当我们在脚本中使用它时，当命令实行完毕，它就会强制退出脚本。
+示例 ::
+{{{class="brush:bash"
+exec echo "Exiting \"$0\"." # 脚本将在此退出.
+
+# 下边的部分将执行不到.
+echo "This echo will never echo."
+}}}
+
+=== caller ===
+描述 :: 将caller命令放到函数中，将会在stdout上打印出函数调用者的信息。
+示例 ::
+{{{class="brush:bash"
+function1()
+{
+    # 在function1()内部
+    caller 0
+}
+}}}
+

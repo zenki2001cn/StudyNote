@@ -1,0 +1,27 @@
+= 顺序菜单 =
+
+例程源码(XML)
+{{{class="brush:xml"
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- These are in reverse order in this resource, but the orderInCategory attribute will
+         order them for the menu (they all have the same default category). -->
+
+    <item android:id="@+id/fourth_item"
+        android:orderInCategory="3"
+        android:title="Fourth" />
+
+    <item android:id="@+id/third_item"
+        android:orderInCategory="2"
+        android:title="Third" />
+
+    <item android:id="@+id/second_item"
+        android:orderInCategory="1"
+        android:title="Second" />
+
+    <item android:id="@+id/first_item"
+        android:orderInCategory="0"
+        android:title="First" />
+
+</menu>
+}}}

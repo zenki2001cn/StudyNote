@@ -1,0 +1,16 @@
+= Binder驱动层 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+kernel/drivers/staging/android/binder.h
+kernel/drivers/staging/android/binder.c
+}}}
+
+== 要点说明 ==
+- [[Binder通信协议]]
+- [[与Binder相关的proc文件]]
+- [[Binder内核驱动源码分析]]
+
+

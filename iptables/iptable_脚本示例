@@ -1,0 +1,107 @@
+#配置文件一
+#!/bin/sh 
+# 
+/sbin/modprobe ipt_MASQUERADE 
+/sbin/modprobe ip_conntrack_ftp 
+/sbin/modprobe ip_nat_ftp 
+/sbin/iptables -F 
+/sbin/iptables -t nat -F 
+/sbin/iptables -X 
+/sbin/iptables -t nat -X 
+/sbin/iptables -t mangle -F 
+
+###########################INPUT键######################### 
+/sbin/iptables -P INPUT DROP 
+/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 
+/sbin/iptables -A INPUT -p tcp -m multiport --dports 110,8080,80,25,22 -j ACCEPT 
+#允许内网samba,smtp,pop3,连接 
+
+/sbin/iptables -A INPUT -i eth1 -p udp -m multiport --dports 53 -j ACCEPT 
+#允许dns连接 
+
+/sbin/iptables -A INPUT -p tcp --dport 1723 -j ACCEPT 
+/sbin/iptables -A INPUT -p gre -j ACCEPT 
+允许外网vpn连接 
+/sbin/iptables -A INPUT -p icmp -m limit --limit 3/s -j LOG --log-level INFO --log-prefix "ICMP packet IN: " 
+/sbin/iptables -A INPUT -p icmp -m limit --limit 6/m -j ACCEPT 
+/sbin/iptables -A INPUT -p icmp -j DROP 
+#设置icmp阔值 ,并对攻击者记录在案 
+/sbin/iptables -A INPUT -i eth0 -p tcp --dport 22  -j DROP 
+#拒绝外网对22端口访问. 
+/sbin/iptables -N syn-flood 
+/sbin/iptables -A INPUT -p tcp --syn -j syn-flood 
+/sbin/iptables -I syn-flood -p tcp -m limit --limit 3/s --limit-burst 6 -j RETURN 
+/sbin/iptables -A syn-flood -j REJECT 
+#防止SYN攻击 轻量 
+
+#######################FORWARD链########################### 
+/sbin/iptables -A FORWARD -p tcp -i eth1 -m multiport --dports 80,110,21,25,1723 -j ACCEPT 
+/sbin/iptables -A FORWARD -p udp -i eth1 --dport 53 -j ACCEPT 
+/sbin/iptables -A FORWARD -p gre -i eth1 -j ACCEPT 
+/sbin/iptables -A FORWARD -p icmp -i eth1 -j ACCEPT 
+#允许 vpn客户走vpn网络连接外网 
+######################################################### 
+/sbin/sysctl -w net.ipv4.ip_forward=1 &>;/dev/null 
+#打开转发 
+######################################################### 
+/sbin/sysctl -w net.ipv4.tcp_syncookies=1 &>;/dev/null 
+#打开 syncookie （轻量级预防 DOS 攻击） 
+
+/sbin/sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_timeout_established=3800 &>;/dev/null 
+#设置默认 TCP 连接痴呆时长为 3800 秒（此选项可以大大降低连接数） 
+/sbin/iptables -I INPUT -s 222.x.x.x -j ACCEPT #我自己的机了,全部放行 
+/sbin/iptables -I INPUT -s 202.x.x.x -j ACCEPT#老师的机子,全部放行 
+
+########################OUTPUT链########################### 
+/sbin/iptables -P OUTPUT  ACCEPT
+
+
+
+
+#配置文件二
+#头两行是注释说明
+# Firewall configuration written by system-config-securitylevel
+# Manual customization of this file is not recommended.
+#使用filter表
+#filter
+#下面四条内容定义了内建的INPUT、FORWAARD、ACCEPT链，还创建了一个被称为RH-Firewall-1-INPUT 的新链
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:RH-Firewall-1-INPUT - [0:0]
+#将所有流入的数据写入到日志文件中
+-A INPUT -j LOG --log-level crit
+#下面这条规则将添加到INPUT链上，所有发往INPUT链上的数据包将跳转到RH-Firewall-1 //链上。
+-A INPUT -j RH-Firewall-1-INPUT
+#下面这条规则将添加到FORWARD链上，所有发往INPUT链上的数据包将跳转到RH-Firewall-1 //链上。
+-A FORWARD -j RH-Firewall-1-INPUT
+#下面这条规则将被添加到RH-Firewall-1-input链。它可以匹配所有的数据包，其中流入接口（-i）//是一个环路接口(lo)。
+#匹配这条规则的数据包将全部通过（ACCEPT），不会再使用别的规则来和它们进行比较
+-A RH-Firewall-1-INPUT -i lo -j ACCEPT
+#下面这条规则是拒绝所以的icmp包-p 后是协议如：icmp、tcp、udp。端口是在-p后面--sport源端口，--dport目的端口。-j 指定数据包发送的
+#目的地址如：ACCEPT、DROP、QUEUE等等
+-A RH-Firewall-1-INPUT -p icmp --icmp-type any -j DROP
+-A RH-Firewall-1-INPUT -p 50 -j ACCEPT
+-A RH-Firewall-1-INPUT -p 51 -j ACCEPT
+-A RH-Firewall-1-INPUT -p udp --dport 5353 -d 224.0.0.251 -j ACCEPT
+-A RH-Firewall-1-INPUT -p udp -m udp --dport 631 -j ACCEPT
+-A RH-Firewall-1-INPUT -p tcp -m tcp --dport 631 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+#-m state --state ESTABLISHED,RELATED这个条件表示所有处于ESTABLISHED或者
+RELATED状态的包，策略都是接受的。
+# -m state --state NEW 这个条件是当connection的状态为初始连接(NEW)时候的策略。
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 21 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 2049 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m udp -p udp --dport 137 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m udp -p udp --dport 138 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 139 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 23 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j DROP -s 222.221.7.84
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+-A RH-Firewall-1-INPUT -m state --state NEW -m tcp -p tcp --dport 25 -j ACCEPT
+-A RH-Firewall-1-INPUT -j REJECT --reject-with icmp-host-prohibited
+#COMMIT
+#iptalbes 是状态检测防火墙！

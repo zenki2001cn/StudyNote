@@ -1,0 +1,187 @@
+= Android补丁 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+linux_source/kernel/power/main.c
+linux_source/kernel/power/earlysuspend.c
+linux_source/kernel/power/wakelock.c
+}}}
+
+== Andriod的新概念 ==
+=== Early Suspend ===
+{{{class="brush:text"
+    Early suspend是android引进的一种机制，这种机制在上游备受争议，这里不做评论。这个机制作用在关闭的时候，
+一些和显示有关的设备，比如LCD背光，比如重力感应器、触摸屏，这些设备都会关掉。但是系统可能还是在运行状态
+(这时候还有wake lock)进行任务的处理，例如在扫描SD卡上的文件等。在嵌入式设备中，背光是一个很大的电源消耗，
+所以android会加入这样一种机制。
+}}}
+
+=== Late Resume ===
+{{{class="brush:text"
+Late Resume是和suspend配套的一种机制，是在内核唤醒完毕开始执行的。主要就是唤醒在Early Suspend的时候休眠的设备。
+}}}
+
+=== Wake Lock ===
+{{{class="brush:text"
+    Wake Lock在Android的电源管理系统中扮演一个核心的角色。Wake Lock是一种锁的机制，只要有人拿着这个锁，
+系统就无法进入休眠，可以被用户态程序和内核获得。这个锁可以是有超时的或者是没有超时的，超时的锁会在时间过去以后
+自动解锁 。如果没有锁了或者超时了，内核就会启动休眠的那套机制来进入休眠。
+}}}
+
+[[pic/power_manager.png]]
+
+== 代码分析 ==
+=== Android Suspend ===
+当用户写入mem或者standby到/sys/power/state中的时候，state_store()会被调用，然后Android会在这里调用request_suspend_state()而标准的Linux会在这里进入enter_state()这个函数。
+如果请求的是休眠，那么early_suspend这个workqueue就会被调用，并且进入early_suspend状态。
+{{{class="brush:c"
+void request_suspend_state(suspend_state_t new_state)
+{
+    unsigned long irqflags;
+    int old_sleep;
+
+    spin_lock_irqsave(&state_lock, irqflags);
+    old_sleep = state & SUSPEND_REQUESTED;
+    
+    if (!old_sleep && new_state != PM_SUSPEND_ON) {
+        state |= SUSPEND_REQUESTED;
+        // early_suspend状态
+        queue_work(suspend_work_queue, &early_suspend_work);
+    } else if (old_sleep && new_state == PM_SUSPEND_ON) {
+        state &= ~SUSPEND_REQUESTED;
+        wake_lock(&main_wake_lock);
+        // late_resume状态
+        queue_work(suspend_work_queue, &late_resume_work);
+    }
+    
+    requested_suspend_state = new_state;
+    spin_unlock_irqrestore(&state_lock, irqflags);
+}
+}}}
+
+=== Early Suspend ===
+在early_suspend()函数中，首先会检查现在请求的状态还是否是suspend，来防止suspend的请求会在这个时候取消掉(因为这个时候用户进程还在运行)，如果需要退出，就简单的退出了。如果没有，这个函数就会把early suspend中注册的一系列的回调都调用一次，然后同步文件系统，然后放弃掉main_wake_lock，这个wake lock是一个没有超时的锁，如果这个锁不释放，那么系统就无法进入休眠。
+{{{class="brush:c"
+static void early_suspend(struct work_struct *work)
+{
+    struct early_suspend *pos;
+    unsigned long irqflags;
+    int abort = 0;
+
+    mutex_lock(&early_suspend_lock);
+    spin_lock_irqsave(&state_lock, irqflags);
+    if (state == SUSPEND_REQUESTED)
+        state |= SUSPENDED;
+    else
+        abort = 1;
+    spin_unlock_irqrestore(&state_lock, irqflags);
+
+    if (abort) {
+        mutex_unlock(&early_suspend_lock);
+        goto abort;
+    }
+
+    list_for_each_entry(pos, &early_suspend_handlers, link) {
+        if (pos->suspend != NULL)
+            pos->suspend(pos);
+    }
+    mutex_unlock(&early_suspend_lock);
+
+    sys_sync();
+abort:
+    spin_lock_irqsave(&state_lock, irqflags);
+    if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
+        wake_unlock(&main_wake_lock);
+    spin_unlock_irqrestore(&state_lock, irqflags);
+}
+}}}
+
+[[pic/early_suspend.png]]
+
+=== Late Resume ===
+- 当所有的唤醒已经结束以后，用户进程都已经开始运行了，唤醒通常会是以下的几种原因：
+- 来电
+
+{{{class="brush:text"
+    如果是来电，那么Modem会通过发送命令给rild来让rild通知WindowManager有来电响应，这样就会远程调用
+PowerManagerService来写"on"到/sys/power/state来执行late resume的设备，比如点亮屏幕等。
+}}}
+
+- 用户按键
+
+{{{class="brush:text"
+    用户按键事件会送到WindowManager中，WindowManager会处理这些按键事件，按键分为几种情况，如果案件不是唤醒键
+(能够唤醒系统的按键)，那么WindowManager会主动放弃wakeLock来使系统进入再次休眠，如果按键是唤醒键，那么WindowManger
+就会调用PowerManagerService中的接口来执行Late Resume。
+}}}
+
+- Late Resume会依次唤醒前面调用了Early Suspend的设备。
+
+{{{class="brush:c"
+static void late_resume(struct work_struct *work)
+{
+    struct early_suspend *pos;
+    unsigned long irqflags;
+    int abort = 0;
+
+    mutex_lock(&early_suspend_lock);
+    spin_lock_irqsave(&state_lock, irqflags);
+    if (state == SUSPENDED)
+        state &= ~SUSPENDED;
+    else
+        abort = 1;
+    spin_unlock_irqrestore(&state_lock, irqflags);
+
+    if (abort) {
+        goto abort;
+    }
+    list_for_each_entry_reverse(pos, &early_suspend_handlers, link)
+    if (pos->resume != NULL)
+        pos->resume(pos);
+abort:
+    mutex_unlock(&early_suspend_lock);
+}
+}}}
+
+=== Wake Lock ===
+- wake lock有加锁和解锁两种状态，加锁的方式有两种：
+    - 第一种是永久的锁住，这样的锁除非显示的放开，否则是不会解锁的，所以这种锁的使用是非常小心的。
+    - 第二种是超时锁，这种锁会锁定系统唤醒一段时间，如果这个时间过去了，这个锁会自动解除。
+
+- 锁有两种类型:
+    - 1. WAKE_LOCK_SUSPEND 这种锁会防止系统进入睡眠。
+    - 2. WAKE_LOCK_IDLE 这种锁不会影响系统的休眠。
+
+- 在wake lock中, 会有3个地方让系统直接开始suspend(), 分别是:
+    - 1. 在wake_unlock()中，如果发现解锁以后没有任何其他的wake lock了，就开始休眠。
+    - 2. 在定时器都到时间以后，定时器的回调函数会查看是否有其他的wake lock，如果没有，就在这里让系统进入睡眠。
+    - 3. 在wake_lock() 中，对一个wake lock加锁以后，会再次检查一下有没有锁。
+
+=== Suspend ===
+- 当wake_lock运行suspend()以后，在wakelock.c的suspend()函数会被调用，这个函数首先sync文件系统，然后调用pm_suspend(request_suspend_state)，接下来pm_suspend()就会调用enter_state()来进入Linux的休眠流程。
+
+{{{class="brush:c"
+static void suspend(struct work_struct *work)
+{
+    int ret;
+    int entry_event_num;
+
+    if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
+        return;
+    }
+
+    entry_event_num = current_event_num;
+    sys_sync();
+    ret = pm_suspend(requested_suspend_state);
+    if (current_event_num == entry_event_num) {
+        wake_lock_timeout(&unknown_wakeup, HZ / 2);
+    }
+}
+}}}
+
+== Android与标准Linux休眠的区别 ==
+- pm_suspend()虽然会调用enter_state()来进入标准的Linux休眠流程，但是还是有一些区别：
+    - 当进入冻结进程的时候，android首先会检查有没有wake lock，如果没有，才会停止这些进程，因为在开始suspend和冻结进程期间有可能有人申请了wake lock，如果是这样，冻结进程会被中断。
+    - 在suspend_late()中，会最后检查一次有没有wake lock，这有可能是某种快速申请wake lock，并且快速释放这个锁的进程导致的，如果有这种情况，这里会返回错误，整个suspend就会全部放弃。

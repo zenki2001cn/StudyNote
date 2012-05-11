@@ -1,0 +1,51 @@
+= 基础StepByStep =
+
+== hello,world ==
+{{{class="brush: text"
+package main
+
+import fmt "fmt" // Package implementing formatted I/O.
+
+func main() { 
+    fmt.Printf("Hello, world; or Καλημέρα κόσμε; or こんにちは 世界\n") 
+} 
+}}}
+
+== 源文件声明 ==
+所有Go源文件需要使用 *package* 进行声明，例如：
+{{{class="brush: text"
+package main
+}}}
+
+== 分割符号 ==
+除了 *for* 语句等少量需要 *“;”* 来分割外，不需要显示使用分割符号。
+
+== 如何编译 ==
+*6g* 和 *8g* 分别用在64位x86和32位x86系统
+过程如下：
+{{{class="brush: text"
+>>>8g hello.go      #编译源文件
+>>>8l hello.8       #链接目标文件
+>>>8.out            #生成可执行文件
+}}}
+
+== 加载模块 ==
+使用 *import* 来加载模块
+{{{class="brush: text"
+import (
+    "os"
+    "flag"
+)
+}}}
+
+== 动态声明 ==
+使用 *new* 或 *make* 来动态声明, *new* 返回一个指针类型，
+*make* 可以对变量初始化。
+{{{class="brush: text"
+type T struct { a, b int }
+var t *T = new(T)
+
+m := make(map[string]int)
+}}}
+
+

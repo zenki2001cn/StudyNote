@@ -1,0 +1,349 @@
+= update升级包 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// 制作脚本
+build/tools/releasetools/ota_from_target_files
+build/tools/releasetools/edify_generator.py
+
+// recovery代码
+bootable/recovery/*
+}}}
+
+== update升级包的组成 ==
+- update.zip升级包的大致组成如下：
+
+{{{class="brush:text"
+update.zip
+|-- META-INF
+|   |-- CERT.RSA
+|   |-- CERT.SF
+|   |-- com
+|   |   `-- google
+|   |       `-- android
+|   |           |-- update-binary
+|   |           `-- updater-script
+|   `-- MANIFEST.MF
+|-- data.zip
+|-- ramdisk-uboot.img
+|-- recovery.img
+|-- system.zip
+|-- u-boot.bin
+|-- uImage
+`......
+}}}
+
+== 重要文件说明 ==
+=== update-binary ===
+{{{class="brush:text"
+    二进制文件，相当于一个脚本解释器，能识别updater-script中描述的操作。该文件由out/target/product/YOU_PRODUCT/system/bin/updater
+重命名所得。具体用什么名字是由bootable/recovery/install.c文件中的宏ASSUMED_UPDATE_BINARY_NAME的值而定。
+}}}
+
+=== updater-script ===
+{{{class="brush:text"
+    该文件需要自己根据更新包需要更新的内容自行编写。具体用什么名字是由myandroid/bootable/recovery/updater/updater.c文件中的宏
+SCRIPT_NAME的值而定。(注意: 是updater-script，而不是update-script)。
+}}}
+
+== update.zip升级包制作流程 ==
+- 1.创建update的目录
+ 
+{{{class="brush:bash"
+$ mkdir update         
+}}}
+
+- 2.在update目录下，创建META-INF目录
+
+{{{class="brush:bash"
+$ mkdir -p META-INF/com/google/android/
+}}}
+
+- 3.拷贝update-binary文件
+
+{{{class="brush:bash"
+$ cp myandroid/out/target/product/YOU_PRODUCT/system/bin/updater META-INF/com/google/android/update-binary 
+}}}
+
+- 4.拷贝升级需要的文件，例如系统文件。`可根据需要创建其他目录和文件，实际升级中拷贝的文件由脚本决定。`
+
+{{{class="brush:bash"
+$ mkdir system
+$ cp myandroid/out/target/product/system/ system/  
+}}}
+
+- 5.编写updater-script脚本，其语法请参考下面的脚本注释
+
+{{{class="brush:bash"
+$ vim META-INF/com/google/android/updater-script
+}}}
+
+- 6.打包update.zip
+
+{{{class="brush:bash"
+$ zip update.zip -ry ./META-INF/ ./system/
+}}}
+
+- 7.签名update.zip
+
+{{{class="brush:bash"
+$ java –jar SignApk.jar -w test-keys.x509.pem test-keys.pk8 update.zip update_signed.zip 
+}}}
+
+== updater-script脚本注解 ==
+=== 升级功能 ===
+| 关键字               | 示例                                                                  | 描述                                                                                   |
+|----------------------+-----------------------------------------------------------------------+----------------------------------------------------------------------------------------|
+| mount                | mount("ext3","/dev/block/mmcblk0p1","/tmp/system");                   | 挂在文件系统到指定分区                                                                 |
+| is_mounted           | is_mounted(mount_point)                                               | 判断分区是否被挂载                                                                     |
+| unmount              | unmount("/tmp/system");                                               | 卸载挂载点                                                                             |
+| format               | format(type, location)                                                | 格式化分区，type为格式化的类型                                                         |
+| show_progress        | show_progress(小数, 持续时间)                                         | 在屏幕上显示一个进度条，自动的根据<持续时间>指定的秒数来递增进度条状态，小数0.1表示10% |
+| set_progress         | set_progress(小数)                                                    | 设置进度条显示状态，小数0.1表示10%                                                     |
+| delete               | delete("/tmp/mbr_boot")                                               | 删除文件                                                                               |
+| delete_recursive     | delete("/tmp/mbr_boot")                                               | 递归删除，包含字目录的文件                                                             |
+| package_extract_dir  | package_extract_dir(package_path, destination_path)                   | 拷贝指定目录                                                                           |
+| package_extract_file | package_extract_file(package_path, destination_path)                  | 拷贝指定文件                                                                           |
+| symlink              | symlink target src                                                    | 创建一个符号链接，类似于"ln -s"                                                        |
+| set_perm             | set_perm(uid, gid, file_mode, file_path)                              | 设置文件的用户、组和权限                                                               |
+| set_perm_recursive   | set_perm(uid, gid, dir_mode, file_mode, file_or_dir_path)             | 设置文件的用户、组和权限，包含子目录的文件                                             |
+| getprop              | getprop(key)                                                          | 根据key获取prop属性                                                                    |
+| file_getprop         | file_getprop(file, key)                                               | 根据key,file获取prop属性                                                               |
+| write_raw_image      | write_raw_image(file, partition)                                      | 将boot.img写入手机，里面包含了内核和ram盘                                              |
+| write_radio_image    | write_radio_image(file, partition)                                    | 将基带部分的镜像写入手机，<src-image>表示镜像文件                                      |
+| write_hboot_image    | write_radio_image(file, partition)                                    | 将系统bootloader镜像写入手机，此命令在直到在所有的程序安装结束之后才会起作用           |
+| apply_patch          | apply_patch(srcfile, tgtfile, tgtsha1, tgtsize, sha1_1, patch_1, ...) |                                                                                        |
+| apply_patch_check    | apply_patch_check(file, [sha1_1, ...])                                |                                                                                        |
+| apply_patch_space    | apply_patch(srcfile, tgtfile, tgtsha1, tgtsize, sha1_1, patch_1, ...) |                                                                                        |
+| read_file            | read_file(filename)                                                   | 读取本地文件                                                                           |
+| sha1_check           | sha1_check(data)                                                      | sha1检查                                                                               |
+| ui_print             | ui_print(string)                                                      | 打印指定字符串                                                                         |
+| run_program          | run_program(program, arg1, arg2)                                      | 运行program指定的程序，arg*用来设置参数                                                |
+
+=== 内置功能 ===
+| 关键字            | 示例                             | 描述                                                                                              |
+|-------------------+----------------------------------+---------------------------------------------------------------------------------------------------|
+| assert <boolexpr> | assert(show_progress(0.1, 1))    | 此命令用来判断表达式boolexpr的正确与否，当表达式错误时程序终止执行                                |
+| ifelse            | ifelse(cond, do_true, do_false)  | 判断cond的bool值，如果为true执行do_true，否则执行do_false                                         |
+| abort             |                                  |                                                                                                   |
+| concat            | concat(expr1, expr2, expr3, ...) | 执行expr语句，并返回结果的字符串                                                                  |
+| is_substring      | is_substring(expr1, expr2)       | 执行expr语句，比较它们的返回结果，如果expr2返回字符串是expr1返回字符串的子串，则返回t，否则返回"" |
+| stdout            | stdout(expr1, expr2, ...)        | 执行expr语句，将结果输出到标准输出                                                                |
+| sleep             | sleep(time)                      | sleep指定的毫秒数                                                                                 |
+| less_than_int     | less_than_int(left, right)       | 比较left和right的int值大小，返回表达式(left < right)                                              |
+| greater_than_int  | greater_than_int(left, right)    | 比较left和right的int值大小，返回表达式(left > right)                                              |
+
+
+= 参考代码 =
+== 设备节点的定义 ==
+- bootable/recovery/roots.c中定义了设备节点的信息
+
+=== 设备名称的描述 ===
+| 设备名称 | 描述                                    |
+|----------+-----------------------------------------|
+| BOOT     | 包含kernel、ramdisk和boot config        |
+| CACHE    | 包含OTA缓存、recovery/update配置 、temp |
+| DATA     | 包含user/system/app配置、apps           |
+| MISC     |                                         |
+| PACKAGE  | 刷机包的伪文件系统                      |
+| RECOVERY | recovery和update的环境，类似BOOT        |
+| SDCARD   | update.zip                              |
+| SYSTEM   | 系统分区，静态且只读                    |
+| MBM      |                                         |
+| TMP      | 保存临时文件                            |
+
+=== roots.c ===
+==== struct RootInfo ====
+{{{class="brush:c++"
+typedef struct {
+    const char *name;               // 名称
+    const char *device;             // 设备节点
+    const char *device2;            // 设备节点2
+    const char *partition_name;     // 分区名称
+    const char *mount_point;        // 挂载点
+    const char *filesystem;         // 文件系统类型
+} RootInfo;
+}}}
+
+==== static RootInfo g_roots[] ====
+{{{class="brush:c++"
+static RootInfo g_roots[] = {
+    { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw },
+    { "CACHE:", "/dev/block/mmcblk0p3", NULL, "cache", "/cache", "ext3" },
+    { "DATA:", "/dev/block/mmcblk0p2", NULL, "userdata", "/data", "ext3" },
+    { "SYSTEM:", "/dev/block/mmcblk0p1", NULL, "system", "/system", "ext3" },
+    { "SDCARD:", "/dev/block/mmcblk1p1", "/dev/block/mmcblk1", NULL, "/sdcard1", "vfat" },
+    { "MISC:", g_mtd_device, NULL, "misc", NULL, g_raw },
+    { "PACKAGE:", NULL, NULL, NULL, NULL, g_package_file },
+    { "RECOVERY:", g_mtd_device, NULL, "recovery", "/", g_raw },
+    { "MBM:", g_mtd_device, NULL, "mbm", NULL, g_raw },
+    { "TMP:", NULL, NULL, NULL, "/tmp", NULL },
+};
+}}}
+
+== 注册处理脚本功能的函数 ==
+- 脚本解析的功能函数通过bootable/recovery/updater/updater.c的main()注册
+- 升级功能通过bootable/recovery/updater/install.c实现
+- 内置功能通过bootable/recovery/edify/expr.c实现
+
+=== updater.c ===
+==== main ====
+{{{class="brush:c++"
+int main(int argc, char** argv) {
+    // 注册内置功能
+    RegisterBuiltins();
+    // 注册升级相关功能
+    RegisterInstallFunctions();
+    // 注册设备相关功能
+    RegisterDeviceExtensions();
+    // 完成注册
+    FinishRegistration();
+}
+}}}
+
+=== install.c ===
+==== RegisterInstallFunctions ====
+{{{class="brush:c"
+void RegisterInstallFunctions() {
+    RegisterFunction("mount", MountFn);
+    RegisterFunction("is_mounted", IsMountedFn);
+    RegisterFunction("unmount", UnmountFn);
+    RegisterFunction("format", FormatFn);
+    RegisterFunction("show_progress", ShowProgressFn);
+    RegisterFunction("set_progress", SetProgressFn);
+    RegisterFunction("delete", DeleteFn);
+    RegisterFunction("delete_recursive", DeleteFn);
+    RegisterFunction("package_extract_dir", PackageExtractDirFn);
+    RegisterFunction("package_extract_file", PackageExtractFileFn);
+    RegisterFunction("symlink", SymlinkFn);
+    RegisterFunction("set_perm", SetPermFn);
+    RegisterFunction("set_perm_recursive", SetPermFn);
+
+    RegisterFunction("getprop", GetPropFn);
+    RegisterFunction("file_getprop", FileGetPropFn);
+    RegisterFunction("write_raw_image", WriteRawImageFn);
+
+    RegisterFunction("apply_patch", ApplyPatchFn);
+    RegisterFunction("apply_patch_check", ApplyPatchCheckFn);
+    RegisterFunction("apply_patch_space", ApplyPatchSpaceFn);
+
+    RegisterFunction("read_file", ReadFileFn);
+    RegisterFunction("sha1_check", Sha1CheckFn);
+
+    RegisterFunction("ui_print", UIPrintFn);
+
+    RegisterFunction("run_program", RunProgramFn);
+}
+}}}
+
+=== expr.c ===
+==== RegisterBuiltins ====
+{{{class="brush:c++"
+void RegisterBuiltins() {
+    RegisterFunction("ifelse", IfElseFn);
+    RegisterFunction("abort", AbortFn);
+    RegisterFunction("assert", AssertFn);
+    RegisterFunction("concat", ConcatFn);
+    RegisterFunction("is_substring", SubstringFn);
+    RegisterFunction("stdout", StdoutFn);
+    RegisterFunction("sleep", SleepFn);
+
+    RegisterFunction("less_than_int", LessThanIntFn);
+    RegisterFunction("greater_than_int", GreaterThanIntFn);
+}
+}}}
+
+== update-script脚本示例 ==
+{{{class="brush:bash"
+ui_print("");
+ui_print("1. extract fuse");
+assert(show_progress(0.010000, 1));
+assert(package_extract_file("fuse", "/tmp/fuse"));
+assert(set_perm(0, 0, 0755, "/tmp/fuse"));
+assert(set_progress(0.010000));
+
+
+# This choose which mbr to use
+assert(show_progress(0.010000, 1));
+assert(set_progress(0.020000));
+
+ui_print("3. format partitions");
+assert(show_progress(0.450000, 60));
+assert(run_program("/tmp/fuse", "system", "format"));
+
+# This segment is masked when inand is invalid
+ui_print("4 fuse mbr_boot");
+assert(show_progress(0.010000, 1));
+assert(package_extract_file("mbr_boot", "/tmp/mbr_boot"));
+assert(run_program("/tmp/fuse", "mbr_boot", "/tmp/mbr_boot"));
+delete("/tmp/mbr_boot");
+assert(set_progress(0.030000));
+
+ui_print("5. fuse xloader");
+assert(show_progress(0.020000, 3));
+assert(package_extract_file("MLO", "/tmp/MLO"));
+assert(run_program("/tmp/fuse", "xloader", "/tmp/MLO"));
+delete("/tmp/MLO");
+assert(set_progress(0.590000));
+
+ui_print("6. fuse u-boot.bin");
+assert(show_progress(0.020000, 3));
+assert(package_extract_file("u-boot.bin", "/tmp/u-boot.bin"));
+assert(run_program("/tmp/fuse", "uboot", "/tmp/u-boot.bin"));
+delete("/tmp/u-boot.bin");
+assert(set_progress(0.590000));
+
+ui_print("7. fuse uImage.img");
+assert(show_progress(0.030000, 5));
+assert(package_extract_file("uImage", "/tmp/uImage"));
+assert(run_program("/tmp/fuse", "kernel", "/tmp/uImage"));
+delete("/tmp/uImage");
+assert(set_progress(0.620000));
+
+ui_print("8. fuse ramdisk_mmc.img");
+assert(show_progress(0.030000, 5));
+assert(package_extract_file("ramdisk-uboot.img", "/tmp/ramdisk_mmc.img"));
+assert(run_program("/tmp/fuse", "ramdisk", "/tmp/ramdisk_mmc.img"));
+delete("/tmp/ramdisk_mmc.img");
+assert(set_progress(0.650000));
+
+ui_print("9. fuse recovery_mmc.img");
+assert(show_progress(0.030000, 5));
+assert(package_extract_file("recovery_mmc.img", "/tmp/recovery_mmc.img"));
+assert(run_program("/tmp/fuse", "recovery", "/tmp/recovery_mmc.img"));
+delete("/tmp/recovery_mmc.img");
+assert(set_progress(0.680000));
+
+ui_print("10. fuse logo.img");
+assert(show_progress(0.030000, 5));
+assert(package_extract_file("logo.img", "/tmp/logo.img"));
+assert(run_program("/tmp/fuse", "logo", "/tmp/logo.img"));
+delete("/tmp/logo.img");
+assert(set_progress(0.680000));
+
+ui_print("11. fuse system.img");
+assert(show_progress(0.300000, 50));
+assert(package_extract_file("system.zip", "/tmp/system.zip"));
+assert(run_program("/tmp/fuse", "system", "/tmp/system.zip"));
+delete("/tmp/system.zip");
+assert(set_progress(0.700000));
+
+ui_print("12. fuse data.img");
+assert(show_progress(0.020000, 50));
+assert(set_progress(0.800000));
+
+assert(show_progress(0.30000, 50));
+ui_print("13. backup data.img");
+assert(mount("ext3","/dev/block/mmcblk0p1","/tmp/system"));
+assert(package_extract_file("data.zip", "/tmp/system/data.zip"));
+assert(unmount("/tmp/system"));
+assert(set_progress(0.850000));
+assert(run_program("/tmp/fuse", "inand-storage", "format"));
+assert(set_progress(0.900000));
+delete("/tmp/fuse");
+assert(set_progress(1.000000));
+
+ui_print("14. Upgrade finish...");
+}}}

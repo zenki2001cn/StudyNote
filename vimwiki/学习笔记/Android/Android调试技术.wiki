@@ -1,0 +1,206 @@
+= Android调试技术 =
+
+%toc
+
+== ndk-stack ==
+- 使用`-g`选项编译程序，并使用ndk-stack工具过滤分析出错信息。
+
+{{{class="brush:bash"
+# SYMBOL_SO_PATH为带调试信息的so所在的根目录
+$ adb logcat | ndk-stack -sym SYMBOL_SO_PATH
+}}}
+
+== C/C++程序crash分析 ==
+=== 示例 ===
+{{{class="brush:c"
+I/DEBUG   (19717): *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+I/DEBUG   (19717): Build fingerprint: 'LENOVO/IdeaPad_Tablet_A1_07/A1_07:2.3.4/GRJ22/eng.user.20120131.085056:eng/test-keys'
+I/DEBUG   (19717): pid: 20539, tid: 20546  >>> system_server <<<
+I/DEBUG   (19717): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr ebebec2b
+I/DEBUG   (19717):  r0 ebebebeb  r1 0000006a  r2 4666eca8  r3 00000000
+I/DEBUG   (19717):  r4 00000000  r5 00326b34  r6 0000006a  r7 0000006a
+I/DEBUG   (19717):  r8 00000000  r9 4666eca8  10 0000004c  fp ebebebeb
+I/DEBUG   (19717):  ip 8061048c  sp 4666ec48  lr a811d0e5  pc a811d0f6  cpsr 20000030
+I/DEBUG   (19717):  d0  6f7420726574656d  d1  6564207465732a2a
+I/DEBUG   (19717):  d2  20726f662079616c  d3  6f72656c65636361
+I/DEBUG   (19717):  d30 0000000000000000  d31 0000000000000000
+I/DEBUG   (19717):  scr 80000012
+I/DEBUG   (19717): 
+I/DEBUG   (19717):          #00  pc 0001d0f6  /system/lib/libutils.so
+I/DEBUG   (19717):          #01  pc 0001d13c  /system/lib/libutils.so
+I/DEBUG   (19717):          #02  pc 0000d300  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #03  pc 0000a682  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #04  pc 0000bd0c  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #05  pc 0000be0e  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #06  pc 000075e4  /system/lib/libgui.so
+I/DEBUG   (19717):          #07  pc 0001359c  /system/lib/libbinder.so
+I/DEBUG   (19717):          #08  pc 000167ba  /system/lib/libbinder.so
+I/DEBUG   (19717):          #09  pc 0001699a  /system/lib/libbinder.so
+I/DEBUG   (19717):          #10  pc 0001c01c  /system/lib/libbinder.so
+I/DEBUG   (19717):          #11  pc 0001c8dc  /system/lib/libutils.so
+I/DEBUG   (19717):          #12  pc 0003298a  /system/lib/libandroid_runtime.so
+I/DEBUG   (19717):          #13  pc 0001ce3a  /system/lib/libutils.so
+I/DEBUG   (19717):          #14  pc 000118e4  /system/lib/libc.so
+I/DEBUG   (19717):          #15  pc 000114b0  /system/lib/libc.so
+I/DEBUG   (19717): 
+I/DEBUG   (19717): code around pc:
+I/DEBUG   (19717): a811d0d4 68874605 46904689 a004f8d0 ff94f7ff 
+I/DEBUG   (19717): a811d0e4 24003f01 e0144683 68281b39 eb01464a 
+I/DEBUG   (19717): a811d0f4 6c0376d1 eb044628 fb0b0666 4798a106 
+I/DEBUG   (19717): a811d104 d1022800 46304634 da01e007 e0001c74 
+I/DEBUG   (19717): a811d114 42bc1e77 f06fdde8 f1b80001 d0010f00 
+I/DEBUG   (19717): 
+I/DEBUG   (19717): code around lr:
+I/DEBUG   (19717): a811d0c4 bd104620 0000ab40 ffffffdc 4ff8e92d 
+I/DEBUG   (19717): a811d0d4 68874605 46904689 a004f8d0 ff94f7ff 
+I/DEBUG   (19717): a811d0e4 24003f01 e0144683 68281b39 eb01464a 
+I/DEBUG   (19717): a811d0f4 6c0376d1 eb044628 fb0b0666 4798a106 
+I/DEBUG   (19717): a811d104 d1022800 46304634 da01e007 e0001c74 
+I/DEBUG   (19717): 
+I/DEBUG   (19717): stack:
+I/DEBUG   (19717):     4666ec08  00000000  
+I/DEBUG   (19717):     4666ec38  4666ec50  
+I/DEBUG   (19717):     4666ec3c  a811d231  /system/lib/libutils.so
+I/DEBUG   (19717):     4666ec44  e3a070ad  
+I/DEBUG   (19717): #00 4666ec48  00000000  
+I/DEBUG   (19717):     4666ec6c  a811d141  /system/lib/libutils.so
+I/DEBUG   (19717): #01 4666ec70  003276f8  
+I/DEBUG   (19717):     4666ec74  8060d303  /system/lib/libsensorservice.so
+}}}
+
+=== 1.查看调用堆栈 ===
+- 以下为程序出错时的调用堆栈，为#00~#15。调用流程从#15开始，最后调用#00。
+
+{{{class="brush:c"
+I/DEBUG   (19717):          #00  pc 0001d0f6  /system/lib/libutils.so
+I/DEBUG   (19717):          #01  pc 0001d13c  /system/lib/libutils.so
+I/DEBUG   (19717):          #02  pc 0000d300  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #03  pc 0000a682  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #04  pc 0000bd0c  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #05  pc 0000be0e  /system/lib/libsensorservice.so
+I/DEBUG   (19717):          #06  pc 000075e4  /system/lib/libgui.so
+I/DEBUG   (19717):          #07  pc 0001359c  /system/lib/libbinder.so
+I/DEBUG   (19717):          #08  pc 000167ba  /system/lib/libbinder.so
+I/DEBUG   (19717):          #09  pc 0001699a  /system/lib/libbinder.so
+I/DEBUG   (19717):          #10  pc 0001c01c  /system/lib/libbinder.so
+I/DEBUG   (19717):          #11  pc 0001c8dc  /system/lib/libutils.so
+I/DEBUG   (19717):          #12  pc 0003298a  /system/lib/libandroid_runtime.so
+I/DEBUG   (19717):          #13  pc 0001ce3a  /system/lib/libutils.so
+I/DEBUG   (19717):          #14  pc 000118e4  /system/lib/libc.so
+I/DEBUG   (19717):          #15  pc 000114b0  /system/lib/libc.so
+}}}
+
+=== 2.查看地址信息 ===
+- 在源码的`prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin`目录有google提供的调试工具。
+- addr2line可查看so中的符号地址信息。
+
+{{{class="brush:bash"
+# 查看出错时libutils.so中0001d0f6所对应的方法
+$ arm-eabi-addr2line -e system/lib/libutils.so 0001d0f6 -f   
+ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj
+??:0
+}}}
+
+=== 3.反汇编动态链接库 ===
+- 使用objdump将动态链接库中的信息输出到文件中
+
+{{{class="brush:bash"
+$ arm-eabi-objdump -S -D libc.so > deassmble_libc.txt
+}}}
+
+=== 4.定位出错地址 ===
+- 打开objdump生成的信息文件，查看出错时对应地址的信息。
+- 以#00号的`0001d0f6`为例：
+    - 000为so的基地址
+    - 1d0f6为偏移位置
+- 查看偏移位置1d0f6所对应的行来分析出错原因。
+
+{{{class="brush:c"
+0001d0d0 <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj>:
+   1d0d0:	e92d 4ff8 	stmdb	sp!, {r3, r4, r5, r6, r7, r8, r9, sl, fp, lr}
+   1d0d4:	4605      	mov	r5, r0
+   1d0d6:	6887      	ldr	r7, [r0, #8]
+   1d0d8:	4689      	mov	r9, r1
+   1d0da:	4690      	mov	r8, r2
+   1d0dc:	f8d0 a004 	ldr.w	sl, [r0, #4]
+   1d0e0:	f7ff ff94 	bl	1d00c <_ZNK7android10VectorImpl8itemSizeEv>
+   1d0e4:	3f01      	subs	r7, #1
+   1d0e6:	2400      	movs	r4, #0
+   1d0e8:	4683      	mov	fp, r0
+   1d0ea:	e014      	b.n	1d116 <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x46>
+   1d0ec:	1b39      	subs	r1, r7, r4
+   1d0ee:	6828      	ldr	r0, [r5, #0]
+   1d0f0:	464a      	mov	r2, r9
+   1d0f2:	eb01 76d1 	add.w	r6, r1, r1, lsr #31
+   1d0f6:	6c03      	ldr	r3, [r0, #64]
+   1d0f8:	4628      	mov	r0, r5
+   1d0fa:	eb04 0666 	add.w	r6, r4, r6, asr #1
+   1d0fe:	fb0b a106 	mla	r1, fp, r6, sl
+   1d102:	4798      	blx	r3
+   1d104:	2800      	cmp	r0, #0
+   1d106:	d102      	bne.n	1d10e <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x3e>
+   1d108:	4634      	mov	r4, r6
+   1d10a:	4630      	mov	r0, r6
+   1d10c:	e007      	b.n	1d11e <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x4e>
+   1d10e:	da01      	bge.n	1d114 <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x44>
+   1d110:	1c74      	adds	r4, r6, #1
+   1d112:	e000      	b.n	1d116 <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x46>
+   1d114:	1e77      	subs	r7, r6, #1
+   1d116:	42bc      	cmp	r4, r7
+   1d118:	dde8      	ble.n	1d0ec <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x1c>
+   1d11a:	f06f 0001 	mvn.w	r0, #1	; 0x1
+   1d11e:	f1b8 0f00 	cmp.w	r8, #0	; 0x0
+   1d122:	d001      	beq.n	1d128 <_ZNK7android16SortedVectorImpl13_indexOrderOfEPKvPj+0x58>
+   1d124:	f8c8 4000 	str.w	r4, [r8]
+   1d128:	e8bd 8ff8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, sl, fp, pc}
+}}}
+
+== adbs ==
+- 综合以上工具，Android提供了一个Python的脚本工具，用来直接翻译logcat的信息。使用步骤如下：
+
+{{{class="brush:bash"
+# 加载环境变量
+$ . build/envsetup.sh
+# 设置编译好的out目录
+$ export ANDROID_PRODUCT_OUT=/home/zenki/project/CL1/OPBU_L25x.Inc6.4.2_ICS/out/target/product/zoom2/
+# 运行adbs
+$ ./build/tools/adbs logcat
+}}}
+
+== gdb调试方法 ==
+=== 1.安装gdbserver ===
+
+{{{class="brush:bash"
+$ adb push gdbserver/system/bin
+}}}
+
+=== 2.运行gdbserver ===
+{{{class="brush:bash"
+$ adb shell gdbserver :1234 /system/bin/bootanimation
+# 或者
+$ adb shell
+$ gdbserver :1234 attach [pid]
+}}}
+
+=== 3.重定向端口 ===
+{{{class="brush:bash"
+$ adb forward tcp:1234 tcp:1234
+}}}
+
+=== 4.运行gdb client ===
+{{{class="brush:bash"
+# 切换到toolchain目录
+$ cd prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin
+# 执行gdb命令，并连接到带符号的可执行文件
+$ ./arm-eabi-gdb product/A1_07/symbols/system/bin/bootanimation
+
+# 在gdb模式下:
+# 连接目标文件
+$ (gdb) target remote :1234
+# 设置断点
+$ (gdb) b main
+# 执行目标文件
+$ (gdb) continue
+# 单步单调试
+$ (gdb) n
+}}}

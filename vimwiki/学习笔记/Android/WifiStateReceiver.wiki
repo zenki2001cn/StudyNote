@@ -1,0 +1,92 @@
+= WifiStateReceiver =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Context;
+import android.content.Intent;
+import android.content.BroadcastReceiver;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.net.wifi.SupplicantState;
+import android.net.NetworkInfo;
+import android.net.NetworkInfo.DetailedState;
+}}}
+
+== 相关流程 ==
+- 该类为BroadcastReceiver的派生类，用来接收关于Wifi状态变化的系统信息
+- Wifi的系统信息通过Intent传递，不同的信息通过不同的Action名来区分
+- 通常在Wifi的管理界面onResume时registerReceiver该对象，并在管理界面onPause时unregisterReceiver
+- 通常为管理界面提供一个接口(`WifiStateEventHandler`)，由管理程序来实现处理这些状态变化的逻辑
+
+== Wifi状态Action ==
+| 类型   | 标识                                | 描述                     | 自定义接口方法        |
+|--------+-------------------------------------+--------------------------+-----------------------|
+| String | WIFI_STATE_CHANGED_ACTION           | WIFI状态改变消息         | updateWifiState       |
+| String | SCAN_RESULTS_AVAILABLE_ACTION       | 扫描完成，Supplicant可用 | updateWifiState       |
+| String | NETWORK_IDS_CHANGED_ACTION          | 网络IDS改变消息          | updateWifiState       |
+| String | SUPPLICANT_STATE_CHANGED_ACTION     | Supplicant状态改变消息   | updateConnectionState |
+| String | RSSI_CHANGED_ACTION                 | Wifi信号强弱改变消息     | updateConnectionState |
+| String | NETWORK_STATE_CHANGED_ACTION        | 网络连接状态改变         | updateConnectionState |
+| String | SUPPLICANT_CONNECTION_CHANGE_ACTION | Supplicant连接状态改变   | updateConnectionState |
+
+== 代码示例 ==
+=== WifiStateReceiver ===
+{{{class="brush:java"
+public class WifiStateReceiver extends BroadcastReceiver {
+
+    WifiStateEventHandler mHandler = null;
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        // context实现WifiStateEventHandler接口
+        mHandler = (WifiStateEventHandler) context;
+        
+        // 处理Wifi系统通知
+        handleEvent(intent);
+    }
+
+    private void handleEvent(Intent intent) {
+        String action = intent.getAction();
+
+        if ( null == mHandler ) {
+            return;
+        }
+
+        if ( WifiManager.WIFI_STATE_CHANGED_ACTION.equals(action) ) {
+            // 更新Wifi状态
+            mHandler.updateWifiState(intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
+                        WifiManager.WIFI_STATE_UNKNOWN));
+        } else if ( WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action) ) {
+            // 
+        } else if (WifiManager.NETWORK_IDS_CHANGED_ACTION.equals(action)) {
+            // 
+        } else if (WifiManager.SUPPLICANT_STATE_CHANGED_ACTION.equals(action)) {
+            // 更新连接点状态
+            mHandler.updateConnectionState(WifiInfo.getDetailedStateOf((SupplicantState)
+                        intent.getParcelableExtra(WifiManager.EXTRA_NEW_STATE)));
+        } else if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
+            // 更新连接点状态
+            mHandler.updateConnectionState(((NetworkInfo) intent.getParcelableExtra(
+                            WifiManager.EXTRA_NETWORK_INFO)).getDetailedState());
+        } else if (WifiManager.RSSI_CHANGED_ACTION.equals(action)) {
+            // 更新连接点状态
+            mHandler.updateConnectionState(null);
+        }
+    }
+}
+}}}
+
+=== WifiStateEventHandler接口 ===
+{{{class="brush:java"
+public interface WifiStateEventHandler {
+
+    // Wifi状态改变时通知
+    public void updateWifiState(int state);
+
+    // Wifi连接状态改变时通知
+    public void updateConnectionState(DetailedState state);
+}
+}}}

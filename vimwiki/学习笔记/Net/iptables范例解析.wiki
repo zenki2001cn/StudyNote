@@ -1,0 +1,50 @@
+= iptables范例解析 =
+
+== 查看配置 ==
+{{{class="brush:bash"
+# iptables -L -n                查看本机iptables的设置情况
+
+# iptables save                 保存配置
+
+# service iptables restart      重启iptables服务
+}}}
+
+== 添加预设规则 ==
+{{{class="brush:bash"
+# iptables -p INPUT DROP        丢弃INPUT链的数据
+
+# iptables -p OUTPUT ACCEPT     接收OUTPUT链的数据
+
+# iptables -p FORWARD DROP      丢弃FORWARD链的数据
+}}}
+
+== 添加ACCEPT规则 ==
+{{{class="brush:bash"
+# iptables -A INPUT -p tcp --dport 22 -j ACCEPT     为INPUT链端口22添加允许规则
+
+# iptables -A OUTPUT -p tcp --sport 22 -j ACCEPT    为OUTPUT链端口22添加允许规则
+
+# iptables -A OUTPUT -p icmp -j ACCEPT              允许icmp包(OUTPUT设置成DROP的话) 
+
+# iptables -A INPUT -i lo -p all -j ACCEPT          允许回环(如果是INPUT DROP)
+
+# iptables -A INPUT -s 192.168.0.3 -p tcp --dport 22 -j ACCEPT      允许地址192.168.0.3端口22的tcp连接
+
+# iptables -A FORWARD -i eth0 -o eth1 -m state --state RELATED,ESTABLISHED -j ACCEPT    开启转发规则
+# iptables -A FORWARD -i eth1 -o eh0 -j ACCEPT
+
+# iptables -A FORWARD -f -m limit --limit 100/s --limit-burst 100 -j ACCEPT      处理IP碎片，允许每秒100个
+
+# iptables -A FORWARD -p icmp -m limit --limit 1/s --limit-burst 10 -j ACCEPT    允许icmp每秒1个，限制10个
+}}}
+
+== 添加DROP规则 ==
+{{{class="brush:bash"
+# iptables -A OUTPUT -p tcp --sport 31337 -j DROP   禁止OUTPUT链端口31337的连接
+
+# iptables -A FORWARD -p TCP ! --syn -m state --state NEW -j DROP    丢弃坏的TCP包
+
+# iptables -t nat -A PREROUTING -p tcp --dport 21 -d 211.101.46.253 -j DROP     丢弃目的地址211.101.46.253端口21的连接
+
+# iptables -A INPUT -m state --state INVALID -j DROP    禁止非法连接
+}}}

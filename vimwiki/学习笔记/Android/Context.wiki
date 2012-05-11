@@ -1,0 +1,107 @@
+= Context =
+
+%toc
+
+- 该类是一个抽象类，其包含了关于应用程序的全局信息和系统服务，其中也包含了启动`Activity`，`Broadcast`和接收`Intent`等需要的特定资源
+
+== 基类和子类可获取的全局资源表 ==
+
+| 类型   | 标识                    | 方法                                        | 相关类                                          | 描述                                |
+|--------+-------------------------+---------------------------------------------+-------------------------------------------------+-------------------------------------|
+| String | ACCESSIBILITY_SERVICE   | getSystemService(String)                    | android.view.accessibility.AccessibilityManager | UI事件管理                          |
+| String | ACCOUNT_SERVICE         | getSystemService(String)                    | android.accounts.AccountManager                 | 账户管理                            |
+| String | ACTIVITY_SERVICE        | getSystemService(String)                    | android.app.ActivityManager                     | Activity管理                        |
+| String | ALARM_SERVICE           | getSystemService(String)                    | android.app.AlarmManager                        | 报警管理                            |
+| String | AUDIO_SERVICE           | getSystemService(String)                    | android.media.AudioManager                      | 声音管理                            |
+| int    | BIND_AUTO_CREATE        | bindService(Intent, ServiceConnection, int) | null                                            | 只要绑定存在，就自动创建一个Service |
+| int    | BIND_DEBUG_UNBIND       | bindService(Intent, ServiceConnection, int) | null                                            | 调用unbind不匹配时，附加调试帮助    |
+| int    | BIND_NOT_FOREGROUND     | bindService(Intent, ServiceConnection, int) | null                                            | 该绑定不会将目标服务进程提升到前台  |
+| String | CLIPBOARD_SERVICE       | getSystemService(String)                    | android.text.ClipboardManager                   | 全局剪贴板管理                      |
+| String | CONNECTIVITY_SERVICE    | getSystemService(String)                    | android.net.ConnectivityManager                 | 网络连接管理                        |
+| int    | CONTEXT_IGNORE_SECURITY | createPackageContext(String, int)           | null                                            | 创建忽略所有安全限制的Context       |
+| int    | CONTEXT_INCLUDE_CODE    | createPackageContext(String, int)           | null                                            | 创建包含应用程序代码的Context       |
+| int    | CONTEXT_RESTRICTED      | createPackageContext(String, int)           | null                                            | 创建有限制的Context，会取消一些特性 |
+| String | DEVICE_POLICY_SERVICE   | getSystemService(String)                    | android.app.admin.DevicePolicyManager           | 设备管理策略                        |
+| String | DROPBOX_SERVICE         | getSystemService(String)                    | android.os.DropBoxManager                       | 垃圾资源，日志记录管理              |
+| String | INPUT_METHOD_SERVICE    | getSystemService(String)                    | android.view.inputmethod.InputMethodManager     | 输入法管理                          |
+| String | KEYGUARD_SERVICE        | getSystemService(String)                    | android.app.NotificationManager                 | 通知消息管理                        |
+| String | LAYOUT_INFLATER_SERVICE | getSystemService(String)                    | android.view.LayoutInflater                     | 视图布局提取                        |
+| String | LOCATION_SERVICE        | getSystemService(String)                    | android.location.LocationManager                | GPS定位管理                         |
+| int    | MODE_APPEND             | openFileOutput(String, int)                 | null                                            | 以添加模式打开文件                  |
+| int    | MODE_PRIVATE            | above                                       | null                                            | 以私有模式创建文件                  |
+| int    | MODE_WORLD_READABLE     | above                                       | null                                            | 允许外部程序以只读模式创建文件      |
+| int    | MODE_WORLD_WRITEABLE    | above                                       | null                                            | 允许外部程序以可写模式创建文件      |
+| String | NOTIFICATION_SERVICE    | getSystemService(String)                    | android.app.NotificationManager                 | 通知消息管理                        |
+| String | POWER_SERVICE           | getSystemService(String)                    | android.os.PowerManager                         | 电源管理                            |
+| String | SEARCH_SERVICE          | getSystemService(String)                    | android.app.SearchManager                       | 搜索管理                            |
+| String | SENSOR_SERVICE          | getSystemService(String)                    | android.hardware.SensorManager                  | 硬件扫描管理                        |
+| String | TELEPHONY_SERVICE       | getSystemService(String)                    | android.telephony.TelephonyManager              | 电话呼叫管理                        |
+| String | UI_MODE_SERVICE         | getSystemService(String)                    | android.app.UiModeManager                       | UI模式管理                          |
+| String | VIBRATOR_SERVICE        | getSystemService(String)                    | android.os.Vibrator                             | 震动管理                            |
+| String | WALLPAPER_SERVICE       | getSystemService(String)                    | com.android.server.WallpaperService             | 壁纸管理                            |
+| String | WIFI_SERVICE            | getSystemService(String)                    | android.net.wifi.WifiManager                    | Wifi管理                            |
+| String | WINDOW_SERVICE          | getSystemService(String)                    | android.view.WindowManager                      | 窗口管理                            |
+
+== 主要方法 ==
+| 方法                                                                              | 描述                               |
+|-----------------------------------------------------------------------------------+------------------------------------|
+| bindService(Intent service, ServiceConnection conn, int flags)                    | 绑定服务                           |
+| checkCallingOrSelfPermission(String  permission)                                  | 检查IPC权限                        |
+| createPackageContext(String packageName, int flags)                               | 根据package名，创建一个新的Context |
+| databaseList()                                                                    | 返回相关数据库名                   |
+| deleteDatabase(String name)                                                       | 删除数据库                         |
+| deleteFile(String name)                                                           | 删除文件                           |
+| fileList()                                                                        | 返回相关的文件列表                 |
+| getApplicationContext()                                                           | 获取当前进程的全局App对象          |
+| getApplicationInfo()                                                              | 获取所有App信息                    |
+| getAssets()                                                                       | 获取AssetManager                   |
+| getClassLoader()                                                                  | 获取ClassLoader                    |
+| getContentResolver()                                                              | 后去ContentResolver                |
+| getDatabasePath(String name)                                                      | 得到数据库路径                     |
+| getDir(String name, int mode)                                                     | 获取或创建目录                     |
+| getMainLooper()                                                                   | 获取主线程循环                     |
+| getPackageManager()                                                               | 获取PackageManager                 |
+| getResources()                                                                    | 获取资源对象                       |
+| getSharedPreferences(String name, int mode)                                       | 获取Preferences对象                |
+| getSystemService(String name)                                                     | 获取指定的系统服务                 |
+| openFileInput(String name)                                                        | 打开相关输入文件                   |
+| openFileOutput(String name, int mode)                                             | 打开相关输出文件                   |
+| openOrCreateDatabase(String name, int mode, SQLiteDatabase.CursorFactory factory) | 打开或创建数据库                   |
+| registerReceiver(BroadcastReceiver receiver, IntentFilter filter)                 | 注册BroadReceiver                  |
+| sendBroadcast(Intent intent)                                                      | 发送BroadReceiver                  |
+| sendOrderedBroadcast(Intent intent, String  receiverPermission)                   | 发送排序的BroadReceiver            |
+| startActivity(Intent intent)                                                      | 启动一个Activity                   |
+| startService(Intent service)                                                      | 启动一个Service                    |
+| stopService(Intent service)                                                       | 停止一个Service                    |
+| unbindService(ServiceConnection conn)                                             | 取消绑定一个Service                |
+| unregisterReceiver(BroadcastReceiver receiver)                                    | 注销一个Broadcast                  |
+
+
+== 相关子类 ==
+
+| 子类                         | 描述                            |
+|------------------------------+---------------------------------|
+| AbstractInputMethodService   | 输入法的抽象类                  |
+| AccessibilityService         | AccessibilityEvents事件的服务类 |
+| AccountAuthenticatorActivity |                                 |
+| Activity                     | 活动                            |
+| ActivityGroup                | 运行多个活动的组                |
+| AliasActivity                |                                 |
+| Application                  | 应用程序类                      |
+| BackupAgent                  |                                 |
+| BackupAgentHelper            |                                 |
+| ContextThemeWrapper          |                                 |
+| ExpandableListActivity       |                                 |
+| InputMethodService           | 输入法服务类                    |
+| IntentService                |                                 |
+| IsolatedContext              |                                 |
+| LauncherActivity             |                                 |
+| ListActivity                 | 优化List控件的Activity          |
+| MockApplication              |                                 |
+| MutableContextWrapper        |                                 |
+| PreferenceActivity           | 优化Preference的Activity        |
+| RecognitionService           |                                 |
+| RenamingDelegatingContext    |                                 |
+| Service                      | 服务                            |
+| TabActivity                  | 优化Tab控件的Activity           |
+| WallpaperService             | 墙纸服务                        |

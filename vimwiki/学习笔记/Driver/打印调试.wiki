@@ -1,0 +1,35 @@
+= 打印调试 =
+
+%toc
+
+== 使用printk ==
+- 需要注意的是打印信息标识和字符串中间使用`空格隔开`。
+
+{{{class="brush:c"
+printk(KERN_DEBUG "Here I am: %s:%i\n", __FILE__, __LINE__);
+printk(KERN_CRIT "I'm trashed; giving up on %p\n", ptr);
+}}}
+
+== 打印的消息级别 ==
+- 有8种打印消息的级别，定义在<linux/kernel.h>中，由其重要程度分为以下几种：
+
+{{{class="brush:c"
+#define	KERN_EMERG	    "<0>"	/* system is unusable			*/
+#define	KERN_ALERT	    "<1>"	/* action must be taken immediately	*/
+#define	KERN_CRIT	    "<2>"	/* critical conditions		    */
+#define	KERN_ERR	    "<3>"	/* error conditions			    */
+#define	KERN_WARNING    "<4>"	/* warning conditions			*/
+#define	KERN_NOTICE	    "<5>"	/* normal but significant condition	*/
+#define	KERN_INFO	    "<6>"	/* informational			    */
+#define	KERN_DEBUG	    "<7>"	/* debug-level messages			*/
+
+/* Use the default kernel loglevel */
+#define KERN_DEFAULT	"<d>"
+}}}
+
+== 调整打印级别 ==
+- 通过以下方法可调整输出到控制台的打印信息
+
+{{{class="brush:bash"
+# echo 8 > /proc/sys/kernel/printk
+}}}

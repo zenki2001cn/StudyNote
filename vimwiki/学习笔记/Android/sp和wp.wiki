@@ -1,0 +1,480 @@
+= sp和wp =
+
+%toc
+
+== RefBase ==
+{{{class="brush:text"
+    从上一节的Binder类图，我们看出Binder相关类的基类是RefBase类。它的作用是为子类保持一个引用计数，只要是继承该类的子类，
+当对象赋值，销毁等操作时，会自动保持当前的引用计数。RefBase在构造时会创建一个weakref_type类型对象，该类的实现子类为weakref_impl，
+实际上RefBase是通过weakref_impl来实现引用计数的增减操作。
+    从RefBase的构造方法和析构方法来看，只有当弱引用的计数为0，才会销毁weakref_impl对象。
+}}}
+
+== struct ref_entry ==
+{{{class="brush:text"
+    RefBase是通过weakref_impl来操作引用计数，那么weakref_impl又是如何实现呢？该类有个内部结构struct ref_entry，引用计数
+是通过这个结构对象连接起来的链表。同时，在weakref_impl类中，包含两个ref_entry结构的成员，一个代表强引用，一个代表弱引用。
+RefBase::incStrong会同时增加强引用计数和弱引用计数，而weakref_impl::incWeak只会增加弱引用计数，相对应的RefBase::decStrong
+和weakref_impl::decWeak减少操作也是如此。由此得出当所有强引用对象计数为0时，其实弱引用计数还在，因此弱引用对象不会销毁。
+}}}
+
+== sp和wp ==
+- 理解上面两个概念后，我们引入sp和wp这两个类。它们是`模板类`，用来管理上面提到的强引用和弱引用。
+- sp代表“强引用指针”。它提供了重载的`*`和`->`操作符来返回实际的目标对象，所以看起来像个指针。sp调用的是`RefBase::incString()`和`RefBase::decStrong()`，所以不仅对强引用做增减操作，还对弱引用做增减操作。
+- wp代表“弱引用指针”。wp调用的是`weakref_impl::incWeak()`和`weakref_impl::decWeak()`，所以只会对弱引用做增减操作。当一个对象同时赋值给一个sp和wp时，如果销毁sp对象，wp对象仍然存在，因为弱引用的计数没有减少。但是从wp的类方法可以发现，wp没有重载`*`和`->`操作符号，因此无法引用目标对象，必须通过`promote()`方法升级为sp对象。
+- 无论是sp或wp，它要求构造参数的目标对象类型必须继承自`RefBase`类(可参考以下UML图)。`sp和wp是对目标对象的一层封装，虽然目标对象是继承于RefBase类，但他们不会直接管理引用计数，而这个任务就交给了sp和wp`。
+
+=== sp和wp继承图 ===
+[[pic/spwp.png]]
+
+== RefBase.h ==
+=== RefBase ===
+{{{class="brush:c++"
+class RefBase
+{
+public:
+    // 增加强引用计数
+    void            incStrong(const void* id) const;
+    // 减少强引用计数
+    void            decStrong(const void* id) const;
+    ......
+    
+    // 内部类，表示弱引用
+    class weakref_type
+    {
+    public:
+        RefBase*            refBase() const;
+        
+        // 增加弱引用计数
+        void                incWeak(const void* id);
+        // 减少弱引用计数
+        void                decWeak(const void* id);
+        
+        bool                attemptIncStrong(const void* id);
+        bool                attemptIncWeak(const void* id);
+
+        ......
+    };
+    
+    weakref_type*   createWeak(const void* id) const;
+            
+    weakref_type*   getWeakRefs() const;
+    ......
+
+protected:
+                            RefBase();
+    virtual                 ~RefBase();
+    
+    //! Flags for extendObjectLifetime()
+    enum {
+        OBJECT_LIFETIME_WEAK    = 0x0001,
+        OBJECT_LIFETIME_FOREVER = 0x0003
+    };
+    
+    //! Flags for onIncStrongAttempted()
+    enum {
+        FIRST_INC_STRONG = 0x0001
+    };
+    
+    virtual void            onFirstRef();
+    virtual void            onLastStrongRef(const void* id);
+    virtual bool            onIncStrongAttempted(uint32_t flags, const void* id);
+    virtual void            onLastWeakRef(const void* id);
+
+private:
+    friend class weakref_type;
+    class weakref_impl;
+    
+                    RefBase(const RefBase& o);
+    RefBase&        operator=(const RefBase& o);
+            
+    weakref_impl* const mRefs;
+};
+}}}
+
+=== sp::sp ===
+{{{class="brush:c++"
+template<typename T>
+sp<T>::sp(T* other)
+    : m_ptr(other)
+{
+    if (other) other->incStrong(this);
+}
+}}}
+
+=== sp::~sp ===
+{{{class="brush:c++"
+template<typename T>
+sp<T>::~sp()
+{
+    // 强引用对象计数减少
+    if (m_ptr) m_ptr->decStrong(this);
+}
+}}}
+
+=== wp::wp ===
+{{{class="brush:c++"
+template<typename T>
+wp<T>::wp(T* other)
+    : m_ptr(other)
+{
+    if (other) m_refs = other->createWeak(this);
+}
+}}}
+
+=== wp::~wp ===
+{{{class="brush:c++"
+template<typename T>
+wp<T>::~wp()
+{
+    if (m_ptr) m_refs->decWeak(this);
+}
+}}}
+
+=== wp::promote ===
+{{{class="brush:c++"
+template<typename T>
+sp<T> wp<T>::promote() const
+{
+    return sp<T>(m_ptr, m_refs);
+}
+}}}
+
+== RefBase.cpp ==
+=== RefBase::RefBase ===
+{{{class="brush:c++"
+RefBase::RefBase()
+    : mRefs(new weakref_impl(this))
+{
+}
+}}}
+
+=== RefBase::~RefBase ===
+{{{class="brush:c++"
+RefBase::~RefBase()
+{
+    if (mRefs->mWeak == 0) {
+        delete mRefs;
+    }
+}
+}}}
+
+=== RefBase::incStrong ===
+{{{class="brush:c++"
+void RefBase::incStrong(const void* id) const
+{
+    weakref_impl* const refs = mRefs;
+    // 先添加弱引用对象
+    refs->addWeakRef(id);
+    // 添加弱引用计数
+    refs->incWeak(id);
+    
+    // 再添加强引用对象
+    refs->addStrongRef(id);
+    const int32_t c = android_atomic_inc(&refs->mStrong);
+    
+    if (c != INITIAL_STRONG_VALUE)  {
+        return;
+    }
+
+    android_atomic_add(-INITIAL_STRONG_VALUE, &refs->mStrong);
+    const_cast<RefBase*>(this)->onFirstRef();
+}
+}}}
+
+=== RefBase::decStrong ===
+{{{class="brush:c++"
+void RefBase::decStrong(const void* id) const
+{
+    weakref_impl* const refs = mRefs;
+    refs->removeStrongRef(id);
+    const int32_t c = android_atomic_dec(&refs->mStrong);
+    
+    if (c == 1) {
+        const_cast<RefBase*>(this)->onLastStrongRef(id);
+        if ((refs->mFlags&OBJECT_LIFETIME_WEAK) != OBJECT_LIFETIME_WEAK) {
+            delete this;
+        }
+    }
+    refs->removeWeakRef(id);
+    refs->decWeak(id);
+}
+}}}
+
+=== RefBase::createWeak ===
+{{{class="brush:c++"
+RefBase::weakref_type* RefBase::createWeak(const void* id) const
+{
+    mRefs->incWeak(id);
+    return mRefs;
+}
+}}}
+
+
+=== RefBase::weakref_impl ===
+{{{class="brush:c++"
+class RefBase::weakref_impl : public RefBase::weakref_type
+{
+public:
+    volatile int32_t    mStrong;
+    volatile int32_t    mWeak;
+    RefBase* const      mBase;
+    volatile int32_t    mFlags;
+
+    weakref_impl(RefBase* base)
+        : mStrong(INITIAL_STRONG_VALUE)
+        , mWeak(0)
+        , mBase(base)
+        , mFlags(0)
+    {
+    }
+
+    void addStrongRef(const void* /*id*/) { }
+    void removeStrongRef(const void* /*id*/) { }
+    void addWeakRef(const void* /*id*/) { }
+    void removeWeakRef(const void* /*id*/) { }
+    void printRefs() const { }
+    void trackMe(bool, bool) { }
+
+    ~weakref_impl()
+    {
+        LOG_ALWAYS_FATAL_IF(!mRetain && mStrongRefs != NULL, "Strong references remain!");
+        LOG_ALWAYS_FATAL_IF(!mRetain && mWeakRefs != NULL, "Weak references remain!");
+    }
+
+    // 增加强引用计数
+    void addStrongRef(const void* id)
+    {
+        addRef(&mStrongRefs, id, mStrong);
+    }
+
+    // 减少强引用计数
+    void removeStrongRef(const void* id)
+    {
+        if (!mRetain)
+            removeRef(&mStrongRefs, id);
+        else
+            addRef(&mStrongRefs, id, -mStrong);
+    }
+
+    // 增加弱引用计数
+    void addWeakRef(const void* id)
+    {
+        addRef(&mWeakRefs, id, mWeak);
+    }
+
+    // 减少弱引用计数
+    void removeWeakRef(const void* id)
+    {
+        if (!mRetain)
+            removeRef(&mWeakRefs, id);
+        else
+            addRef(&mWeakRefs, id, -mWeak);
+    }
+
+private:
+    // 引用计数数据结构
+    struct ref_entry
+    {
+        ref_entry* next;
+        const void* id;
+#if DEBUG_REFS_CALLSTACK_ENABLED
+        CallStack stack;
+#endif
+        int32_t ref;
+    };
+
+    void addRef(ref_entry** refs, const void* id, int32_t mRef)
+    {
+        if (mTrackEnabled) {
+            AutoMutex _l(mMutex);
+            ref_entry* ref = new ref_entry;
+            // Reference count at the time of the snapshot, but before the
+            // update.  Positive value means we increment, negative--we
+            // decrement the reference count.
+            ref->ref = mRef;
+            ref->id = id;
+#if DEBUG_REFS_CALLSTACK_ENABLED
+            ref->stack.update(2);
+#endif
+            
+            ref->next = *refs;
+            *refs = ref;
+        }
+    }
+
+    void removeRef(ref_entry** refs, const void* id)
+    {
+        if (mTrackEnabled) {
+            AutoMutex _l(mMutex);
+            
+            ref_entry* ref = *refs;
+            while (ref != NULL) {
+                if (ref->id == id) {
+                    *refs = ref->next;
+                    delete ref;
+                    return;
+                }
+                
+                refs = &ref->next;
+                ref = *refs;
+            }
+        }
+    }
+    ......
+
+    Mutex mMutex;
+    // 强引用对象
+    ref_entry* mStrongRefs;
+    // 弱引用对象
+    ref_entry* mWeakRefs;
+
+    bool mTrackEnabled;
+    bool mRetain;
+
+#if 0
+    mutable Mutex mMutex;
+    KeyedVector<const void*, int32_t> mStrongRefs;
+    KeyedVector<const void*, int32_t> mWeakRefs;
+#endif
+
+#endif
+};
+}}}
+
+=== RefBase::weakref_type::incWeak ===
+{{{class="brush:c++"
+void RefBase::weakref_type::incWeak(const void* id)
+{
+    weakref_impl* const impl = static_cast<weakref_impl*>(this);
+    impl->addWeakRef(id);
+    const int32_t c = android_atomic_inc(&impl->mWeak);
+}
+}}}
+
+=== RefBase::weakref_type::decWeak ===
+{{{class="brush:c++"
+void RefBase::weakref_type::decWeak(const void* id)
+{
+    weakref_impl* const impl = static_cast<weakref_impl*>(this);
+    impl->removeWeakRef(id);
+    const int32_t c = android_atomic_dec(&impl->mWeak);
+    if (c != 1) return;
+    
+    if ((impl->mFlags&OBJECT_LIFETIME_WEAK) != OBJECT_LIFETIME_WEAK) {
+        if (impl->mStrong == INITIAL_STRONG_VALUE)
+            delete impl->mBase;
+        else {
+            delete impl;
+        }
+    } else {
+        impl->mBase->onLastWeakRef(id);
+        if ((impl->mFlags&OBJECT_LIFETIME_FOREVER) != OBJECT_LIFETIME_FOREVER) {
+            delete impl->mBase;
+        }
+    }
+}
+}}}
+
+=== sp ===
+{{{class="brush:c++"
+template <typename T>
+class sp
+{
+public:
+    typedef typename RefBase::weakref_type weakref_type;
+    
+    inline sp() : m_ptr(0) { }
+
+    sp(T* other);
+    sp(const sp<T>& other);
+    template<typename U> sp(U* other);
+    template<typename U> sp(const sp<U>& other);
+
+    ~sp();
+    
+    sp& operator = (T* other);
+    sp& operator = (const sp<T>& other);
+    
+    template<typename U> sp& operator = (const sp<U>& other);
+    template<typename U> sp& operator = (U* other);
+    
+    void force_set(T* other);
+    void clear();
+    
+    // 可以对对象进行操作
+    inline  T&      operator* () const  { return *m_ptr; }
+    inline  T*      operator-> () const { return m_ptr;  }
+    inline  T*      get() const         { return m_ptr; }
+
+    COMPARE(==)
+    COMPARE(!=)
+    COMPARE(>)
+    COMPARE(<)
+    COMPARE(<=)
+    COMPARE(>=)
+
+private:    
+    template<typename Y> friend class sp;
+    template<typename Y> friend class wp;
+
+    sp(T* p, weakref_type* refs);
+    T*              m_ptr;
+};
+}}}
+
+=== wp ===
+{{{class="brush:c++"
+template <typename T>
+class wp
+{
+public:
+    typedef typename RefBase::weakref_type weakref_type;
+    
+    inline wp() : m_ptr(0) { }
+
+    wp(T* other);
+    wp(const wp<T>& other);
+    wp(const sp<T>& other);
+    template<typename U> wp(U* other);
+    template<typename U> wp(const sp<U>& other);
+    template<typename U> wp(const wp<U>& other);
+
+    ~wp();
+    
+    wp& operator = (T* other);
+    wp& operator = (const wp<T>& other);
+    wp& operator = (const sp<T>& other);
+    
+    template<typename U> wp& operator = (U* other);
+    template<typename U> wp& operator = (const wp<U>& other);
+    template<typename U> wp& operator = (const sp<U>& other);
+    
+    void set_object_and_refs(T* other, weakref_type* refs);
+
+    // 升级成sp
+    // 缺少目标对象的引用，因此无法使用目标对象
+    sp<T> promote() const;
+
+    void clear();
+
+    inline  weakref_type* get_refs() const { return m_refs; }
+    inline  T* unsafe_get() const { return m_ptr; }
+        
+    COMPARE(==)
+    COMPARE(!=)
+    COMPARE(>)
+    COMPARE(<)
+    COMPARE(<=)
+    COMPARE(>=)
+
+private:
+    template<typename Y> friend class sp;
+    template<typename Y> friend class wp;
+
+    T*              m_ptr;
+    weakref_type*   m_refs;
+};
+}}}
+
+

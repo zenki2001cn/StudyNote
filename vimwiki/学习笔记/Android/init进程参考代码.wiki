@@ -1,0 +1,843 @@
+= init进程参考代码 =
+
+%toc
+
+== init.c ==
+=== main ===
+{{{class="brush:c++"
+int main(int argc, char **argv)
+{
+    int fd_count = 0;
+    struct pollfd ufds[4];
+    char *tmpdev;
+    char* debuggable;
+    char tmp[32];
+    int property_set_fd_init = 0;
+    int signal_fd_init = 0;
+    int keychord_fd_init = 0;
+
+    if (!strcmp(basename(argv[0]), "ueventd"))
+        return ueventd_main(argc, argv);
+
+    /* clear the umask */
+    umask(0);
+
+        /* Get the basic filesystem setup we need put
+         * together in the initramdisk on / and then we'll
+         * let the rc file figure out the rest.
+         */
+    mkdir("/dev", 0755);
+    mkdir("/proc", 0755);
+    mkdir("/sys", 0755);
+
+    mount("tmpfs", "/dev", "tmpfs", 0, "mode=0755");
+    mkdir("/dev/pts", 0755);
+    mkdir("/dev/socket", 0755);
+    mount("devpts", "/dev/pts", "devpts", 0, NULL);
+    mount("proc", "/proc", "proc", 0, NULL);
+    mount("sysfs", "/sys", "sysfs", 0, NULL);
+
+        /* We must have some place other than / to create the
+         * device nodes for kmsg and null, otherwise we won't
+         * be able to remount / read-only later on.
+         * Now that tmpfs is mounted on /dev, we can actually
+         * talk to the outside world.
+         */
+    open_devnull_stdio();
+    log_init();
+    
+    INFO("reading config file\n");
+    init_parse_config_file("/init.rc");
+
+    /* pull the kernel commandline and ramdisk properties file in */
+    import_kernel_cmdline(0);
+
+    get_hardware_name(hardware, &revision);
+    snprintf(tmp, sizeof(tmp), "/init.%s.rc", hardware);
+    init_parse_config_file(tmp);
+
+    action_for_each_trigger("early-init", action_add_queue_tail);
+
+    queue_builtin_action(wait_for_coldboot_done_action, "wait_for_coldboot_done");
+    queue_builtin_action(property_init_action, "property_init");
+    queue_builtin_action(keychord_init_action, "keychord_init");
+    queue_builtin_action(console_init_action, "console_init");
+    queue_builtin_action(set_init_properties_action, "set_init_properties");
+
+        /* execute all the boot actions to get us started */
+    action_for_each_trigger("init", action_add_queue_tail);
+    action_for_each_trigger("early-fs", action_add_queue_tail);
+    action_for_each_trigger("fs", action_add_queue_tail);
+    action_for_each_trigger("post-fs", action_add_queue_tail);
+
+    queue_builtin_action(property_service_init_action, "property_service_init");
+    queue_builtin_action(signal_init_action, "signal_init");
+    queue_builtin_action(check_startup_action, "check_startup");
+
+    /* execute all the boot actions to get us started */
+    action_for_each_trigger("early-boot", action_add_queue_tail);
+    action_for_each_trigger("boot", action_add_queue_tail);
+
+        /* run all property triggers based on current state of the properties */
+    queue_builtin_action(queue_property_triggers_action, "queue_propety_triggers");
+
+
+#if BOOTCHART
+    queue_builtin_action(bootchart_init_action, "bootchart_init");
+#endif
+
+    for(;;) {
+        int nr, i, timeout = -1;
+
+        execute_one_command();
+        restart_processes();
+
+        if (!property_set_fd_init && get_property_set_fd() > 0) {
+            ufds[fd_count].fd = get_property_set_fd();
+            ufds[fd_count].events = POLLIN;
+            ufds[fd_count].revents = 0;
+            fd_count++;
+            property_set_fd_init = 1;
+        }
+        if (!signal_fd_init && get_signal_fd() > 0) {
+            ufds[fd_count].fd = get_signal_fd();
+            ufds[fd_count].events = POLLIN;
+            ufds[fd_count].revents = 0;
+            fd_count++;
+            signal_fd_init = 1;
+        }
+        if (!keychord_fd_init && get_keychord_fd() > 0) {
+            ufds[fd_count].fd = get_keychord_fd();
+            ufds[fd_count].events = POLLIN;
+            ufds[fd_count].revents = 0;
+            fd_count++;
+            keychord_fd_init = 1;
+        }
+
+        if (process_needs_restart) {
+            timeout = (process_needs_restart - gettime()) * 1000;
+            if (timeout < 0)
+                timeout = 0;
+        }
+
+        if (!action_queue_empty() || cur_action)
+            timeout = 0;
+
+#if BOOTCHART
+        if (bootchart_count > 0) {
+            if (timeout < 0 || timeout > BOOTCHART_POLLING_MS)
+                timeout = BOOTCHART_POLLING_MS;
+            if (bootchart_step() < 0 || --bootchart_count == 0) {
+                bootchart_finish();
+                bootchart_count = 0;
+            }
+        }
+#endif
+
+        nr = poll(ufds, fd_count, timeout);
+        if (nr <= 0)
+            continue;
+
+        for (i = 0; i < fd_count; i++) {
+            if (ufds[i].revents == POLLIN) {
+                if (ufds[i].fd == get_property_set_fd())
+                    handle_property_set_fd();
+                else if (ufds[i].fd == get_keychord_fd())
+                    handle_keychord();
+                else if (ufds[i].fd == get_signal_fd())
+                    handle_signal();
+            }
+        }
+    }
+
+    return 0;
+}
+}}}
+
+=== import_kernel_cmdline ===
+{{{class="brush:c++"
+static void import_kernel_cmdline(int in_qemu)
+{
+    char cmdline[1024];
+    char *ptr;
+    int fd;
+
+    fd = open("/proc/cmdline", O_RDONLY);
+    if (fd >= 0) {
+        int n = read(fd, cmdline, 1023);
+        if (n < 0) n = 0;
+
+        /* get rid of trailing newline, it happens */
+        if (n > 0 && cmdline[n-1] == '\n') n--;
+
+        cmdline[n] = 0;
+        close(fd);
+    } else {
+        cmdline[0] = 0;
+    }
+
+    ptr = cmdline;
+    while (ptr && *ptr) {
+        char *x = strchr(ptr, ' ');
+        if (x != 0) *x++ = 0;
+        import_kernel_nv(ptr, in_qemu);
+        ptr = x;
+    }
+
+        /* don't expose the raw commandline to nonpriv processes */
+    chmod("/proc/cmdline", 0440);
+}
+}}}
+
+=== import_kernel_nv ===
+{{{class="brush:c++"
+static void import_kernel_nv(char *name, int in_qemu)
+{
+    char *value = strchr(name, '=');
+
+    if (value == 0) return;
+    *value++ = 0;
+    if (*name == 0) return;
+
+    if (!in_qemu)
+    {
+        /* on a real device, white-list the kernel options */
+        if (!strcmp(name,"qemu")) {
+            strlcpy(qemu, value, sizeof(qemu));
+        } else if (!strcmp(name,"androidboot.console")) {
+            strlcpy(console, value, sizeof(console));
+        } else if (!strcmp(name,"androidboot.mode")) {
+            strlcpy(bootmode, value, sizeof(bootmode));
+        } else if (!strcmp(name,"androidboot.serialno")) {
+            strlcpy(serialno, value, sizeof(serialno));
+        } else if (!strcmp(name,"androidboot.baseband")) {
+            strlcpy(baseband, value, sizeof(baseband));
+        } else if (!strcmp(name,"androidboot.carrier")) {
+            strlcpy(carrier, value, sizeof(carrier));
+        } else if (!strcmp(name,"androidboot.bootloader")) {
+            strlcpy(bootloader, value, sizeof(bootloader));
+        } else if (!strcmp(name,"androidboot.hardware")) {
+            strlcpy(hardware, value, sizeof(hardware));
+        }
+    } else {
+        /* in the emulator, export any kernel option with the
+         * ro.kernel. prefix */
+        char  buff[32];
+        int   len = snprintf( buff, sizeof(buff), "ro.kernel.%s", name );
+        if (len < (int)sizeof(buff)) {
+            property_set( buff, value );
+        }
+    }
+}
+}}}
+
+== util.c ==
+=== open_devnull_stdio ===
+{{{class="brush:c++"
+void open_devnull_stdio(void)
+{
+    int fd;
+    static const char *name = "/dev/__null__";
+    if (mknod(name, S_IFCHR | 0600, (1 << 8) | 3) == 0) {
+        fd = open(name, O_RDWR);
+        unlink(name);
+        if (fd >= 0) {
+            dup2(fd, 0);
+            dup2(fd, 1);
+            dup2(fd, 2);
+            if (fd > 2) {
+                close(fd);
+            }
+            return;
+        }
+    }
+
+    exit(1);
+}
+}}}
+
+=== log_init ===
+{{{class="brush:c++"
+void log_init(void)
+{
+    static const char *name = "/dev/__kmsg__";
+    if (mknod(name, S_IFCHR | 0600, (1 << 8) | 11) == 0) {
+        log_fd = open(name, O_WRONLY);
+        fcntl(log_fd, F_SETFD, FD_CLOEXEC);
+        unlink(name);
+    }
+}
+}}}
+
+=== get_hardware_name ===
+{{{class="brush:c++"
+void get_hardware_name(char *hardware, unsigned int *revision)
+{
+    char data[1024];
+    int fd, n;
+    char *x, *hw, *rev;
+
+    /* Hardware string was provided on kernel command line */
+    if (hardware[0])
+        return;
+
+    fd = open("/proc/cpuinfo", O_RDONLY);
+    if (fd < 0) return;
+
+    n = read(fd, data, 1023);
+    close(fd);
+    if (n < 0) return;
+
+    data[n] = 0;
+    hw = strstr(data, "\nHardware");
+    rev = strstr(data, "\nRevision");
+
+    if (hw) {
+        x = strstr(hw, ": ");
+        if (x) {
+            x += 2;
+            n = 0;
+            while (*x && !isspace(*x)) {
+                hardware[n++] = tolower(*x);
+                x++;
+                if (n == 31) break;
+            }
+            hardware[n] = 0;
+        }
+    }
+
+    if (rev) {
+        x = strstr(rev, ": ");
+        if (x) {
+            *revision = strtoul(x + 2, 0, 16);
+        }
+    }
+}
+}}}
+
+== init_parser.c ==
+=== struct parse_state ===
+{{{class="brush:c++"
+// 解析init.rc的数据结构，需要注意parse_line为解析文本的方法指针。
+// 对于service、action块有不同的处理方法。
+struct parse_state
+{
+    char *ptr;
+    char *text;
+    int line;
+    int nexttoken;
+    void *context;
+    void (*parse_line)(struct parse_state *state, int nargs, char **args);
+    const char *filename;
+};
+}}}
+
+=== init_parse_config_file ===
+{{{class="brush:c++"
+int init_parse_config_file(const char *fn)
+{
+    char *data;
+    data = read_file(fn, 0);
+    if (!data) return -1;
+
+    // 解析入口函数
+    parse_config(fn, data);
+    DUMP();
+    return 0;
+}
+}}}
+
+=== parse_config ===
+{{{class="brush:c++"
+static void parse_config(const char *fn, char *s)
+{
+    struct parse_state state;
+    char *args[INIT_PARSER_MAXARGS];
+    int nargs;
+
+    nargs = 0;
+    state.filename = fn;
+    state.line = 1;
+    state.ptr = s;
+    state.nexttoken = 0;
+    // 默认的处理方法为
+    state.parse_line = parse_line_no_op;
+    for (;;) {
+        switch (next_token(&state)) {
+        case T_EOF:
+            state.parse_line(&state, 0, 0);
+            return;
+        case T_NEWLINE:
+            if (nargs) {
+                int kw = lookup_keyword(args[0]);
+                if (kw_is(kw, SECTION)) {
+                    state.parse_line(&state, 0, 0);
+                    // 解析section
+                    parse_new_section(&state, kw, nargs, args);
+                } else {
+                    // 解析line
+                    state.parse_line(&state, nargs, args);
+                }
+                nargs = 0;
+            }
+            break;
+        case T_TEXT:
+            if (nargs < INIT_PARSER_MAXARGS) {
+                args[nargs++] = state.text;
+            }
+            break;
+        }
+    }
+}
+}}}
+
+=== parse_new_section ===
+{{{class="brush:c++"
+void parse_new_section(struct parse_state *state, int kw,
+                       int nargs, char **args)
+{
+    printf("[ %s %s ]\n", args[0],
+           nargs > 1 ? args[1] : "");
+    switch(kw) {
+    case K_service:
+        state->context = parse_service(state, nargs, args);
+        if (state->context) {
+            // 解析service
+            state->parse_line = parse_line_service;
+            return;
+        }
+        break;
+    case K_on:
+        state->context = parse_action(state, nargs, args);
+        if (state->context) {
+            // 解析action
+            state->parse_line = parse_line_action;
+            return;
+        }
+        break;
+    }
+    state->parse_line = parse_line_no_op;
+}
+}}}
+
+=== parse_line_service ===
+{{{class="brush:c++"
+static void parse_line_service(struct parse_state *state, int nargs, char **args)
+{
+    struct service *svc = state->context;
+    struct command *cmd;
+    int i, kw, kw_nargs;
+
+    if (nargs == 0) {
+        return;
+    }
+
+    svc->ioprio_class = IoSchedClass_NONE;
+
+    kw = lookup_keyword(args[0]);
+    switch (kw) {
+    case K_capability:
+        break;
+    case K_class:
+        if (nargs != 2) {
+            parse_error(state, "class option requires a classname\n");
+        } else {
+            svc->classname = args[1];
+        }
+        break;
+    case K_console:
+        svc->flags |= SVC_CONSOLE;
+        break;
+    case K_disabled:
+        svc->flags |= SVC_DISABLED;
+        break;
+    case K_ioprio:
+        if (nargs != 3) {
+            parse_error(state, "ioprio optin usage: ioprio <rt|be|idle> <ioprio 0-7>\n");
+        } else {
+            svc->ioprio_pri = strtoul(args[2], 0, 8);
+
+            if (svc->ioprio_pri < 0 || svc->ioprio_pri > 7) {
+                parse_error(state, "priority value must be range 0 - 7\n");
+                break;
+            }
+
+            if (!strcmp(args[1], "rt")) {
+                svc->ioprio_class = IoSchedClass_RT;
+            } else if (!strcmp(args[1], "be")) {
+                svc->ioprio_class = IoSchedClass_BE;
+            } else if (!strcmp(args[1], "idle")) {
+                svc->ioprio_class = IoSchedClass_IDLE;
+            } else {
+                parse_error(state, "ioprio option usage: ioprio <rt|be|idle> <0-7>\n");
+            }
+        }
+        break;
+    case K_group:
+        if (nargs < 2) {
+            parse_error(state, "group option requires a group id\n");
+        } else if (nargs > NR_SVC_SUPP_GIDS + 2) {
+            parse_error(state, "group option accepts at most %d supp. groups\n",
+                        NR_SVC_SUPP_GIDS);
+        } else {
+            int n;
+            svc->gid = decode_uid(args[1]);
+            for (n = 2; n < nargs; n++) {
+                svc->supp_gids[n-2] = decode_uid(args[n]);
+            }
+            svc->nr_supp_gids = n - 2;
+        }
+        break;
+    case K_keycodes:
+        if (nargs < 2) {
+            parse_error(state, "keycodes option requires atleast one keycode\n");
+        } else {
+            svc->keycodes = malloc((nargs - 1) * sizeof(svc->keycodes[0]));
+            if (!svc->keycodes) {
+                parse_error(state, "could not allocate keycodes\n");
+            } else {
+                svc->nkeycodes = nargs - 1;
+                for (i = 1; i < nargs; i++) {
+                    svc->keycodes[i - 1] = atoi(args[i]);
+                }
+            }
+        }
+        break;
+    case K_oneshot:
+        svc->flags |= SVC_ONESHOT;
+        break;
+    case K_onrestart:
+        nargs--;
+        args++;
+        kw = lookup_keyword(args[0]);
+        if (!kw_is(kw, COMMAND)) {
+            parse_error(state, "invalid command '%s'\n", args[0]);
+            break;
+        }
+        kw_nargs = kw_nargs(kw);
+        if (nargs < kw_nargs) {
+            parse_error(state, "%s requires %d %s\n", args[0], kw_nargs - 1,
+                kw_nargs > 2 ? "arguments" : "argument");
+            break;
+        }
+
+        cmd = malloc(sizeof(*cmd) + sizeof(char*) * nargs);
+        cmd->func = kw_func(kw);
+        cmd->nargs = nargs;
+        memcpy(cmd->args, args, sizeof(char*) * nargs);
+        list_add_tail(&svc->onrestart.commands, &cmd->clist);
+        break;
+    case K_critical:
+        svc->flags |= SVC_CRITICAL;
+        break;
+    case K_setenv: { /* name value */
+        struct svcenvinfo *ei;
+        if (nargs < 2) {
+            parse_error(state, "setenv option requires name and value arguments\n");
+            break;
+        }
+        ei = calloc(1, sizeof(*ei));
+        if (!ei) {
+            parse_error(state, "out of memory\n");
+            break;
+        }
+        ei->name = args[1];
+        ei->value = args[2];
+        ei->next = svc->envvars;
+        svc->envvars = ei;
+        break;
+    }
+    case K_socket: {/* name type perm [ uid gid ] */
+        struct socketinfo *si;
+        if (nargs < 4) {
+            parse_error(state, "socket option requires name, type, perm arguments\n");
+            break;
+        }
+        if (strcmp(args[2],"dgram") && strcmp(args[2],"stream")
+                && strcmp(args[2],"seqpacket")) {
+            parse_error(state, "socket type must be 'dgram', 'stream' or 'seqpacket'\n");
+            break;
+        }
+        si = calloc(1, sizeof(*si));
+        if (!si) {
+            parse_error(state, "out of memory\n");
+            break;
+        }
+        si->name = args[1];
+        si->type = args[2];
+        si->perm = strtoul(args[3], 0, 8);
+        if (nargs > 4)
+            si->uid = decode_uid(args[4]);
+        if (nargs > 5)
+            si->gid = decode_uid(args[5]);
+        si->next = svc->sockets;
+        svc->sockets = si;
+        break;
+    }
+    case K_user:
+        if (nargs != 2) {
+            parse_error(state, "user option requires a user id\n");
+        } else {
+            svc->uid = decode_uid(args[1]);
+        }
+        break;
+    default:
+        parse_error(state, "invalid option '%s'\n", args[0]);
+    }
+}
+}}}
+
+=== parse_line_action ===
+{{{class="brush:c++"
+static void parse_line_action(struct parse_state* state, int nargs, char **args)
+{
+    struct command *cmd;
+    struct action *act = state->context;
+    int (*func)(int nargs, char **args);
+    int kw, n;
+
+    if (nargs == 0) {
+        return;
+    }
+
+    kw = lookup_keyword(args[0]);
+    if (!kw_is(kw, COMMAND)) {
+        parse_error(state, "invalid command '%s'\n", args[0]);
+        return;
+    }
+
+    n = kw_nargs(kw);
+    if (nargs < n) {
+        parse_error(state, "%s requires %d %s\n", args[0], n - 1,
+            n > 2 ? "arguments" : "argument");
+        return;
+    }
+    cmd = malloc(sizeof(*cmd) + sizeof(char*) * nargs);
+    cmd->func = kw_func(kw);
+    cmd->nargs = nargs;
+    memcpy(cmd->args, args, sizeof(char*) * nargs);
+    list_add_tail(&act->commands, &cmd->clist);
+}
+}}}
+
+== devices.c ==
+=== device_init ===
+{{{class="brush:c++"
+int device_init(void)
+{
+    suseconds_t t0, t1;
+    int fd;
+
+    fd = open_uevent_socket();
+    if(fd < 0)
+        return -1;
+
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+
+    t0 = get_usecs();
+    coldboot(fd, "/sys/class");
+    coldboot(fd, "/sys/block");
+    coldboot(fd, "/sys/devices");
+    t1 = get_usecs();
+
+    log_event_print("coldboot %ld uS\n", ((long) (t1 - t0)));
+
+    return fd;
+}
+}}}
+
+=== do_coldboot ===
+{{{class="brush:c++"
+static void do_coldboot(int event_fd, DIR *d)
+{
+    struct dirent *de;
+    int dfd, fd;
+
+    dfd = dirfd(d);
+
+    fd = openat(dfd, "uevent", O_WRONLY);
+    if(fd >= 0) {
+        write(fd, "add\n", 4);
+        close(fd);
+        handle_device_fd(event_fd);
+    }
+
+    while((de = readdir(d))) {
+        DIR *d2;
+
+        if(de->d_type != DT_DIR || de->d_name[0] == '.')
+            continue;
+
+        fd = openat(dfd, de->d_name, O_RDONLY | O_DIRECTORY);
+        if(fd < 0)
+            continue;
+
+        d2 = fdopendir(fd);
+        if(d2 == 0)
+            close(fd);
+        else {
+            do_coldboot(event_fd, d2);
+            closedir(d2);
+        }
+    }
+}
+}}}
+
+=== coldboot ===
+{{{class="brush:c++"
+static void coldboot(int event_fd, const char *path)
+{
+    DIR *d = opendir(path);
+    if(d) {
+        do_coldboot(event_fd, d);
+        closedir(d);
+    }
+}
+}}}
+
+== property_service.c ==
+=== property_init ===
+{{{class="brush:c++"
+void property_init(void)
+{
+    // 初始化时读取/default.prop
+    init_property_area();
+    load_properties_from_file(PROP_PATH_RAMDISK_DEFAULT);
+}
+}}}
+
+=== start_property_service ===
+{{{class="brush:c++"
+int start_property_service(void)
+{
+    int fd;
+
+    // 开启服务时读取/system/build.prop、/system/default.prop、/data/local.prop
+    load_properties_from_file(PROP_PATH_SYSTEM_BUILD);
+    load_properties_from_file(PROP_PATH_SYSTEM_DEFAULT);
+    load_properties_from_file(PROP_PATH_LOCAL_OVERRIDE);
+    /* Read persistent properties after all default values have been loaded. */
+    load_persistent_properties();
+
+    fd = create_socket(PROP_SERVICE_NAME, SOCK_STREAM, 0666, 0, 0);
+    if(fd < 0) return -1;
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+
+    listen(fd, 8);
+    return fd;
+}
+}}}
+
+=== handle_property_set_fd ===
+{{{class="brush:c++"
+void handle_property_set_fd(int fd)
+{
+    prop_msg msg;
+    int s;
+    int r;
+    int res;
+    struct ucred cr;
+    struct sockaddr_un addr;
+    socklen_t addr_size = sizeof(addr);
+    socklen_t cr_size = sizeof(cr);
+
+    if ((s = accept(fd, (struct sockaddr *) &addr, &addr_size)) < 0) {
+        return;
+    }
+
+    /* Check socket options here */
+    if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, &cr, &cr_size) < 0) {
+        close(s);
+        ERROR("Unable to recieve socket options\n");
+        return;
+    }
+
+    r = recv(s, &msg, sizeof(msg), 0);
+    close(s);
+    if(r != sizeof(prop_msg)) {
+        ERROR("sys_prop: mis-match msg size recieved: %d expected: %d\n",
+              r, sizeof(prop_msg));
+        return;
+    }
+
+    switch(msg.cmd) {
+    case PROP_MSG_SETPROP:
+        msg.name[PROP_NAME_MAX-1] = 0;
+        msg.value[PROP_VALUE_MAX-1] = 0;
+
+        if(memcmp(msg.name,"ctl.",4) == 0) {
+            if (check_control_perms(msg.value, cr.uid, cr.gid)) {
+                handle_control_message((char*) msg.name + 4, (char*) msg.value);
+            } else {
+                ERROR("sys_prop: Unable to %s service ctl [%s] uid: %d pid:%d\n",
+                        msg.name + 4, msg.value, cr.uid, cr.pid);
+            }
+        } else {
+            if (check_perms(msg.name, cr.uid, cr.gid)) {
+                property_set((char*) msg.name, (char*) msg.value);
+            } else {
+                ERROR("sys_prop: permission denied uid:%d  name:%s\n",
+                      cr.uid, msg.name);
+            }
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+}}}
+
+== parser.c ==
+=== drain_action_queue ===
+{{{class="brush:c++"
+void drain_action_queue(void)
+{
+    struct listnode *node;
+    struct command *cmd;
+    struct action *act;
+    int ret;
+
+    while ((act = action_remove_queue_head())) {
+        INFO("processing action %p (%s)\n", act, act->name);
+        list_for_each(node, &act->commands) {
+            cmd = node_to_item(node, struct command, clist);
+            ret = cmd->func(cmd->nargs, cmd->args);
+            INFO("command '%s' r=%d\n", cmd->args[0], ret);
+        }
+    }
+}
+}}}
+
+=== action_for_each_trigger ===
+{{{class="brush:c++"
+void action_for_each_trigger(const char *trigger,
+                             void (*func)(struct action *act))
+{
+    struct listnode *node;
+    struct action *act;
+    list_for_each(node, &action_list) {
+        act = node_to_item(node, struct action, alist);
+        if (!strcmp(act->name, trigger)) {
+            func(act);
+        }
+    }
+}
+}}}
+
+=== action_remove_queue_head ===
+{{{class="brush:c++"
+struct action *action_remove_queue_head(void)
+{
+    if (list_empty(&action_queue)) {
+        return 0;
+    } else {
+        struct listnode *node = list_head(&action_queue);
+        struct action *act = node_to_item(node, struct action, qlist);
+        list_remove(node);
+        return act;
+    }
+}
+}}}

@@ -1,0 +1,24 @@
+1、执行autoscan生成configure.scan文件，对该文件进行修改，并改名为configure.in
+开始
+AC_INIT()
+生成makefile文件需要
+AM_INIT_AUTOMAKE(exe_name, version)
+添加库和编译选项
+CCFLAGS="$CCFLAGS ..."
+LIBS="$LIBS ..."
+结束
+AC_OUTPUT(Makefile)
+
+2、执行aclocal
+
+3、执行autoconf
+
+4、编辑Makefile.am文件
+AUTOMAKE_OPTIONS=foreign
+bin_PROGRAMS=exe_name
+exe_name_SOURCES=sources_file
+
+5、执行automake --add-missing并生成configure脚本
+
+6、运行configure脚本生成Makefile文件
+

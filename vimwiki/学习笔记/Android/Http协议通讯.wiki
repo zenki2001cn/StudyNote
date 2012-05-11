@@ -1,0 +1,17 @@
+= Http协议通讯 =
+
+%toc
+
+== 关键说明 ==
+- [[HttpURLConnection应答代码表]]
+
+== Tips ==
+- [[HttpURLConnection代码注释]]
+- [[URLConnection和HttpURLConnection]]代码实现
+- [[Apache接口]]
+- [[AndroidHttpClient接口]]
+
+== XML添加权限 ==
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.INTERNET" /> 
+}}}

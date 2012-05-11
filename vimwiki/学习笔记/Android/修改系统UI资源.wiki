@@ -1,0 +1,20 @@
+= 修改系统UI资源 =
+
+%toc
+
+== 编译源文件目录 ==
+{{{class="brush:text"
+/frameworks/base/core/res/res
+}}}
+
+== 生成Android系统包 ==
+{{{class="brush:java"
+/system/framework/framework-res.apk
+}}}
+
+== Q&A ==
+- 替换资源编译后不生效
+
+{{{class="brush:text"
+    需要删除中间文件：out/target/common/obj/APPS/framework-res_intermediates
+}}}

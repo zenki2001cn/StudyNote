@@ -1,0 +1,78 @@
+= 什么是Vold =
+
+%toc
+
+== Vold简介 ==
+=== udev由来 ===
+- udev是Linux2.6内核里的一个功能，它替代了原来的devfs，成为当前Linux预设的设备管理工具。udev以守护进程的形式运行，通过侦听内核发出来的uevent来管理/dev目录下的设备文件。不像之前的设备管理工具，udev在用户空间(user space)运行，而不在内核空间(kernel space)运行。
+- devfs存在的主要的问题是它处理设备检测、创建和命名的方式，其中设备节点的命名可能是最严重的问题。一般可接受的方式是，如果设备名是可配置的，那么设备命名策略应该由系统管理员决定，而不是由某些开发者强制规定。devfs文件系统还存在竞争条件(race conditions)的问题，这是它天生的设计缺陷，不对内核做彻底的修改就无法修正这个问题。所以udev应运而生。
+- udev能够实现所有devfs实现的功能。具有以下优点:
+    -  dynamic replacement for /dev：作为devfs的替代者，传统的devfs不能动态分配major和minor的值，major和minor非常有限，很快就会用完了。udev而能够像DHCP 动态分配IP地址一样去动态分配major和minor。
+    - device naming：提供设备命名持久化的机制。传统设备命名方式不具直观性，像/dev/hda1这样的名字肯定没有boot_disk这样的名字直观。udev能够像DNS解析域名一样去给设备指定一个有意义的名称。
+    - API to access info about current system devices：提供了一组易用的API去操作sysfs，避免重复实现同样的代码，但udev运行在用户模式中，而devfs 运行在内核中。udev只支持linux-2.6内核，因为udev严重依赖于sysfs文件系统提供的信息，sysfs文件系统只在linux-2.6内核中而才有。
+
+=== Vold的产生 ===
+- Vold的全称是Volume Daemon。在android中，取代udev的是vold，我们这里不去过多的讨论为什么android不继续使用udev，但要知道vold的机制和udev是一样的，理解了udev，也就理解了vold。android一出生就没有尊守传统linux的许多标准，当然也不能指望udev能很好的服务于android。android小区的选择是别起炉灶，为android定做一套udev，这就是vold了。 
+- 无论是udev还是vold，都是基于sysfs的， sysfs为内核与用户层的通讯提供了一种全新的方式，并将这种方式加以规范。kernel层能检测到有新的设备接入，并能为之加载相应的驱动，但如何通知用户层呢?这就是sysfs的工作，内核中的sysfs机制要求当有新的驱动加载时给用户层发送相应的event.但这些event只尽告知的义务，具体怎么处理，这就是vold的事了。对于用户层而言，我们无需关心sysfs的细节，只要知道sysfs能向用户层提供什么就行了。
+- 首先，我们要知道如何接收来自内核的event。Netlink socket大家应该不会陌生吧，socket这套东西不仅能用于网络间的通讯，也用能用于进程间的通讯，          像这种内核态与用户沟通的活，自然也少不了它。
+
+== Vold功能分析 ==
+=== Vold的启动 ===
+- Vold由init进程启动，查看init.rc脚本如下：
+
+{{{class="brush:bash"
+service vold /system/bin/vold
+    socket vold stream 0660 root mount
+    ioprio be 2
+}}}
+
+=== Vold配置文件 ===
+- 在vold启动时，需要载入并解析vold.fstab文件，对现有外设存储设备进行处理。路径为/system/etc/vold.fstab。
+- 需要注意几点:
+    - 子分区的数目可以为auto，表示只有一个子分区。子分区数目也可以为任意大于0的一个整数。
+    - 个参数间不能有空格，应该以tab制表符为参数的间隔，原因是android对vold.fstab的解析是以`\t`为标识，从而得到各个参数。
+- 根据解析的信息会生成DirectVolume对象，并将该对象加入链表。
+
+{{{class="brush:bash"
+# vold.fstab示例
+## Vold 2.0 Generic fstab
+## - San Mehat (san@android.com)
+## 
+
+#######################
+## Regular device mount
+##
+## Format: dev_mount <label> <mount_point> <part> <sysfs_path1...> 
+## label        - Label for the volume
+## mount_point  - Where the volume will be mounted
+## part         - Partition # (1 based)， or 'auto' for first usable partition.
+## <sysfs_path> - List of sysfs paths to source devices
+######################
+
+## Example of a standard sdcard mount for the emulator / Dream
+# Mounts the first usable partition of the specified device
+dev_mount removable_sdcard /mnt/sdcard/removable_sdcard auto /devices/platform/mmci-omap-hs.0/mmc_host/mmc1
+dev_mount sdcard /mnt/sdcard 3 /devices/platform/mmci-omap-hs.0/mmc_host/mmc0
+
+## Example of a dual card setup
+# dev_mount left_sdcard  /sdcard1  auto /devices/platform/goldfish_mmc.0 /devices/platform/msm_sdcc.2/mmc_host/mmc1
+# dev_mount right_sdcard /sdcard2  auto /devices/platform/goldfish_mmc.1 /devices/platform/msm_sdcc.3/mmc_host/mmc1
+
+## Example of specifying a specific partition for mounts
+# dev_mount sdcard /sdcard 2 /devices/platform/goldfish_mmc.0 /devices/platform/msm_sdcc.2/mmc_host/mmc1
+}}}
+
+=== Vold的作用 ===
+- Vold守护进程通过建立两个socket连接分别与framework层和驱动层通讯：
+    - CommandListener：与framework间的连接，用来接收framework层的指令和通报事件给framework层。
+    - NetlinkManager：与驱动层的连接，用来接收驱动层上传的uevent事件。
+
+==== uevent简介 ====
+{{{class="brush:text"
+    uevent由内核发出，通过netlink sokect来传递给vold，在kobject被创建的时候，就会发生uevent的传递。
+对于未传递的uevent，会在kset下产生uevent文件，这是供用户态触发uevent使用的，通过向uevent档写入action(add，remove等)
+可以触发一个uevent，这些uevent可以被vold捕获，从而完成未完成的vold处理。在系统启动的时候，vold 未启动的时候，
+这些uevent写入了uevent档，vold启动后，会扫描sys目录查找uevent，然后触发它们，来完成之前未完成的操作。uevent文件的内容，
+代表了uevent事件的数据。
+}}}
+

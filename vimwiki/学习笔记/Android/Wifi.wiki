@@ -1,0 +1,48 @@
+= Wifi =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.net.wifi.WifiInfo;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.net.wifi.SupplicantState;
+import android.net.NetworkInfo;
+import android.net.NetworkInfo.DetailedState;
+
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiConfiguration.KeyMgmt;
+import android.net.wifi.WifiConfiguration.AuthAlgorithm;
+import android.net.DhcpInfo;
+
+import android.content.Context;
+}}}
+
+== 要点归纳 ==
+- Wifi相关的几个概念包括`WifiController`、`AccessPointState`、`WifiStateReceiver`
+- WifiController主要负责查找AP，获取AP信息，连接和断开Wifi等等
+- AccessPointState主要负责维护连接的热点状态信息
+- WifiStateReceiver主要负责接收系统发送的Wifi状态变化的消息，并做出相应的反应
+
+== Wifi连接管理 ==
+- [[WifiController]]
+
+== Wifi连接点状态 ==
+- [[AccessPointState]]
+
+== Wifi状态监控 ==
+- [[WifiStateReceiver]]
+
+== Android权限设置 ==
+- 需要在Manifest文件中加入对Wifi访问权限
+
+{{{class="brush:xml"
+android.permission.ACCESS_WIFI_STATE
+android.permission.CHANGE_WIFI_STATE
+android.permission.WAKE_LOCK
+}}}
+
+== Tip ==
+- [[开启和关闭WIFI]]
+

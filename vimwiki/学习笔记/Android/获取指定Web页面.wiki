@@ -1,0 +1,27 @@
+= 获取指定页面 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Intent;
+}}}
+
+- 实例化Intent的时候使用的构建器。
+ 
+public Intent (String action, Uri uri) 
+    # 第1个参数action设置为Intent类的常数Intent.ACTION_VIEW、
+    # 第2个参数uri设置为Uri类的实例。
+    # 调用Uri.parse()方法生成Uri的实例。
+
+作成Intent实例后，调用startActivity()方法来启动Activity。
+
+例程源码(Java) 
+{{{class="brush:java"
+Intent intent = new Intent(
+    Intent.ACTION_VIEW,
+    Uri.parse("<a href="http://www.adakoda.com/adakoda/">http://www.adakoda.com/adakoda/</a>"));
+ 
+startActivity(intent);
+
+}}}
+ 
+ 

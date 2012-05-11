@@ -1,0 +1,26 @@
+= 开启和关闭WIFI =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.net.wifi.WifiManager; 
+}}}
+
+== 例程源码(JAVA) ==
+{{{class="brush:java"
+WifiManager wifiManager = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
+
+if (wifiManager.isWifiEnabled()) {  
+    wifiManager.setWifiEnabled(false);  
+} else {  
+    wifiManager.setWifiEnabled(true);  
+}
+}}}
+
+== 例程源码(XML) ==
+{{{class="brush:xml"
+android.permission.ACCESS_WIFI_STATE
+android.permission.CHANGE_WIFI_STATE
+android.permission.WAKE_LOCK
+}}}

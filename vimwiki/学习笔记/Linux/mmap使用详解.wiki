@@ -1,0 +1,115 @@
+= mmap使用详解 =
+
+%toc
+
+== 相关函数 ==
+{{{class="brush：c"
+#include <sys/mman.h>
+
+void * mmap(void *start, size_t length, int prot , int flags, int fd, off_t offset);
+int munmap(void *start, size_t length);
+int msync(const void *start, size_t length, int flags);
+}}}
+
+== mmap ==
+原型 :: void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offsize);
+
+*参数：*
+    # addr： 指定映射的起始地址, 通常设为NULL, 由系统指定。
+    # length： 将文件的多大长度映射到内存。
+    # prot： 映射区的保护方式, 可以是：
+        * PROT_EXEC： 映射区可被执行。
+        * PROT_READ： 映射区可被读取。
+        * PROT_WRITE： 映射区可被写入。
+        * PROT_NONE： 映射区不能存取。
+    # flags：映射区的特性, 可以是：
+        * MAP_SHARED： 对映射区域的写入数据会复制回文件, 且允许其他映射该文件的进程共享。
+        * MAP_PRIVATE： 对映射区域的写入操作会产生一个映射的复制(copy-on-write), 对此区域所做的修改不会写回原文件。
+        * 此外还有其他几个flags不很常用, 具体查看linux C函数说明。
+    # fd： 由open返回的文件描述符, 代表要映射的文件。
+    # offset： 以文件开始处的偏移量, 必须是分页大小的整数倍, 通常为0, 表示从文件头开始映射。
+ 
+*返回值：*
+成功则返回映射区起始地址，失败则返回MAP_FAILED(-1)，errno被设置成以下值：
+    # EACCES：访问出错 
+    # EAGAIN：文件已被锁定，或者太多的内存已被锁定
+    # EBADF：fd不是有效的文件描述词 
+    # EINVAL：一个或者多个参数无效 
+    # ENFILE：已达到系统对打开文件的限制 
+    # ENODEV：指定文件所在的文件系统不支持内存映射 
+    # ENOMEM：内存不足，或者进程已超出最大内存映射数量 
+    # EPERM：权能不足，操作不允许 
+    # ETXTBSY：已写的方式打开文件，同时指定MAP_DENYWRITE标志 
+    # SIGSEGV：试着向只读区写入 
+    # SIGBUS：试着访问不属于进程的内存区
+
+*实现过程：*
+    # 先通过文件系统定位要映射的文件；
+    # 权限检查, 映射的权限不会超过文件打开的方式, 也就是说如果文件是以只读方式打开, 那么则不允许建立一个可写映射；
+    # 创建一个vma对象, 并对之进行初始化；
+    # 调用映射文件的mmap函数, 其主要工作是给vm_ops向量表赋值；
+    # 把该vma链入该进程的vma链表中, 如果可以和前后的vma合并则合并；
+    # 如果是要求VM_LOCKED(映射区不被换出)方式映射, 则发出缺页请求, 把映射页面读入内存中.
+
+=== 内存映射图 ===
+[pic/mmap.png]
+
+== munmap ==
+原型 :: int munmap(void *start, size_t length);
+
+*参数：*
+    # start：需要释放的映射内存地址。
+    # length：释放的内存大小。
+
+*实现过程：*
+    # 该调用可以看作是mmap的一个逆过程. 它将进程中从start开始length长度的一段区域的映射关闭, 如果该区域不是恰好对应一个vma, 则有可能会分割几个或几个vma。
+
+== msync ==
+原型 :: int msync(const void *start, size_t length, int flags);
+
+*参数：*
+    # start 映射内存起始地址
+    # length 内存大小
+    # flags标识：
+        * MS_ASYNC : 立即将资料写入。
+        * MS_SYNC : 在msync结束返回前，将资料写入。
+        * MS_INVALIDATE : 让核心自行决定是否写入，仅在特殊状况下使用
+
+*实现过程：*
+    # 把映射区域的修改回写到后备存储中. 因为munmap时并不保证页面回写, 如果不调用msync, 那么有可能在munmap后丢失对映射区的修改。该系统调用是通过调用映射文件的sync函数来完成工作的。
+
+== 示例代码 ==
+{{{class="brush:c"
+#include <sys/mman.h>   /* for mmap and munmap */
+#include <sys/types.h>  /* for open */
+#include <sys/stat.h>   /* for open */
+#include <fcntl.h>      /* for open */
+#include <unistd.h>     /* for lseek and write */
+#include <stdio.h>      /* i/o */
+
+int main(int argc, char **argv)
+{
+    int fd;
+    char *mapped_mem, *p;
+    int flength = 1024;
+    void *start_addr = 0;
+
+    fd = open(argv[1], O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    flength = lseek(fd, 1, SEEK_END);
+    /* 在文件最后添加一个空字符，以便下面printf正常工作 */
+    write(fd, "\0", 1);         
+    lseek(fd, 0, SEEK_SET);
+    
+    /* 使用内存映射 */
+    mapped_mem = mmap(start_addr, flength, PROT_READ,   // 允许读
+                      MAP_PRIVATE,                      // 不允许其它进程访问此内存区域
+                      fd, 0);
+                      
+    /* 为了保证这里工作正常，参数传递的文件名最好是一个文本文件 */
+    printf("%s\n", mapped_mem);                         
+    close(fd);
+    munmap(mapped_mem, flength);
+    
+    return 0;
+}
+}}}

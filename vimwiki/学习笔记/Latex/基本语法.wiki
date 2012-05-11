@@ -1,0 +1,105 @@
+= LaTex基本语法 =
+
+== 空白距离 ==
+{{{class="brush: text"
+空白和制表符被看作是一个空白字符
+两行文本之间的空白标志上段的结束和下段的开始
+}}}
+
+== 特殊字符 ==
+{{{class="brush: text"
+# $ % ^ & _ { } ~ \
+被当做特殊字符，加上“\”后可以正常输出到文档
+“\\”表示换行
+}}}
+
+== LaTex命令 ==
+- 以“\”开始，命令以字母组成，任何非字母被认为是命令的结束
+- 由“\”和非字母的字符组成。
+
+{{{class="brush: text"
+1. 命令忽略后面的的空白字符，如果希望加上空格，可以在命令后加上{}和一个空格
+2. 有的命令后面需要参数，用{}括住。可选参数用[]括住
+}}}
+
+== 注释 ==
+{{{class="brush: text"
+1. “%”用来注释后面的内容，换行符及下一行前的空白字符。
+2. \begin{comment}和\end{comment}
+}}}
+
+== 源文件结构 ==
+{{{class="brush: text"
+1. \documentclass[option]{class}
+2. \usepackage{...}
+3. \begin{document}
+4. \end{document}
+}}}
+
+== 生成tex文档 ==
+{{{class="brush: text"
+1. latex foo.tex
+2. xdvi foo.dvi
+3. 转换成pdf文档 dvipdf foo.dvi
+}}}
+
+= 文档布局 =
+
+== 文档类 ==
+*文档类定义*: \documentclass[option]{class}
+{{{class="brush: text"
+article     演示文档、程序文档、科学期刊、短报告……
+proc        会议文集……
+minimal     小型文档……
+report      报告、论文……
+book        排版书籍……
+slides      排版幻灯片……
+}}}
+
+*文档选项*
+{{{class="brush: text"
+10pt,11pt,12pt          字体大小
+a4paper,letterpaper     纸张尺寸
+titlepage,notitlepage   指定是否在文档标题后另起一页
+twoside,oneside         指定双面或单面打印
+}}}
+
+*使用宏包来增强功能*: \usepackage[options]{package}
+{{{class="brush: text"
+doc     说明文档
+exscale 按比例缩放的数学扩展字体
+}}}
+
+*页面样式*: \pagestyle{style} 或 \thispagestyle{style}
+{{{class="brush: text"
+plain       页脚正中显示页码
+headings    页眉显示章节名和页码
+empty       页眉和页脚空白
+}}}
+
+= 大型工程 =
+*两个命令*: \include{filename} 或 \includeonly{filename1,filename2}
+{{{class="brush: text"
+\include 命令会新的一页载入文本，如果不希望在新的一页载入，
+可以使用 \input。
+}}}
+
+= 生成和预览 =
+*编译Latex文件*
+{{{class="brush: text"
+latex myfile.tex
+}}}
+
+*预览dvi文件*
+{{{class="brush: text"
+xdvi myfile.dvi
+}}}
+
+*转换dvi文件*
+{{{class="brush: text"
+dvipdfmx myfile.dvi
+dvips myfile.dvi
+}}}
+
+>>[[Latex学习笔记]]
+

@@ -1,0 +1,46 @@
+= YES_NO对话框 =
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class AlertDialogSamples extends Activity {
+
+    private static final int DIALOG_YES_NO_MESSAGE = 1;
+    
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        switch (id) {
+        case DIALOG_YES_NO_MESSAGE :
+            return new AlertDialog.Builder(AlertDialogSamples.this)
+                .setIcon(R.drawable.alert_dialog_icon)
+                .setTitle(R.string.alert_dialog_two_buttons_title)
+                .setPositiveButton(R.string.alert_dialog_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // do something
+                    }
+                })
+                .setNegativeButton(R.string.alert_dialog_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // do something
+                    }
+                })
+                .create();
+        default :
+            return null;
+    }
+    
+    @Override
+	protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.alert_dialog);
+                
+        /* Display a text message with yes/no buttons and handle each message as well as the cancel action */
+        Button twoButtonsTitle = (Button) findViewById(R.id.two_buttons);
+        twoButtonsTitle.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog(DIALOG_YES_NO_MESSAGE);
+            }
+        });
+    }
+}}}
+

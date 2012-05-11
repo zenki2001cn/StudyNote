@@ -1,0 +1,14 @@
+= 拨打电话 =
+
+{{{class="brush:java"
+// 方法一
+Uri uri = Uri.parse("tel:xxxxxx");
+Intent it = new Intent(Intent.ACTION_DIAL, uri);  
+startActivity(it); 
+
+// 方法二
+Uri uri = Uri.parse("tel.xxxxxx");
+Intent it =new Intent(Intent.ACTION_CALL,uri);
+// 要使用这个必须在配置文件中加入
+<uses-permission id="android.permission.CALL_PHONE" />
+}}}

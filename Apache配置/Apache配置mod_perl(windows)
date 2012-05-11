@@ -1,0 +1,25 @@
+1、ServerRoot "C:/Apache2.2" 									apache服务目录
+2、	LoadFile "c:/perl/bin/perl58.dll"							装载active-perl的库和dll
+	LoadModule perl_module modules/mod_perl.so				
+3、DocumentRoot "C:/Apache2.2/htdocs"							主页所在目录
+4、<Directory "C:/Apache2.2/htdocs">							主页目录选项
+		选项
+	</Directory>
+5、ErrorLog logs/error.log										日志目录
+6、ScriptAlias /cgi-bin/ "C:/Apache2.2/cgi-bin/"				cgi目录
+7、<Directory "C:/Apache2.2/cgi-bin/">							cgi目录属性
+    AllowOverride all
+    Options all
+    Order allow,deny
+    Allow from all
+	
+	SetHandler perl-script										mod_perl属性
+    PerlResponseHandler ModPerl::Registry   
+    Options +ExecCGI   
+    PerlOptions +ParseHeaders
+    PerlSendHeader On
+	</Directory>
+9、<Perl>														perl语法，加载mod_perl模块
+	use lib "C:/Perl/site/lib/ModPerl";
+	</Perl>
+10、AddHandler perl-script .pl, .cgi							添加cgi处理

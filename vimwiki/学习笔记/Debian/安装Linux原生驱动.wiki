@@ -1,0 +1,53 @@
+= 安装Linux原生驱动 =
+
+%toc
+
+== 下载官方驱动 ==
+=== 在官方主页下载驱动 ===
+{{{class="brush: text"
+http://www.broadcom.com/products/Wireless-LAN/802.11-Wireless-LAN-Solutions
+}}}
+
+=== 下载必要的软件包 ===
+{{{class="brush: bash"
+$ apt-get install wireless-tools wpasupplicant
+}}}
+
+== 编译&安装 ==
+=== 解压官方驱动，进入驱动文件目录 ===
+{{{class="brush: bash"
+1. make
+2. make install
+3. cp wl.ko /lib/modules/<kernel-version>/kernel/net/wireless/
+4. depmod -a
+5. modprobe wl
+6. modprobe lib80211
+7. modprobe ieee80211_crypt_tkip
+8. insmod wl.ko
+9. 编辑/etc/modules，启动时加载
+}}}
+
+== 检查安装和使用 ==
+=== 查看安装是否成功 ===
+{{{class="brush: bash"
+$ sudo iwconfig
+}}}
+
+=== 启用无线网卡 ===
+{{{class="brush: bash"
+$ sudo ifconfig eth1 up
+}}}
+
+=== 扫描无线网络 ===
+{{{class="brush: bash"
+$ sudo iwlist scan
+}}}
+
+=== 链接无线网络 ===
+{{{class="brush: bash"
+$ sudo iwconfig eth1 essid "test"
+
+# 如网络已加密，则用
+$ sudo iwconfig eth1 essid "test" key s:"你的密码" 
+$ sudo dhclient eth1
+}}}

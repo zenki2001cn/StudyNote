@@ -1,0 +1,35 @@
+= GPL历史 =
+
+%toc
+
+== 什么是GPL ==
+- Copyleft 是一种让计算机程序(或者其他作品)保持自由的方法,并且要求所有该程序的修订版和拓展版都同样保持自由。
+- Copyleft 是一种适用计算机软件版权的方式。她并不反对版权,事实上,反对就会使 Copyleft 成为不可能。Copyleft 中的 Left 并不代表动词“离开”——仅仅表示与“右(right)”相对的方向。
+- Copyleft 仅仅是一个一般概念,您不能直接使用一般概念。您必须为这个一般概念指定一个具体的实现方式。GNU 项目中,在我们大多数的软件都采用GNU 通用公共许可协议中包含的特定分发条款。GNU通用公共许可协议通常简称为GNU GPL。
+
+== 主流的License ==
+- GPL v2
+- GPL v3
+- Apache 1.0
+- Apache 2.0
+- BSD
+- BSD-Style
+- MIT
+- ......
+
+== GPL关系图 ==
+[[pic/copyleft.png]]
+
+== Android包含的License ==
+=== Apache 2.0 License ===
+- Applications
+- Application Framework
+- Android Runtime: Core Libraries、Daivik Virtual Machine
+- Libraries: Surface Manager、Media Framework、SGL
+
+=== Free BSD ===
+- Libraries: SQLite、FreeType、Webkit、SSL、libc
+
+=== GPL ===
+- Webkit、Linux kernel
+

@@ -1,0 +1,30 @@
+= 画直线 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+}}}
+
+- 描画直线，调用Canvas.drawLine()方法。
+
+参数 x0,y0,x1,y1、和Paint的实例。
+
+- 描画复数个直线，调用Canvas.drawLines()方法。
+
+参数  复数个点的Float数组（x0,y0,x1,y1,…）和Paint实例。
+
+例程源码(Java)
+{{{class="brush: java"
+@Override
+protected void onDraw(Canvas canvas) {
+    Paint paint = new Paint();
+    paint.setColor(Color.argb(255, 255, 255, 255));
+    
+    canvas.drawLine(0, 0, 10, 20, paint);
+    
+    float[] pts = {50, 0, 50, 30};
+    canvas.drawLines(pts, paint);
+}
+}}}
+

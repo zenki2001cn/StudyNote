@@ -1,0 +1,80 @@
+= 基本语法 =
+
+== 类的声明 ==
+*使用class来声明类*
+{{{class="brush: java"
+class MyClass {
+}
+
+MyClass c = new MyClass();
+}}}
+
+== 成员变量和方法 ==
+*在类中声明用于这个类的变量和方法,变量会自动初始化默认值,方法只能作为类的一部分创建*
+{{{class="brush: java"
+class MyClass {
+    int i;
+    int j;
+
+    void print_it() {
+    }
+}
+}}}
+*静态方法是对类而言，而不是对类的对象而言，因此无需实例化一个对象便可以调用类的静态方法*
+
+== 运算符 ==
+*Java中的各种运算符和C/C++差不多，需要注意的几点如下：*
+{{{class="brush: java"
+对象进行比较时使用equals: class1.equals(class2)
+Java没有sizeof的概念，它不关心数据类型的大小，因为与平台无关
+}}}
+
+== 控制流程 ==
+*Java中的控制流程语句和C/C++，需要注意的几点如下：*
+{{{class="brush: java"
+if语句中的条件必须为布尔类型，如if(a)->if(a!=0)
+没有goto语句，而在break和continue的后面可以加上标签，表示跳转
+
+foreach语法，for (String a:b)
+表示变量a暂存b中的变量，并逐个便利其中的元素
+}}}
+
+== 对象的初始化与清除 ==
+*Java中类的构造函数使用与类名相同，且无返回值*
+{{{class="brush: java"
+public class Demo {
+    
+    public Demo() {
+        // do something
+    }
+
+}
+}}}
+*Java会对没有初始化的主类型变量进行默认赋值，而类的对象变量则默认为NULL*
+
+== Overload ==
+*通过方法的参数不同实现重载，不能通过返回值来区分*
+{{{class="brush: java"
+public class Demo {
+
+    public Demo(int i) {
+        // do something
+    }
+
+    public Demo(String s) {
+        // do something
+    }
+}
+}}}
+
+== this关键字 ==
+*this关键字返回当前对象的句柄,可以通过this.来访问对象的变量和方法*
+
+== static关键字 ==
+*static指明了类的全局变量或方法，而不针对某个对象*
+
+== 对象的清除 ==
+*finalize关键字是用来清除类，但应该避免调用finalize，它由系统自动调用*
+
+== 初始值 ==
+*Java会为类的每个成员变量赋予一个默认的初始值*

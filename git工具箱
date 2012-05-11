@@ -144,7 +144,7 @@ $ git log --pretty=oneline --since='2 days ago'
 # 查看路线图
 $ git log --oneline --decorate --graph
 # 显示每个提交者的简要信息
-$ git shortlog
+$ git shortlog -e
 
 2.6.2 显示commit日志和修改内容
 $ git log -p -2
@@ -288,6 +288,9 @@ foo.txt
 # 忽略所有.o和.a文件.
 *.[oa]
 
+3.5.2 编辑.git/info/exclude
+# 将需要忽略的文件加入到exlcude文件中
+
 3.6 标签管理
 3.6.1 添加标签
 $ git tag -a v1.0 -m "tag v1.0"
@@ -301,8 +304,10 @@ $ git tag -l
 3.6.4 上传标签
 $ git push --tags
 
-3.5.2 编辑.git/info/exclude
-# 将需要忽略的文件加入到exlcude文件中
+3.7 自动化脚本
+# 在.git/hooks/目录中可以编写各种脚本，
+# 服务器可以在接收到代码提交时触发执行这些脚本。
+# 将sample的后缀去掉后即可启动这些脚本。
 
 4. Git 图形界面
 # 查看历史版本的图形化工具

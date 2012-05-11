@@ -1,0 +1,198 @@
+= 文件在内核中的定义 =
+
+%toc
+
+== 头文件 ==
+{{{class="brush:c"
+#include <linux/fs.h>
+}}}
+
+== 文件操作 ==
+- file_operations结构告诉驱动如何连接设备到对应的编号。它是一个函数指针的集合。
+- 每个打开文件(内部用一个file结构来代表)与它自身的file_operations相关连(通过包含一个称为f_op的成员，它指向一个file_operations结构)。这些操作大部分负责实现系统调用，如open，read等等。
+
+=== file_operations ===
+{{{class="brush:c"
+struct file_operations {
+	struct module *owner;
+	loff_t (*llseek) (struct file *, loff_t, int);
+	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+	ssize_t (*aio_read) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+	int (*readdir) (struct file *, void *, filldir_t);
+	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+	int (*mmap) (struct file *, struct vm_area_struct *);
+	int (*open) (struct inode *, struct file *);
+	int (*flush) (struct file *, fl_owner_t id);
+	int (*release) (struct inode *, struct file *);
+	int (*fsync) (struct file *, struct dentry *, int datasync);
+	int (*aio_fsync) (struct kiocb *, int datasync);
+	int (*fasync) (int, struct file *, int);
+	int (*lock) (struct file *, int, struct file_lock *);
+	ssize_t (*sendpage) (struct file *, struct page *, int, size_t, loff_t *, int);
+	unsigned long (*get_unmapped_area)(struct file *, unsigned long, 
+                                       unsigned long, unsigned long, unsigned long);
+	int (*check_flags)(int);
+	int (*flock) (struct file *, int, struct file_lock *);
+	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *, size_t, unsigned int);
+	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *, size_t, unsigned int);
+    int (*setlease)(struct file *, long, struct file_lock **);
+};
+}}}
+
+=== 初始化示例 ===
+{{{class="brush:c"
+struct file_operations scull_fops = {
+    .owner =  THIS_MODULE, 
+    .llseek =  scull_llseek, 
+    .read =  scull_read, 
+    .write =  scull_write, 
+    .ioctl =  scull_ioctl, 
+    .open =  scull_open, 
+    .release =  scull_release,  
+};
+}}}
+
+== 文件结构 ==
+- struct file是设备驱动中第二个最重要的数据结构。注意file与用户空间程序的FILE指针没有任何关系。一个FILE定义在C库中，从不出现在内核代码中。一个struct file是一个内核结构，从不出现在用户程序中。
+- 文件结构代表一个打开的文件。(系统中每个打开的文件有一个关联的struct file在内核空间)。它由内核在open时创建，并传递给在文件上操作的任何函数，直到最后的关闭。在文件的所有实例都关闭后，内核释放这个数据结构。
+
+=== file ===
+{{{class="brush:c"
+struct file {
+	/*
+	 * fu_list becomes invalid after file_free is called and queued via
+	 * fu_rcuhead for RCU freeing
+	 */
+	union {
+		struct list_head	fu_list;
+		struct rcu_head 	fu_rcuhead;
+	} f_u;
+	struct path		f_path;
+#define f_dentry	f_path.dentry
+#define f_vfsmnt	f_path.mnt
+	const struct file_operations	*f_op;
+	spinlock_t		f_lock;  /* f_ep_links, f_flags, no IRQ */
+	atomic_long_t		f_count;
+	unsigned int 		f_flags;
+	fmode_t			f_mode;
+	loff_t			f_pos;
+	struct fown_struct	f_owner;
+	const struct cred	*f_cred;
+	struct file_ra_state	f_ra;
+
+	u64			f_version;
+#ifdef CONFIG_SECURITY
+	void			*f_security;
+#endif
+	/* needed for tty driver, and maybe others */
+	void			*private_data;
+
+#ifdef CONFIG_EPOLL
+	/* Used by fs/eventpoll.c to link all the hooks to this file */
+	struct list_head	f_ep_links;
+#endif /* #ifdef CONFIG_EPOLL */
+	struct address_space	*f_mapping;
+#ifdef CONFIG_DEBUG_WRITECOUNT
+	unsigned long f_mnt_write_state;
+#endif
+};
+}}}
+
+== inode节点 ==
+- inode结构由内核在内部用来表示文件。因此，它和代表打开文件描述符的文件结构是不同的。可能有代表单个文件的多个打开描述符的文件结构，但是它们都指向一个单个inode结构。
+
+=== inode ===
+{{{class="brush:c"
+struct inode {
+	struct hlist_node	i_hash;
+	struct list_head	i_list;		/* backing dev IO list */
+	struct list_head	i_sb_list;
+	struct list_head	i_dentry;
+	unsigned long		i_ino;
+	atomic_t		i_count;
+	unsigned int		i_nlink;
+	uid_t			i_uid;
+	gid_t			i_gid;
+	dev_t			i_rdev;         // 对于代表设备文件的节点, 这个成员包含实际的设备编号
+	unsigned int		i_blkbits;
+	u64			i_version;
+	loff_t			i_size;
+#ifdef __NEED_I_SIZE_ORDERED
+	seqcount_t		i_size_seqcount;
+#endif
+	struct timespec		i_atime;
+	struct timespec		i_mtime;
+	struct timespec		i_ctime;
+	blkcnt_t		i_blocks;
+	unsigned short          i_bytes;
+	umode_t			i_mode;
+	spinlock_t		i_lock;	/* i_blocks, i_bytes, maybe i_size */
+	struct mutex		i_mutex;
+	struct rw_semaphore	i_alloc_sem;
+	const struct inode_operations	*i_op;
+	const struct file_operations	*i_fop;	/* former ->i_op->default_file_ops */
+	struct super_block	*i_sb;
+	struct file_lock	*i_flock;
+	struct address_space	*i_mapping;
+	struct address_space	i_data;
+#ifdef CONFIG_QUOTA
+	struct dquot		*i_dquot[MAXQUOTAS];
+#endif
+	struct list_head	i_devices;
+	union {
+		struct pipe_inode_info	*i_pipe;    // 表示管道类型节点
+		struct block_device	*i_bdev;        // 表示块设备的指针
+		struct cdev		*i_cdev;            // 表示字符设备的指针
+	};
+
+	__u32			i_generation;
+
+#ifdef CONFIG_FSNOTIFY
+	__u32			i_fsnotify_mask; /* all events this inode cares about */
+	struct hlist_head	i_fsnotify_mark_entries; /* fsnotify mark entries */
+#endif
+
+#ifdef CONFIG_INOTIFY
+	struct list_head	inotify_watches; /* watches on this inode */
+	struct mutex		inotify_mutex;	/* protects the watches list */
+#endif
+
+	unsigned long		i_state;
+	unsigned long		dirtied_when;	/* jiffies of first dirtying */
+
+	unsigned int		i_flags;
+
+	atomic_t		i_writecount;
+#ifdef CONFIG_SECURITY
+	void			*i_security;
+#endif
+#ifdef CONFIG_FS_POSIX_ACL
+	struct posix_acl	*i_acl;
+	struct posix_acl	*i_default_acl;
+#endif
+	void			*i_private; /* fs or device private pointer */
+};
+}}}
+
+=== 从inode获取设备编号 ===
+
+==== iminor ====
+{{{class="brush:c"
+static inline unsigned iminor(const struct inode *inode)
+{
+	return MINOR(inode->i_rdev);
+}
+}}}
+
+==== imajor ====
+{{{class="brush:c"
+static inline unsigned imajor(const struct inode *inode)
+{
+	return MAJOR(inode->i_rdev);
+}
+}}}

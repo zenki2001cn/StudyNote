@@ -1,0 +1,19 @@
+= 使用File存储 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Context;
+}}}
+
+- 使用Context.openFileInput方法读取文件，返回FileInputStream对象
+- 使用Context.openFileOutput方法写入文件，返回FileOutputStream对象
+- 参数fileName不包含路径分割符`/`，这种模式打开的文件只能被该应用程序使用
+
+=== 文件打开权限 ===
+# MODE_PRIVATE --- 0
+# MODE_WORLD_READABLE --- 1
+# MODE_WORLD_WRITEABLE --- 2
+参见[[Context]]全局表
+

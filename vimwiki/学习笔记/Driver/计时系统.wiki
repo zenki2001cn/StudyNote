@@ -1,0 +1,433 @@
+= 计时系统 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:c"
+#include <linux/jiffies.h>
+#include <linux/time.h>
+#include <linux/delay.h>
+}}}
+
+== 时钟和定时器 ==
+- 80x86体系上的几种定时器如下：
+
+| 类型                   | 说明                                                                       | 备注 |
+|------------------------+----------------------------------------------------------------------------+------|
+| 实时时钟(RTC)          | 独立于CPU和其他芯片的实时时钟，Linux通过RTC来获取时间和日期                |      |
+| 时间戳计数器(TSC)      | 根据外部震荡器的时钟信号累加一个计数器，并利用64位的时间戳计数器来实现计数 |      |
+| 可编程间隔定时器(PIT)  | 该定时器以大约1000HZ的频率向IRQ0发出时钟中断，即每1ms产生一次时钟中断      |      |
+| CPU本地定时器          | 16位的CPU本地定时器，并且只和自身的CPU相关联                               |      |
+| 高精度事件定时器(HPET) | 更高精度的硬定时器，频率至少为10MHZ                                        |      |
+| 电源管理定时器(ACPI)   | 频率大约为3.58MHZ定时器，内核通过某个I/O端口读取计数器的当前值             |      |
+
+== Linux计时体系 ==
+- 内核会周期性的执行以下动作：
+    - 更新自系统启动以来所经过的时间。
+    - 更新时间和日期。
+    - 确定当前进程在每个CPU上已运行了多长时间，如果超过了分配给它的时间，则抢占它。
+    - 更新资源使用计数。
+    - 检查每个软定时器的时间间隔是否已到。
+
+=== jiffies变量 ===
+- jiffies变量是一个计数器，用来记录自系统启动以来产生的节拍总数。
+- 在80x86体系中，该变量被声明成一个32为整型，因此大约间隔50天后会回绕到0。内核通过time_after、time_after_eq、time_before、time_before_eq四个宏来处理变量的溢出。
+
+{{{class="brush:c"
+// 宏定义
+#define time_after(a,b)		        \
+	(typecheck(unsigned long, a) && \
+	 typecheck(unsigned long, b) && \
+	 ((long)(b) - (long)(a) < 0))
+#define time_before(a,b)	time_after(b,a)
+
+#define time_after_eq(a,b)	        \
+	(typecheck(unsigned long, a) && \
+	 typecheck(unsigned long, b) && \
+	 ((long)(a) - (long)(b) >= 0))
+#define time_before_eq(a,b)	time_after_eq(b,a)
+
+// 获取流逝的时间
+unsigned long j, stamp_1, stamp_half, stamp_n;
+
+j = jiffies;                    // 当前jiffies
+stamp_1 = j + HZ;               // 1秒后的jiffies
+stamp_half = j + HZ/2;          // 0.5秒后的jiffies
+stamp_n = j + n * HZ / 1000;    // n毫秒后的jiffies
+}}}
+
+=== xtime变量 ===
+- xtime变量存放当前时间和日期，它是一个timespec类型的数据结构。
+- xtime变量通常是每个节拍更新一次，大约每秒更新1000次。
+- xtime_lock防止同时访问所造成的竞争条件，它同时也保护jiffies变量。
+
+{{{class="brush:c"
+struct timespec {
+	__kernel_time_t	tv_sec;			/* seconds */
+	long		    tv_nsec;		/* nanoseconds */
+};
+
+extern struct timespec xtime;
+extern seqlock_t xtime_lock;
+
+// timespec类型与jiffies的转换
+unsigned long timespec_to_jiffies(struct timespec *value);
+void jiffies_to_timespec(unsigned long jiffies, struct timespec *value);
+unsigned long timeval_to_jiffies(struct timeval *value);
+void jiffies_to_timeval(unsigned long jiffies, struct timeval *value);
+}}}
+
+=== 获取当前时间 ===
+{{{class="brush:c"
+#include <linux/time.h>
+unsigned long mktime(unsigned int year, unsigned int mon,
+                     unsigned int day, unsigned int hour,
+                     unsigned int min, unsigned int sec);
+void do_gettimeofday(struct timeval *tv);
+struct timespec current_kernel_time(void);
+}}}
+
+=== 单处理器的计时体系 ===
+- 单处理器系统上，所有与定时有关的活动都是由IRQ0的可编程定时器产生的中断触发的。
+- time_init初始化计时系统
+
+{{{class="brush:c"
+/*
+ * This is called directly from init code; we must delay timer setup in the
+ * HPET case as we can't make the decision to turn on HPET this early in the
+ * boot process.
+ *
+ * The chosen time_init function will usually be hpet_time_init, above, but
+ * in the case of virtual hardware, an alternative function may be substituted.
+ */
+void __init time_init(void)
+{
+    pre_time_init_hook();
+    tsc_init();
+    late_time_init = choose_time_init();
+}
+}}}
+
+- timer_interrupt处理时钟中断服务。
+
+{{{class="brush:c"
+/*
+ * Default timer interrupt handler for PIT/HPET
+ */
+static irqreturn_t timer_interrupt(int irq, void *dev_id)
+{
+	/* Keep nmi watchdog up to date */
+	inc_irq_stat(irq0_irqs);
+
+	/* Optimized out for !IO_APIC and x86_64 */
+	if (timer_ack) {
+		/*
+		 * Subtle, when I/O APICs are used we have to ack timer IRQ
+		 * manually to deassert NMI lines for the watchdog if run
+		 * on an 82489DX-based system.
+		 */
+		raw_spin_lock(&i8259A_lock);
+		outb(0x0c, PIC_MASTER_OCW3);
+		/* Ack the IRQ; AEOI will end it automatically. */
+		inb(PIC_MASTER_POLL);
+		raw_spin_unlock(&i8259A_lock);
+	}
+
+	global_clock_event->event_handler(global_clock_event);
+
+	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
+	if (MCA_bus)
+		outb_p(inb_p(0x61)| 0x80, 0x61);
+
+	return IRQ_HANDLED;
+}
+}}}
+
+=== 多处理器的计时体系 ===
+- 多处理器系统可以依赖两种不同的时钟中断源：
+    - 可编程间隔定时器或高精度事件定时器
+    - CPU本地定时器
+- time_init初始化计时系统(同单处理系统)
+- apic_intr_init初始化本地定时器
+
+{{{class="brush:c"
+static void __init apic_intr_init(void)
+{
+    smp_intr_init();
+
+    alloc_intr_gate(THERMAL_APIC_VECTOR, thermal_interrupt);
+    alloc_intr_gate(THRESHOLD_APIC_VECTOR, threshold_interrupt);
+
+    /* self generated IPI for local APIC timer */
+    alloc_intr_gate(LOCAL_TIMER_VECTOR, apic_timer_interrupt);
+
+    /* IPI vectors for APIC spurious and error interrupts */
+    alloc_intr_gate(SPURIOUS_APIC_VECTOR, spurious_interrupt);
+    alloc_intr_gate(ERROR_APIC_VECTOR, error_interrupt);
+}
+}}}
+
+== 计时系统的功能 ==
+=== 更新时间和日期 ===
+- 用户程序从xtime变量中获得当前时间和日期。内核必须周期性的更新该变量，才能使它的值保持相当的精确。
+- update_times更新xtime变量。
+
+{{{class="brush:c"
+static inline void update_times(unsigned long ticks)
+{
+    update_wall_time();
+    calc_load(ticks);
+}
+}}}
+
+=== 更新系统统计数 ===
+- 通过update_process_times检查运行进程的CPU资源限制
+
+{{{class="brush:c"
+void update_process_times(int user_tick)
+{
+	struct task_struct *p = current;
+	int cpu = smp_processor_id();
+
+	account_process_tick(p, user_tick);
+	run_local_timers();
+	rcu_check_callbacks(cpu, user_tick);
+	printk_tick();
+	perf_event_do_pending();
+	scheduler_tick();
+	run_posix_cpu_timers(p);
+}
+}}}
+
+=== 记录系统负载 ===
+- 通过calc_load记录系统进行了多少CPU活动
+
+{{{class="brush:c"
+static inline void calc_load(unsigned long ticks)
+{
+    unsigned long active_tasks; /* fixed-point */
+    static int count = LOAD_FREQ;
+
+    count -= ticks;
+    if (unlikely(count < 0)) {
+        active_tasks = count_active_tasks();
+        do {
+            CALC_LOAD(avenrun[0], EXP_1, active_tasks);
+            CALC_LOAD(avenrun[1], EXP_5, active_tasks);
+            CALC_LOAD(avenrun[2], EXP_15, active_tasks);
+            count += LOAD_FREQ;
+        } while (count < 0);
+    }
+}
+}}}
+
+=== 监管内核代码 ===
+- 通过profile_tic为代码监管器采集数据
+
+{{{class="brush:c"
+void profile_tick(int type)
+{
+        struct pt_regs *regs = get_irq_regs();
+
+        if (type == CPU_PROFILING && timer_hook)
+                timer_hook(regs);
+        if (!user_mode(regs) && prof_cpu_mask != NULL &&
+            cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
+                profile_hit(type, (void *)profile_pc(regs));
+}
+}}}
+
+== 软定时器和延迟函数 ==
+- Linux包含两种类型的定时器：动态定时器和间隔定时器。第一种类型由内核使用，第二种由进程在用户态创建。
+- 对定时器的检查总是由可延迟函数进行，因此内核不确保定时器函数正好在定时器到期时执行，而只能保证在适当的时间执行它们。
+
+=== 动态定时器对象链表 ===
+- timer_list结构用来保存定时器对象数据
+
+{{{class="brush:c"
+struct timer_list {
+    /*
+     * All fields that change during normal runtime grouped to the
+     * same cacheline
+     */
+    struct list_head entry;         // 定时器链表
+    unsigned long expires;          // 到期时间
+    struct tvec_base *base;
+
+    void (*function)(unsigned long);// 定时器函数
+    unsigned long data;             // 附加数据
+
+    int slack;
+
+#ifdef CONFIG_TIMER_STATS
+    int start_pid;
+    void *start_site;
+    char start_comm[16];
+#endif
+#ifdef CONFIG_LOCKDEP
+    struct lockdep_map lockdep_map;
+#endif
+};
+}}}
+
+- 通过宏init_timer来初始化timer_list对象
+
+{{{class="brush:c"
+#define init_timer(timer)                       \
+do {                                            \
+    static struct lock_class_key __key;         \
+    init_timer_key((timer), #timer, &__key);    \
+} while (0)
+}}}
+
+- 通过add_timer来添加定时器对象
+
+{{{class="brush:c"
+void add_timer(struct timer_list *timer)
+{
+    BUG_ON(timer_pending(timer));
+    mod_timer(timer, timer->expires);
+}
+EXPORT_SYMBOL(add_timer);
+}}}
+
+- 通过mod_timer修改定时器对象
+
+{{{class="brush:c"
+int mod_timer(struct timer_list *timer, unsigned long expires)
+{
+    expires = apply_slack(timer, expires);
+
+    /*
+     * This is a common optimization triggered by the
+     * networking code - if the timer is re-modified
+     * to be the same thing then just return:
+     */
+    if (timer_pending(timer) && timer->expires == expires)
+        return 1;
+
+    return __mod_timer(timer, expires, false, TIMER_NOT_PINNED);
+}
+EXPORT_SYMBOL(mod_timer);
+}}}
+
+- 通过del_timer删除已定义的定时器对象
+
+{{{class="brush:c"
+int del_timer(struct timer_list *timer)
+{
+    struct tvec_base *base;
+    unsigned long flags;
+    int ret = 0;
+
+    timer_stats_timer_clear_start_info(timer);
+    if (timer_pending(timer)) {
+        base = lock_timer_base(timer, &flags);
+        if (timer_pending(timer)) {
+            detach_timer(timer, 1);
+            if (timer->expires == base->next_timer &&
+                !tbase_get_deferrable(timer->base))
+                base->next_timer = base->timer_jiffies;
+            ret = 1;
+        }
+        spin_unlock_irqrestore(&base->lock, flags);
+    }
+
+    return ret;
+}
+EXPORT_SYMBOL(del_timer);
+}}}
+
+=== 保存动态定时器对象 ===
+- tvec_t_base_s结构的每CPU变量类型用来保存定时器对象链表。在多处理器系统中活动的动态定时器集合被分配到各个不同的CPU中。
+
+{{{class="brush:c"
+struct tvec_base {
+    spinlock_t lock;
+    struct timer_list *running_timer;
+    unsigned long timer_jiffies;
+    unsigned long next_timer;
+    struct tvec_root tv1;
+    struct tvec tv2;
+    struct tvec tv3;
+    struct tvec tv4;
+    struct tvec tv5;
+}
+}}}
+
+=== 动态定时器处理 ===
+- 通过run_timer_softirq方法检测并触发动态定时器，该方法是与TIMER_SOFTIRQ软中断请求相关的可延迟函数。
+
+{{{class="brush:c"
+static void run_timer_softirq(struct softirq_action *h)
+{
+    struct tvec_base *base = __this_cpu_read(tvec_bases);
+
+    hrtimer_run_pending();
+
+    if (time_after_eq(jiffies, base->timer_jiffies))
+        __run_timers(base);
+}
+}}}
+
+- __run_timers遍历动态定时器链表，并执行定时器对象的方法:
+    - 首先要禁用本地中断
+    - 第一个循环遍历保存定时器对象的链表，检测定时器是否到期
+    - 第二个循环遍历定时器对象集合，并依次执行定时器方法
+    - 将到期定时器对象置空。
+    - 启用本地中断
+
+{{{class="brush:c"
+static inline void __run_timers(struct tvec_base *base)
+{
+	struct timer_list *timer;
+
+	spin_lock_irq(&base->lock);
+	while (time_after_eq(jiffies, base->timer_jiffies)) {
+		struct list_head work_list;
+		struct list_head *head = &work_list;
+		int index = base->timer_jiffies & TVR_MASK;
+
+		/*
+		 * Cascade timers:
+		 */
+		if (!index &&
+			(!cascade(base, &base->tv2, INDEX(0))) &&
+				(!cascade(base, &base->tv3, INDEX(1))) &&
+					!cascade(base, &base->tv4, INDEX(2)))
+			cascade(base, &base->tv5, INDEX(3));
+			
+		++base->timer_jiffies;
+		list_replace_init(base->tv1.vec + index, &work_list);
+		while (!list_empty(head)) {
+			void (*fn)(unsigned long);
+			unsigned long data;
+
+			timer = list_first_entry(head, struct timer_list,entry);
+			fn = timer->function;
+			data = timer->data;
+
+			timer_stats_account_timer(timer);
+
+			set_running_timer(base, timer);
+			detach_timer(timer, 1);
+
+			spin_unlock_irq(&base->lock);
+			call_timer_fn(timer, fn, data);
+			spin_lock_irq(&base->lock);
+		}
+	}
+	set_running_timer(base, NULL);
+	spin_unlock_irq(&base->lock);
+}
+}}}
+
+=== 延迟函数 ===
+- 当内核需要一个较短的时间间隔，比如几毫秒，就无需使用定时器。内核会将间隔的时间转换为loops数，并执行一个紧凑的loops次循环来达到延迟的目的。
+
+| 方法名 | 说明                         | 备注 |
+|--------+------------------------------+------|
+| udelay | 微秒级的延迟，参数为延迟时间 |      |
+| ndelay | 纳秒级的延迟，参数为延迟时间 |      |
+| msleep | 微秒级的延迟，参数为延迟时间 |      |
+| ssleep | 秒级的延迟，参数为延迟时间   |      |

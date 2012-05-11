@@ -1,0 +1,32 @@
+= Activity的启动 =
+
+== 相关文件 ==
+{{{class="brush:text"
+frameworks/base/core/java/android/os/Process.java             
+frameworks/base/core/jni/android_util_Process.cpp                          
+frameworks/base/core/jni/ActivityManager.cpp                           
+frameworks/base/services/java/com/android/server/am/ActivityManagerService.java
+frameworks/base/services/java/com/android/server/SystemServer.java
+frameworks/base/core/java/android/os/ServiceManager.java
+frameworks/base/core/java/android/os/ServiceManagerNative.java 
+frameworks/base/core/java/android/app/ActivityManagerNative.java
+frameworks/base/core/java/android/app/IApplicationThread.java
+frameworks/base/core/java/android/app/IActivityManager.java
+frameworks/base/core/java/android/app/ActivityThread.java 
+frameworks/base/core/java/android/app/ActivityManager.java 
+frameworks/base/core/java/android/app/ApplicationThreadNative.java 
+}}}
+
+== 流程分析 ==
+- [[从startActivity()方法开始]]
+- [[关键点:如果获取IActivityManager接口]]
+- [[通过Zygote产生真正的进程]]
+- [[怎样执行我们的onCreate()方法]]
+
+== 经验总结 ==
+- 整个应用的实现和加载分为几个层次：
+    - 应用层：为开发者提供简单易用的调用接口。
+    - Instrumentation的机制负责Activity的控制。
+    - Activity的创建和管理分为两个部分来实现，分别是ActivityManager和ActivityThread。
+- 整个流程使用了多次IPC，底层实现以Service的形式注册给系统管理进程。
+- 使用Zygote进程的fork()机制来创建新的应用，这样保证了每个进程都可以复用之前加载的类资源，从而加快启动速度。

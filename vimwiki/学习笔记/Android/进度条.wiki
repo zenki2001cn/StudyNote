@@ -1,0 +1,140 @@
+= ProgressBar使用 =
+
+[pic/progressbar.png]
+
+== 相关类 ==
+{{{class="brush:java"
+import android.widget.ProgressBar;
+}}}
+
+== 基本流程 ==
+
+- 进度条分不确定（indeterminate=true）和确定（indeterminate=false）2种。
+        默认值是不确定（indeterminate=true）进度条。
+
+- 进度条有4种风格可以使用。
+    # 默认值是progressBarStyle。 ※上图中的第2个
+    # 设置成progressBarStyleSmall后，图标变小。　※上图中的第1个
+    # 设置成progressBarStyleLarge后，图标变大 ※上图中的第3个
+    # 设置成progressBarStyleHorizontal后，变成横向长方形。 ※上图中的第4个
+
+- 确定（indeterminate=false）进度条中的最大值的设定，调用setMax()方法。
+- 当前进度值的设置，调用setProgress()方法。
+- 第2进度值的设置，调用setSecondaryProgress()方法。
+
+== 普通进度条控件 ==
+==== 普通圆形进度条 ====
+[pic/normal_progress.png]
+
+XML布局
+{{{class="brush:xml"
+<progressBar android:id="@+id/widget43"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"   
+    android:layout_gravity="center_vertical">
+</ProgressBar>
+}}}
+
+==== 大号圆形进度条 ====
+[pic/big_progress.png]
+
+XML布局
+{{{class="brush:xml"
+<progressBar android:id="@+id/widget196"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    style="?android:attr/progressBarStyleLarge">
+</ProgressBar>
+}}}
+
+==== 小号圆形进度条 ====
+[pic/small_progress.png]
+
+XML布局
+{{{class="brush:xml"
+<progressBar android:id="@+id/widget108"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    style="?android:attr/progressBarStyleSmall">
+</ProgressBar>
+}}}
+
+==== 长形进度条 ====
+[pic/square_progress.png]
+
+例程源码(XML)
+{{{class="brush: xml"
+<ProgressBar android:id="@+id/progressBarHorizontal"
+    style="?android:attr/progressBarStyleHorizontal"
+    android:layout_width="200dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_vertical"
+    android:max="100"
+    android:progress="50"
+    android:secondaryProgress="70"
+/> 
+}}}
+
+例程源码(Java)
+{{{class="brush: java"
+ProgressBar myProgressBar = (ProgressBar) findViewById(id.progressBarHorizontal);
+ 
+// 设置最大长度
+myProgressBar.setMax(100);
+// 设置第一个进度值
+myProgressBar.setProgress(30);
+// 设置第二个进度值
+myProgressBar.setSecondaryProgress(70);
+// 设置进度值增加5
+myProgressBar.incrementProgressBy(5);
+// 设置进度值减少5
+myProgressBar.incrementProgressBy(-5);
+// 设置背后的第二个进度条 进度值增加5
+myProgressBar.incrementSecondaryProgressBy(5);
+// 设置背后的第二个进度条 进度值减少5
+myProgressBar.incrementSecondaryProgressBy(-5);
+}}}
+
+== 标题栏进度条 ==
+==== 标题栏圆形进度条 ====
+[pic/title_progress.png]
+
+XML布局
+{{{class="brush:xml"
+<progressBar android:id="@+id/widget110"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    style="?android:attr/progressBarStyleSmallTitle">
+</ProgressBar>
+}}}
+
+JAVA代码
+{{{class="brush:java"
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    
+    //请求窗口特色风格，这里设置成不明确的进度风格
+    requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+    setContentView(R.layout.second);
+    
+    //设置标题栏中的不明确的进度条是否可以显示
+    setProgressBarIndeterminateVisibility(true);
+}
+}}}
+
+==== 标题栏长形进度条 ====
+[pic/title_progress2.png]
+
+JAVA代码
+{{{class="brush:java"
+//请求一个窗口进度条特性风格
+requestWindowFeature(Window.FEATURE_PROGRESS);
+setContentView(R.layout.main);
+//设置进度条可视
+setProgressBarVisibility(true);
+//设置标题栏中前景的一个进度条进度值
+setProgress(myProgressBar.getProgress() * 100);
+//设置标题栏中后面的一个进度条进度值
+setSecondaryProgress(myProgressBar.getSecondaryProgress() * 100);
+}}}
+

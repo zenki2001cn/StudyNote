@@ -1,0 +1,68 @@
+= Path =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+}}}
+
+- Path（一组区域）的描画，调用Canvas.drawPath()方法。
+
+例程源码(Java)
+{{{class="brush:java"
+@Override
+protected void onDraw(Canvas canvas) {
+    Paint paint = new Paint();
+    paint.setAntiAlias(true);
+    paint.setColor(Color.argb(255, 164, 199, 57));
+ 
+    canvas.drawARGB(255, 255, 255, 255);
+    
+    // 眼睛
+    Path clipPath = new Path();
+    
+    clipPath.addCircle(140, 80, 3, Path.Direction.CW);
+    canvas.clipPath(clipPath, Op.DIFFERENCE);
+    clipPath.addCircle(170, 80, 3, Path.Direction.CW);
+    canvas.clipPath(clipPath, Op.DIFFERENCE);
+    
+    Path path = new Path();
+    
+    // 左手腕
+    path.addRoundRect(new RectF(102, 95, 117, 145), 7, 7, Path.Direction.CW);
+    
+    // 右手腕
+    path.addRoundRect(new RectF(193, 95, 208, 145), 7, 7, Path.Direction.CW);
+    
+    // 身体 上部
+    path.addRect(new RectF(120, 98, 190, 145), Path.Direction.CW);
+    
+    // 身体 下部
+    path.addRoundRect(new RectF(120, 140, 190, 150), 5, 5, Path.Direction.CW);
+    
+    // 左脚
+    path.addRoundRect(new RectF(135, 140, 150, 175), 7, 7, Path.Direction.CW);
+    
+    // 右脚
+    path.addRoundRect(new RectF(160, 140, 175, 175), 7, 7, Path.Direction.CW);
+    
+    // 头部
+    path.addArc(new RectF(120, 63, 190, 127), 180, 180);
+    
+    // 天线 左边
+    path.moveTo(140, 70);
+    path.lineTo(130, 55);
+    path.lineTo(131, 54);
+    path.lineTo(141, 69);
+    
+    // 天线 右边
+    path.moveTo(170, 70);
+    path.lineTo(180, 55);
+    path.lineTo(182, 54);
+    path.lineTo(172, 69);
+    
+    canvas.drawPath(path, paint);
+}
+}}}
+

@@ -1,0 +1,30 @@
+= EditText使用方法 =
+
+[pic/edittext.png]
+
+- 设置文字列到EditText的时候，调用setText()方法
+- 取得EditText的文字列的时候，调用getText()方法
+- 选择EditText的文字列的时候，调用selectAll()方法
+
+== 相关类 ==
+{{{class="brush: java"
+import android.widget.EditText;
+}}}
+
+== 例程源码(Java) ==
+{{{class="brush: java"
+EditText editText = (EditText) findViewById(id.editText);
+ 
+editText.setText(getString(R.string.test));
+editText.selectAll();
+ 
+Log.v("Test", String.valueOf(editText.getText()));
+}}}
+
+== 例程源码(Resource) ==
+{{{class="brush: xml"
+<EditText android:id="@+id/editText"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content" />
+}}}
+

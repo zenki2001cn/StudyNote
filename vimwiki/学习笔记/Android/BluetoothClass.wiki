@@ -1,0 +1,25 @@
+= BluetoothClass =
+
+== 功能描述 ==
+{{{class="brush:text"
+    该类用来描述设备通用特性和功能的蓝牙类。比如，一个蓝牙类会指定比如电话、计算机或耳机的通用设备类型，
+可以提供比如音频或者电话的服务。每个蓝牙类都是有0个或更多的服务类，以及一个设备类组成。设备类将被分解成主要和较小的设备类部分。
+BluetoothClass用作一个能大致描述一个设备（比如关闭用户界面上一个图标的设备）的特性，但当蓝牙服务事实上是被一个设备所支撑的时候，
+BluetoothClass的描述则不一定很准确。精确的服务搜寻通过SDP请求来完成。当运用createRfcommSocketToServiceRecord(UUID) 和
+listenUsingRfcommWithServiceRecord(String,UUID)来创建RFCOMM端口的时候，SDP请求就会自动执行。
+我们可以使用getBluetoothClass()方法来获取为远程设备所提供的类。
+}}}
+
+== 相关方法说明 ==
+=== 内部类 ===
+| 类名                   | 描述                   |
+|------------------------+------------------------|
+| BluetoothClass.Device  | 定义所有设备类的常量。 |
+| BluetoothClass.Service | 定义所有服务类的常量。 |
+
+=== 方法说明 ===
+| 返回类型 | 方法名                  | 描述                                                  |
+|----------+-------------------------+-------------------------------------------------------|
+| int      | getDeviceClass()        | 返回BluetoothClass.中的设备类部分。                   |
+| int      | getMajorDeviceClass()   | 返回BluetoothClass.中设备类的主要部分。               |
+| boolean  | hasService(int service) | 如果该指定服务类被BluetoothClass.所支持，则返回true。 |

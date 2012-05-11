@@ -1,0 +1,106 @@
+= CTS测试 =
+
+%toc
+
+== device设置 ==
+- (1). 勾選 Settings > Applications > Development中的3個選項(USB debugging, Stay awake, Allow mock locations).
+- (2). 設置 Settings > Sound & Display > Screen Timeout為"Never Timeout"
+- (3). 安裝2個APK：
+    - 其一為： adb install -r android-cts/repository/testcases/CtsDelegatingAccessibilityService.apk
+    - 其二為： adb install -r android-cts/repository/testcases/CtsDeviceAdmin.apk(CTS r4及以上)
+- (4). 开启下列设置选项： 
+    - Settings > Accessibility > Accessibility > Delegating Accessibility Service 
+    - Settings >Location & security > Select device administrators
+- (5). 必須連上網路，並Log in a Google account.(可选) 
+- (6). 插入一張空的Micro SD card.
+- (7). 設置時間和日期為PC的時間和日期。
+- (8). 所有設置完成後reboot待測device(不要讓任何其它程序運行)，並讓機器停留在Home screen. 
+
+== CTS包目录结构 ==
+- 从网络下载Google的CTS测试包，并解压生成以下目录：
+
+{{{class="brush:bash"
+.
+|-- docs
+|-- repository
+|   |-- host_config.xml         # 配置文件
+|   |-- plans                   # plan
+|   |-- results                 # 测试结果
+|   `-- testcases               # testcase
+`-- tools
+    |-- cts.jar
+    |-- ddmlib-prebuilt.jar
+    |-- hosttestlib.jar
+    |-- junit.jar
+    `-- startcts                # 测试脚本
+}}}
+
+== 测试命令 ==
+=== 启动CTS测试 ===
+{{{class="brush:bash"
+# 进入tools目录
+$ ./startcts
+}}}
+
+=== 显示帮助命令 ===
+{{{class="brush:bash"
+# 显示以下帮助信息
+cts_host > help
+Host:
+    help: 显示帮助信息
+    exit: 退出测试
+Plan:
+    ls --plan:  显示可用的测试plan
+    ls --plan plan_name:    列出特定plan的测试内容
+    add --plan plan_name:   添加一个指定名称的plan
+    add --derivedplan plan_name -s/--session session_id -r/--result result_type: 
+    rm --plan plan_name/all: 
+    start --plan test_plan_name:    执行一个plan
+    start --plan test_plan_name -d/--device device_ID:  给特定ID的device执行一个plan
+    start --plan test_plan_name -t/--test test_name:    执行指定的测试项
+    start --plan test_plan_name -p/--package java_package_name: 
+    start --plan test_plan_name -t/--test test_name -d/--device device_ID: 
+    start --plan test_plan_name -p/--package java_package_name -d/--device device_ID: 
+  Package:
+    ls -p/--package:    列出可用测试包
+    ls -p/--package package_name:   根据包名列出测试内容
+    add -p/--package root: 
+    rm -p/--package package_name/all: 
+  Result:
+    ls -r/--result: 
+    ls -r/--result -s/--session session_id: 
+    ls -r/--result [pass/fail/notExecuted/timeout] -s/--session session_id: 
+  History:
+    history/h: 
+    history/h count: 
+    history/h -e num: 
+  Device:
+    ls -d/--device: 列出可用设备
+}}}
+
+=== 测试范例 ===
+{{{class="brush:bash"
+# 列出可用plan
+cts_host > ls --plan
+List of plans (8 in total):
+Android
+AppSecurity
+CTS
+Java
+Performance
+RefApp
+Signature
+VM
+
+# 开始测试VM
+cts_host > start --plan VM
+
+# 测试单独的包
+cts_host > start --plan Java -p android.telephony.gsm.cts.SmsManagerTest
+
+# 测试单独的项目
+cts_host > start --plan Java -t android.telephony.gsm.cts.SmsManagerTest#testSendMessages
+}}}
+
+== 测试结果 ==
+- 结果会以zip包的形式保存在repository/results/目录中，文件名以测试时间命名。

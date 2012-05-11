@@ -1,0 +1,134 @@
+= proc文件系统 =
+
+%toc
+
+== /proc文件系统 ==
+- /proc是一个特殊的文件系统类型，内核可以通过该文件系统将信息输出到用户空间。
+- 在内核中，proc文件由struct proc_dir_entry结构来描述。
+
+{{{class="brush:c"
+struct proc_dir_entry {
+	unsigned int low_ino;
+	unsigned short namelen;
+	const char *name;
+	mode_t mode;
+	nlink_t nlink;
+	uid_t uid;
+	gid_t gid;
+	loff_t size;
+	const struct inode_operations *proc_iops;
+	
+	const struct file_operations *proc_fops;
+	struct proc_dir_entry *next, *parent, *subdir;
+	void *data;
+	// 读文件的方法
+	read_proc_t *read_proc;
+	// 写文件的方法
+	write_proc_t *write_proc;
+	atomic_t count;		            /* use count */
+	int pde_users;	                /* number of callers into module in progress */
+	spinlock_t pde_unload_lock;     /* proc_fops checks and pde_users bumps */
+	struct completion *pde_unload_completion;
+	struct list_head pde_openers;	/* who did ->open, but not ->release */
+};
+}}}
+
+== 创建/proc文件 ==
+- proc文件系统的根目录为/proc，即创建的文件最顶层的路径为/proc。通常不指定parent参数，则会在/proc下创建指定的文件。
+
+{{{class="brush:c"
+static inline struct proc_dir_entry *proc_symlink(const char *name,
+		struct proc_dir_entry *parent,const char *dest) {return NULL;}
+static inline struct proc_dir_entry *proc_mkdir(const char *name,
+	struct proc_dir_entry *parent) {return NULL;}
+
+static inline struct proc_dir_entry *create_proc_read_entry(const char *name,
+	mode_t mode, struct proc_dir_entry *base, 
+	read_proc_t *read_proc, void * data) { return NULL; }
+}}}
+
+== 读写/proc文件 ==
+- read_proc_t方法对应于struct proc_dir_entry的read_proc成员，当用户空间读文件时调用该方法。
+    - page表示返回给用户的缓存区指针。
+    - start表示缓冲区页的起始位置，如果数据小于1页，则赋值为NULL。
+    - off表示文件指针的偏移位置。
+    - count表示需要读取多少字节。
+    - eof表示是否到达缓冲区末尾。如果是，则置1。
+    - data表示附加数据，由驱动使用。
+- write_proc_t方法对应于struct proc_dir_entry的write_proc成员，当用户空间写文件时调用该方法。
+    - file表示文件指针。
+    - buffer表示用户空间的缓冲区冲指针。
+    - count表示要写入的字节数。
+    - data表示附加数据，由驱动使用。
+
+{{{class="brush:c"
+typedef	int (read_proc_t)(char *page, char **start, off_t off,
+			  int count, int *eof, void *data);
+typedef	int (write_proc_t)(struct file *file, const char __user *buffer,
+			   unsigned long count, void *data);
+}}}
+
+== 移除/proc文件 ==
+- 在模块移除时必须调用remove_proc_entry方法来删除/proc文件。
+
+{{{class="brush:c"
+void remove_proc_entry(const char *name, struct proc_dir_entry *parent);
+}}}
+
+== 示例程序 ==
+{{{class="brush:c"
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/proc_fs.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+// 自定义的proc设备结构
+struct test_proc_dev {
+    struct proc_dir_entry *entry;
+    char proc_name[64];
+};
+struct test_proc_dev g_proc_dev; 
+
+// 读取proc文件的方法
+int proc_read(char *page, char **start, off_t off,
+			  int count, int *eof, void *data) 
+{
+    char *msg = "this is a proc test";
+    sprintf(page, "--%s--", msg); 
+
+    *eof = 1;
+    return strlen(msg)+4;
+}
+
+// 初始化proc设备模块
+void init_proc_dev(struct test_proc_dev *proc) 
+{
+    printk(KERN_DEBUG "init_proc_dev");
+    sprintf(proc->proc_name, "%s", "test_proc_file");
+    create_proc_read_entry(proc->proc_name, 0, NULL, proc_read, NULL);
+}
+
+// 移除proc设备模块
+void remove_proc_dev(struct test_proc_dev *proc)
+{
+    printk(KERN_DEBUG "remove_proc_dev");
+    remove_proc_entry(proc->proc_name, NULL);
+}
+
+// 模块初始化方法
+static int test_proc_init(void)
+{
+    init_proc_dev(&g_proc_dev);
+    return 0;
+}
+
+// 模块退出方法
+static void test_proc_exit(void)
+{
+    remove_proc_dev(&g_proc_dev);
+}
+
+module_init(test_proc_init);
+module_exit(test_proc_exit);
+}}}

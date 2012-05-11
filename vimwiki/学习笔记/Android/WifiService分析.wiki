@@ -1,0 +1,228 @@
+= WifiService分析 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+framework/base/services/java/com/android/server/WifiService.java
+}}}
+
+== WifiService初始化 ==
+- WifiService的初始化主要完成以下功能：
+    - 通过SystemProperties获取wifi的接口名称。如默认为wifi.interface: wlan0。
+    - 初始化WifiStateMachine，该类用于跟踪Wifi的状态。
+    - 获取电池状态的Service，处理Wifi是否休眠时电池使用的特殊情况。
+    - 注册了两个BroadcastReceiver：
+        - 处理飞行模式的消息。
+        - 处理网络状态变化。
+        - 处理Wifi状态变化。
+        - 处理扫描结果通知。
+    - 通过AsyncServiceHandler处理客户端的异步请求。
+    - 通过WifiStateMachineHandler处理Wifi状态的请求。
+    - 设置Wifi连接的超时通知机制。
+
+{{{class="brush:java"
+WifiService(Context context) {
+    mContext = context;
+
+    // 获取Wifi接口
+    mInterfaceName =  SystemProperties.get("wifi.interface", "wlan0");
+
+    mWifiStateMachine = new WifiStateMachine(mContext, mInterfaceName);
+    mWifiStateMachine.enableRssiPolling(true);
+    mBatteryStats = BatteryStatsService.getService();
+
+    mAlarmManager = (AlarmManager)mContext.getSystemService(Context.ALARM_SERVICE);
+    Intent idleIntent = new Intent(ACTION_DEVICE_IDLE, null);
+    mIdleIntent = PendingIntent.getBroadcast(mContext, IDLE_REQUEST, idleIntent, 0);
+
+    // ...... 
+    // 异步消息的处理机制
+    HandlerThread wifiThread = new HandlerThread("WifiService");
+    wifiThread.start();
+    mAsyncServiceHandler = new AsyncServiceHandler(wifiThread.getLooper());
+    mWifiStateMachineHandler = new WifiStateMachineHandler(wifiThread.getLooper());
+
+    // 连接超时设置
+    NOTIFICATION_REPEAT_DELAY_MS = Settings.Secure.getInt(context.getContentResolver(),
+            Settings.Secure.WIFI_NETWORKS_AVAILABLE_REPEAT_DELAY, 900) * 1000l;
+    mNotificationEnabledSettingObserver = new NotificationEnabledSettingObserver(new Handler());
+    mNotificationEnabledSettingObserver.register();
+
+    mBackgroundScanSupported = mContext.getResources().getBoolean(
+            com.android.internal.R.bool.config_wifi_background_scan_support);
+}
+}}}
+
+== WIFI状态机 ==
+- WifiService实现的大部分功能是通过调用WifiStateMachine类的接口完成。
+- [[WIFI状态机]]的实现。
+
+== 处理飞行模式 ==
+- 飞行模式的处理是通过注册一个BroadcastReceiver，当接收到Intent.ACTION_AIRPLANE_MODE_CHANGED后，查询数据库信息来判断是否处于飞行模式。
+
+{{{class="brush:java"
+WifiService(Context context) {
+    // ......
+    mContext.registerReceiver(
+        new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mAirplaneModeOn.set(isAirplaneModeOn());
+                if (!mAirplaneModeOn.get() && (testAndClearWifiSavedState() ||
+                    mPersistWifiState.get() == WIFI_ENABLED_AIRPLANE_OVERRIDE)) {
+                        persistWifiState(true);
+                }
+                // 更新Wifi状态
+                updateWifiState();
+            }
+        },
+        new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED));
+}
+}}}
+
+=== updateWifiState ===
+- 该方法用来更新Wifi状态，主要是通过调用状态机的相关方法与底层交互。
+
+{{{class="brush:java"
+private void updateWifiState() {
+    boolean lockHeld = mLocks.hasLocks();
+    int strongestLockMode = WifiManager.WIFI_MODE_FULL;
+    boolean wifiShouldBeStarted;
+
+    if (mEmergencyCallbackMode) {
+        wifiShouldBeStarted = false;
+    } else {
+        wifiShouldBeStarted = !mDeviceIdle || lockHeld;
+    }
+
+    if (lockHeld) {
+        strongestLockMode = mLocks.getStrongestLockMode();
+    }
+    // If device is not idle, lockmode cannot be scan only
+    if (!mDeviceIdle && strongestLockMode == WifiManager.WIFI_MODE_SCAN_ONLY) {
+        strongestLockMode = WifiManager.WIFI_MODE_FULL;
+    }
+
+    // Disable tethering when airplane mode is enabled 
+    if (mAirplaneModeOn.get()) {
+        mWifiStateMachine.setWifiApEnabled(null, false);
+    }
+
+    if (shouldWifiBeEnabled()) {
+        if (wifiShouldBeStarted) {
+            reportStartWorkSource();
+            mWifiStateMachine.setWifiEnabled(true);
+            mWifiStateMachine.setScanOnlyMode(
+                    strongestLockMode == WifiManager.WIFI_MODE_SCAN_ONLY);
+            mWifiStateMachine.setDriverStart(true, mEmergencyCallbackMode);
+            mWifiStateMachine.setHighPerfModeEnabled(strongestLockMode
+                    == WifiManager.WIFI_MODE_FULL_HIGH_PERF);
+        } else {
+            mWifiStateMachine.setDriverStart(false, mEmergencyCallbackMode);
+        }
+    } else {
+        mWifiStateMachine.setWifiEnabled(false);
+    }
+}
+}}}
+
+== 处理网络、WIFI状态变化和扫描结果通知 ==
+- 通过BroadcastReceiver实现网络、Wifi状态的切换及扫描完成的结果通知。注意三个WifiManager类定义的Action。
+
+{{{class="brush:java"
+WifiService(Context context) {
+    // ......
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+    filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+    filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+
+    mContext.registerReceiver(
+        new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equals(WifiManager.WIFI_STATE_CHANGED_ACTION)) {
+                    int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
+                            WifiManager.WIFI_STATE_DISABLED);
+
+                    mWifiEnabled = (wifiState == WifiManager.WIFI_STATE_ENABLED);
+
+                    // reset & clear notification on any wifi state change
+                    resetNotification();
+                } else if (intent.getAction().equals(
+                        WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
+                    mNetworkInfo = (NetworkInfo) intent.getParcelableExtra(
+                            WifiManager.EXTRA_NETWORK_INFO);
+                    // reset & clear notification on a network connect & disconnect
+                    switch(mNetworkInfo.getDetailedState()) {
+                        case CONNECTED:
+                        case DISCONNECTED:
+                            evaluateTrafficStatsPolling();
+                            resetNotification();
+                            break;
+                    }
+                } else if (intent.getAction().equals(
+                        WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+                    checkAndSetNotification();
+                }
+            }
+        }, filter);
+}
+}}}
+
+== 处理待机状态、充电状态及其他 ==
+- WifiService内部又注册了一个BroadcastReceiver来处理接收屏幕点亮、屏幕关闭、电池充电等状态，并在这些状态下处理WIFI的特殊行为。
+
+{{{class="brush:java"
+private void registerForBroadcasts() {
+    IntentFilter intentFilter = new IntentFilter();
+    intentFilter.addAction(Intent.ACTION_SCREEN_ON);
+    intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
+    intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+    intentFilter.addAction(ACTION_DEVICE_IDLE);
+    intentFilter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
+    intentFilter.addAction(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED);
+    mContext.registerReceiver(mReceiver, intentFilter);
+}
+}}}
+
+- 构造的BroadcastReceiver内部成员对象。
+
+{{{class="brush:java"
+private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        // ......
+        if (action.equals(Intent.ACTION_SCREEN_ON)) {
+            // ......
+            evaluateTrafficStatsPolling();
+            // ......
+            setDeviceIdleAndUpdateWifi(false);
+        } else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
+            // ......
+            evaluateTrafficStatsPolling();
+            if (mBackgroundScanSupported) {
+                mWifiStateMachine.enableBackgroundScanCommand(true);
+            }
+            // ...... 
+        } else if (action.equals(ACTION_DEVICE_IDLE)) {
+            setDeviceIdleAndUpdateWifi(true);
+        } else if (action.equals(Intent.ACTION_BATTERY_CHANGED)) {
+            // ......
+            if (mScreenOff && shouldWifiStayAwake(stayAwakeConditions, mPluggedType) &&
+                    !shouldWifiStayAwake(stayAwakeConditions, pluggedType)) {
+                long triggerTime = System.currentTimeMillis() + idleMillis;
+                mAlarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, mIdleIntent);
+            }
+        } else if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
+            int state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE,
+                    BluetoothAdapter.STATE_DISCONNECTED);
+            mWifiStateMachine.sendBluetoothAdapterStateChange(state);
+        } else if (action.equals(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED)) {
+            mEmergencyCallbackMode = intent.getBooleanExtra("phoneinECMState", false);
+            updateWifiState();
+        }
+    }
+}
+}}}

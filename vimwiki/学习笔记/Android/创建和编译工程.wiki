@@ -1,0 +1,81 @@
+= 创建和编译工程 =
+
+== 创建工程 ==
+{{{class="brush: bash"
+#创建一个新的工程
+$ android create project -t 1 -k org.example.demo -a demo -n project_demo -p ./demo
+Options:
+  -t --target   Target id of the new project [required]
+  -k --package  Package name [required]
+  -a --activity Activity name [required]
+  -n --name     Project name
+  -p --path     Location path of new project [required]
+
+#更新工程 (must have an AndroidManifest.xml).
+$ android update project
+Options:
+  -l --library  Location path of an Android Library to add, relative to the main project
+  -s --subprojects Also update any projects in sub-folders, such as test projects.
+  -n --name     Project name
+  -t --target   Target id to set for the project
+  -p --path     Location path of the project [required]
+
+#创建新的测试工程
+$ android create test-project
+Options:
+  -m --main     Location path of the project to test, relative to the new project [required]
+  -n --name     Project name
+  -p --path     Location path of new project [required]
+
+#更新测试工程 (must have an AndroidManifest.xml).
+$ android update test-project
+Options:
+  -m --main     Location path of the project to test, relative to the new project [required]
+  -p --path     Location path of the project [required]
+
+#创建一个库
+$ android create lib-project
+Options:
+  -n --name     Project name
+  -t --target   Target id of the new project [required]
+  -p --path     Location path of new project [required]
+  -k --package  Package name [required]
+
+#更新库 (must have an AndroidManifest.xml).
+$ android update lib-project
+Options:
+  -t --target   Target id to set for the project
+  -p --path     Location path of the project [required]
+  -l --library  Location path of an Android Library to add, relative to the main project
+}}}
+
+== 编译工程 ==
+{{{class="brush: bash"
+#编译debug版
+$ ant debug
+
+#编译release版
+$ ant release
+
+#clean
+$ ant clean
+}}}
+
+== 运行程序 ==
+{{{class="brush: bash"
+#打开模拟器
+$ emulator -avd AVD1
+
+#添加和删除程序
+#默认安装在system/app下
+$ adb install xxx.apk
+
+$ adb push xxx.apk /data/app
+$ adb shell rm /data/app/xxx.apk
+}}}
+
+== 调试程序 ==
+{{{class="brush: bash"
+#运行调试器
+$ ddms &
+}}}

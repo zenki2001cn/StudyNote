@@ -1,0 +1,295 @@
+= AudioService =
+
+%toc
+
+== 概述 ==
+{{{class="brush:text"
+    AudioService为AudioManager的大多数方法提供接口。AudioService并不做任何具体实现，它会调用
+AudioSystem类来处理相关请求。
+    AudioService需要注意以下几点：
+    1.为上层AudioManager提供接口实现。
+    2.请求获取声音焦点的处理。
+    3.Media按键的监听。
+}}}
+
+== 常量定义 ==
+=== 特定音效定义 ===
+{{{class="brush:java"
+// 音效的路径
+private static final String SOUND_EFFECTS_PATH = "/media/audio/ui/";
+// 声音文件名
+private static final String[] SOUND_EFFECT_FILES = new String[] {
+    "Effect_Tick.ogg",
+    "KeypressStandard.ogg",
+    "KeypressSpacebar.ogg",
+    "KeypressDelete.ogg",
+    "KeypressReturn.ogg"
+};
+
+/* Sound effect file name mapping sound effect id (AudioManager.FX_xxx) to
+ * file index in SOUND_EFFECT_FILES[] (first column) and indicating if effect
+ * uses soundpool (second column) */
+private int[][] SOUND_EFFECT_FILES_MAP = new int[][] {
+    {0, -1},  // FX_KEY_CLICK
+    {0, -1},  // FX_FOCUS_NAVIGATION_UP
+    {0, -1},  // FX_FOCUS_NAVIGATION_DOWN
+    {0, -1},  // FX_FOCUS_NAVIGATION_LEFT
+    {0, -1},  // FX_FOCUS_NAVIGATION_RIGHT
+    {1, -1},  // FX_KEYPRESS_STANDARD
+    {2, -1},  // FX_KEYPRESS_SPACEBAR
+    {3, -1},  // FX_FOCUS_DELETE
+    {4, -1}   // FX_FOCUS_RETURN
+};
+}}}
+
+=== 音量大小定义 ===
+{{{class="brush:java"
+private int[] MAX_STREAM_VOLUME = new int[] {
+    5,  // STREAM_VOICE_CALL
+    7,  // STREAM_SYSTEM
+    7,  // STREAM_RING
+    15, // STREAM_MUSIC
+    7,  // STREAM_ALARM
+    7,  // STREAM_NOTIFICATION
+    15, // STREAM_BLUETOOTH_SCO
+    7,  // STREAM_SYSTEM_ENFORCED
+    15, // STREAM_DTMF
+    15  // STREAM_TTS
+};
+}}}
+
+== AudioService初始化流程 ==
+=== AudioService ===
+{{{class="brush:java"
+public AudioService(Context context) {
+    mContext = context;
+    mContentResolver = context.getContentResolver();
+
+    // 初始化音量
+    MAX_STREAM_VOLUME[AudioSystem.STREAM_VOICE_CALL] = SystemProperties.getInt(
+        "ro.config.vc_call_vol_steps",
+       MAX_STREAM_VOLUME[AudioSystem.STREAM_VOICE_CALL]);
+    // 初始化音量控制面板
+    mVolumePanel = new VolumePanel(context, this);
+    // 初始化SettingsObserver
+    mSettingsObserver = new SettingsObserver();
+    // 初始化device属性设置
+    mForcedUseForComm = AudioSystem.FORCE_NONE;
+    // 创建AudioSystem处理线程
+    createAudioSystemThread();
+    // 读取系统属性，并做相应设置
+    readPersistedSettings();
+    // 初始化VolumeStreamState
+    createStreamStates();
+    ......
+
+    // 设置错误回调
+    AudioSystem.setErrorCallback(mAudioSystemCallback);
+    // 初始化音效
+    loadSoundEffects();
+    // 初始化蓝牙耳机代理对象
+    mBluetoothHeadset = new BluetoothHeadset(context,
+                                             mBluetoothHeadsetServiceListener);
+    // 注册耳机设备连接的监听
+    IntentFilter intentFilter =
+            new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+    intentFilter.addAction(BluetoothA2dp.ACTION_SINK_STATE_CHANGED);
+    intentFilter.addAction(BluetoothHeadset.ACTION_STATE_CHANGED);
+    intentFilter.addAction(Intent.ACTION_DOCK_EVENT);
+    intentFilter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
+    context.registerReceiver(mReceiver, intentFilter);
+
+    // 注册media按键的监听
+    intentFilter = new IntentFilter(Intent.ACTION_MEDIA_BUTTON);
+    intentFilter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+    context.registerReceiver(mMediaButtonReceiver, intentFilter);
+
+    // 初始化电话管理对象
+    TelephonyManager tmgr = (TelephonyManager)
+            context.getSystemService(Context.TELEPHONY_SERVICE);
+    tmgr.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+}
+}}}
+
+== AudioSystem处理线程 ==
+- AudioManager类关于声音处理的方法会调用到AudioService接口，这些接口的实现在AudioService中以Handler方式处理，即AudioSystemThread和AudioHandler。
+
+=== AudioSystemThread ===
+{{{class="brush:java"
+private class AudioSystemThread extends Thread {
+    AudioSystemThread() {
+        super("AudioService");
+    }
+
+    @Override
+    public void run() {
+        Looper.prepare();
+
+        synchronized(AudioService.this) {
+            mAudioHandler = new AudioHandler();
+
+            // Notify that the handler has been created
+            AudioService.this.notify();
+        }
+
+        Looper.loop();
+    }
+}
+}}}
+
+=== AudioHandler ===
+{{{class="brush:java"
+private class AudioHandler extends Handler {
+    ......
+    public void handleMessage(Message msg) {
+            int baseMsgWhat = getMsgBase(msg.what);
+            switch (baseMsgWhat) {
+                case MSG_SET_SYSTEM_VOLUME:
+                    ......
+                    break;
+                case MSG_PERSIST_VOLUME:
+                    ...... 
+                    break;
+                case MSG_PERSIST_RINGER_MODE:
+                    ......
+                    break;
+                case MSG_PERSIST_VIBRATE_SETTING:
+                    ......
+                    break;
+                case MSG_MEDIA_SERVER_DIED:
+                    ......
+                    break;
+                case MSG_MEDIA_SERVER_STARTED:
+                    ...... 
+                    break;
+                case MSG_PLAY_SOUND_EFFECT:
+                    ......
+                    break;
+                case MSG_BTA2DP_DOCK_TIMEOUT:
+                    ......
+                    break;
+            }
+        }
+    }
+}
+}}}
+
+== 监听系统设置 ==
+- SettingsObserver是在系统设置改变后得到通知，再进行相应的处理，可在onChange方法中做自定义处理。
+
+=== SettingsObserver ===
+{{{class="brush:java"
+private class SettingsObserver extends ContentObserver {
+    SettingsObserver() {
+        super(new Handler());
+        mContentResolver.registerContentObserver(Settings.System.getUriFor(
+            Settings.System.MODE_RINGER_STREAMS_AFFECTED), false, this);
+        mContentResolver.registerContentObserver(Settings.System.getUriFor(
+                Settings.System.NOTIFICATIONS_USE_RING_VOLUME), false, this);
+    }
+
+    @Override
+    public void onChange(boolean selfChange) {
+        super.onChange(selfChange);
+        ...... 
+    }
+}
+}}}
+
+== 请求声音焦点 ==
+- AudioService.requestAudioFocus方法用来处理AudioManager的请求，它使用Stack堆栈来处理上层注册的监听对象。
+
+=== requestAudioFocus ===
+{{{class="brush:java"
+public int requestAudioFocus(int mainStreamType, int focusChangeHint, IBinder cb,
+        IAudioFocusDispatcher fd, String clientId) {
+    if (!IN_VOICE_COMM_FOCUS_ID.equals(clientId) && ((cb == null) || !cb.pingBinder())) {
+        return AudioManager.AUDIOFOCUS_REQUEST_FAILED;
+    }
+
+    synchronized(mAudioFocusLock) {
+        if (!canReassignAudioFocus()) {
+            return AudioManager.AUDIOFOCUS_REQUEST_FAILED;
+        }
+
+        if (!mFocusStack.empty() && mFocusStack.peek().mClientId.equals(clientId)) {
+            if (mFocusStack.peek().mFocusChangeType == focusChangeHint) {
+                return AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+            }
+            mFocusStack.pop();
+        }
+
+        if (!mFocusStack.empty() && (mFocusStack.peek().mFocusDispatcher != null)) {
+            try {
+                mFocusStack.peek().mFocusDispatcher.dispatchAudioFocusChange(
+                        -1 * focusChangeHint, // loss and gain codes are inverse of each other
+                        mFocusStack.peek().mClientId);
+            } catch (RemoteException e) {
+            }
+        }
+
+        // focus requester might already be somewhere below in the stack, remove it
+        removeFocusStackEntry(clientId, false);
+
+        // push focus requester at the top of the audio focus stack
+        mFocusStack.push(new FocusStackEntry(mainStreamType, focusChangeHint, false, fd, cb,
+                clientId));
+    }//synchronized(mAudioFocusLock)
+
+    if (!IN_VOICE_COMM_FOCUS_ID.equals(clientId)) {
+        // Register for client death notification
+        AudioFocusDeathHandler afdh = new AudioFocusDeathHandler(cb);
+        try {
+            cb.linkToDeath(afdh, 0);
+        } catch (RemoteException e) {
+            // client has already died!
+        }
+    }
+
+    return AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+}
+}}}
+
+== 监听Media按键 ==
+- AudioService以堆栈方式处理Media按键的监听对象。
+- AudioService.registerMediaButtonEventReceiver会将组件对象加入到Stack堆栈中，并通过MediaButtonBroadcastReceiver接收通知后，再向堆栈中的组件发送广播。
+
+=== registerMediaButtonEventReceiver ===
+{{{class="brush:java"
+public void registerMediaButtonEventReceiver(ComponentName eventReceiver) {
+    synchronized(mRCStack) {
+        pushMediaButtonReceiver(eventReceiver);
+    }
+}
+}}}
+
+=== MediaButtonBroadcastReceiver ===
+{{{class="brush:java"
+private class MediaButtonBroadcastReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        ......
+        KeyEvent event = (KeyEvent) intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+        if (event != null) {
+            synchronized(mRingingLock) {
+                if (mIsRinging || (getMode() == AudioSystem.MODE_IN_CALL) ||
+                        (getMode() == AudioSystem.MODE_IN_COMMUNICATION) ||
+                        (getMode() == AudioSystem.MODE_RINGTONE) ) {
+                    return;
+                }
+            }
+            synchronized(mRCStack) {
+                if (!mRCStack.empty()) {
+                    // 通知注册的组件
+                    Intent targetedIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
+                    targetedIntent.putExtras(intent.getExtras());
+                    targetedIntent.setComponent(mRCStack.peek().mReceiverComponent);
+                    // trap the current broadcast
+                    abortBroadcast();
+                    context.sendBroadcast(targetedIntent, null);
+                }
+            }
+        }
+    }
+}
+}}}

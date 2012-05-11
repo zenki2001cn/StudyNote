@@ -1,0 +1,230 @@
+= 如何制作自己的Product Tree =
+%toc
+
+_Android源码下的vendor用来提供各厂商自己的配置，通过修改该目录中的文件可以生成自定义系统_
+
+== 三个重要的Makefile ==
+{{{class="brush:text"
+AndroidProducts.mk
+BoardConfig.mk
+A0007.mk(自定义)
+}}}
+
+== 基本流程 ==
+=== 1.拷贝sample目录 ===
+- 拷贝一份device中的sample目录，该为公司相关的名称
+
+{{{class="brush:bash"
+$ cp -r sample <company_name>
+}}}
+
+=== 2.创建product-specific文件 ===
+- 创建一个product相关的mk文件，取名为`device/<company_name>/products/<first_product_name>.mk`，并包含以下内容
+
+{{{class="brush:bash"
+$(call inherit-product, $(SRC_TARGET_DIR)/product/generic.mk)
+
+# Overrides
+PRODUCT_NAME := <first_product_name>
+PRODUCT_DEVICE := <board_name>
+}}}
+
+=== 3.修改AndroidProducts.mk ===
+- 修改products目录下的AndroidProducts.mk，添加以下内容，将PRODUCT_MAKEFILES指向上一步所添加的<first_product_name>.mk
+
+{{{class="brush:bash"
+# 包含第一个product的mk文件
+PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/first_product_name.mk \
+}}}
+
+=== 4.创建board-specific目录 ===
+- 创建一个board相关的目录，取名为board_name——PRODUCT_DEVICE定义
+
+{{{class="brush:bash"
+$ mkdir device/<company_name>/<board_name>
+}}}
+
+=== 5.创建BoardConfig.mk ===
+- 在device/<company_name>/<board_name>下创建`BoardConfig.mk`，该文件由编译系统自动搜索并加载
+
+{{{class="brush:bash"
+# These definitions override the defaults in config/config.make for <board_name>
+#
+# TARGET_NO_BOOTLOADER := false
+# TARGET_HARDWARE_3D := false 
+#
+TARGET_USE_GENERIC_AUDIO := true
+TARGET_NO_BOOTLOADER := true
+TARGET_NO_KERNEL := true
+TARGET_NO_RADIOIMAGE := true
+TARGET_CPU_ABI := armeabi
+HAVE_HTC_AUDIO_DRIVER := true
+BOARD_USES_GENERIC_AUDIO := true
+}}}
+
+=== 6.创建system.prop(可选) ===
+- 这个步骤是可选的，如果你需要设置一些系统属性，则在device/<company_name>/<board_name>下创建`system.prop`文件，并加入以下内容
+
+{{{class="brush:bash"
+# system.prop for 
+# This overrides settings in the products/generic/system.prop file
+#
+# rild.libpath=/system/lib/libreference-ril.so
+# rild.libargs=-d /dev/ttyS0
+}}}
+
+=== 7.创建板子的Android.mk(可选) ===
+- 这个步骤是可选的，如果你需要编译内核，则在device/<company_name>/<board_name>下创建`Android.mk`文件，并加入以下内容
+
+{{{class="brush:bash"
+# make file for new hardware  from 
+
+LOCAL_PATH := $(call my-dir)
+
+# this is here to use the pre-built kernel
+ifeq ($(TARGET_PREBUILT_KERNEL),)
+TARGET_PREBUILT_KERNEL := $(LOCAL_PATH)/kernel
+endif
+
+
+file := $(INSTALLED_KERNEL_TARGET)
+ALL_PREBUILT += $(file)
+$(file): $(TARGET_PREBUILT_KERNEL) | $(ACP)
+$(transform-prebuilt-to-target)
+
+# no boot loader, so we don't need any of that stuff..  
+LOCAL_PATH := partner/<company_name>/<board_name>
+
+include $(CLEAR_VARS)
+
+# include more board specific stuff here? Such as Audio parameters.      
+}}}
+
+=== 8.编写A0007.mk(可继承的mk) ===
+- 将products目录下sample_addon.mk改名为A0007.mk，并修改相关内容。这样做的目的是创建一个产品相关的基类mk，其他型号相关mk可以直接继承它
+- device/<company_name>/products/<first_product_name>.mk作为具体的产品mk，需要inherit-product该文件
+- 也可以将以下内容拷贝进first_product_name.mk，这种做法不适合扩展
+- 相关变量设置参见[[Build环境变量]]
+
+{{{class="brush:bash"
+# 该文件继承于$(SRC_TARGET_DIR)/products/generic.mk
+$(call inherit-product, $(SRC_TARGET_DIR)/products/generic.mk)
+
+# 按照规则查找需要build的文件夹，注意命名规则
+# 参考device/sample示例
+PRODUCT_PACKAGES := \
+    PlatformLibraryClient \                     =》当前目录apps下的PlatformLibraryClient文件夹
+    com.example.android.platform_library \      =》当前目录frameworks下的PlatformLibrary文件夹
+    libplatform_library_jni                     =》当前目录frameworks下的PlatformLibrary下的jni文件夹
+    
+# 拷贝命令，定义需要拷贝的文件源与路径
+PRODUCT_COPY_FILES := \
+    vendor/mstar/etc/vold.conf:system/etc/vold.conf \
+    vendor/mstar/bin/bash:system/bin/bash \
+    vendor/mstar/em1/help.epub:system/usr/help.epub \
+    vendor/mstar/em1/help.pdf:system/usr/help.pdf \
+    vendor/mstar/etc/dhcpcd.conf:system/etc/dhcpcd/dhcpcd.conf \
+
+# 拷贝jar库
+PRODUCT_SDK_ADDON_COPY_MODULES := \
+    com.example.android.platform_library:libs/platform_library.jar
+
+# 键盘映射文件
+PRODUCT_PACKAGES := \
+    mg-capacitive.kcm
+        
+#set correct hardware
+ADDITIONAL_DEFAULT_PROPERTIES += ro.hardware=3622
+
+# 这组变量定义了编译出来的产品名称
+# Use 'make PRODUCT-<PRODUCT_NAME>-eng' to build the A0007.
+PRODUCT_BRAND := A0007
+PRODUCT_LOCALES := \
+    zh_CN \
+    zh_TW \
+    en_US
+}}}
+
+=== 9.继承A0007.mk ===
+- 在device/<company_name>/products/<first_product_name>.mk中添加以下内容，用来继承A0007.mk
+
+{{{class="brush:bash"
+$(call inherit-product, $(SRC_TARGET_DIR)/product/generic.mk)
+
+# 继承A0007.mk
+$(call inherit-product, device/<company_name>/products/A0007.mk)
+
+# Overrides
+PRODUCT_BRAND := <brand_name>
+PRODUCT_MANUFACTURER := <manufacturer_name>
+PRODUCT_MODEL := <model_name>
+}}}
+
+=== 10.修改AndroidProducts.mk ===
+{{{class="brush:bash"
+PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/first_product_name.mk
+}}}
+
+=== *.添加第二个product(可选) ===
+- 至此我们已经添加了一个product，如果需要添加其他product，可以从步骤2开始，创建second_product_name.mk
+- 在AndroidProducts.mk中加入second_product_name.mk，并重复以上步骤
+
+==== 添加second_product_name.mk ====
+{{{class="brush:bash"
+$(call inherit-product, partner/google/products/generic.mk)
+
+# 继承A0007.mk
+$(call inherit-product, device/<company_name>/products/A0007.mk)
+
+# Overrides
+PRODUCT_NAME := <second_product_name>
+PRODUCT_DEVICE := <board_name>
+}}}
+
+==== 修改AndroidProducts.mk ====
+{{{class="brush:bash"
+PRODUCT_MAKEFILES := \
+    $(LOCAL_DIR)/first_product_name.mk \
+    $(LOCAL_DIR)/second_product_name.mk
+}}}
+
+=== *.添加环境设置脚本(可选) ===
+- 创建device/<company_name>/products/vendorsetup.sh，并添加以下内容
+- build系统会扫描以下文件
+    - vendor/*/vendorsetup.sh 
+    - vendor/*/build/vendorsetup.sh 
+    - device/*/*/vendorsetup.sh
+
+{{{class="brush:bash"
+add_lunch_combo A0007-user
+}}}
+
+== 最终目录结构 ==
+- <company_name>
+    - <board_name>
+        - Android.mk
+        - product_config.mk
+        - system.prop
+    - products
+        - AndroidProducts.mk
+        - first_product_name.mk
+        - second_product_name.mk
+        - A0007.mk
+        - vendorsetup.sh
+
+== 编译镜像 ==
+- 编译时需要设置TARGET_PRODUCT变量，变量名为A0007.mk中的PRODUCT_NAME定义
+
+{{{class="brush:bash"
+# 编译eng版的镜像
+$ make PRODUCT-A0007-eng
+或
+$ make TARGET_PRODUCT=A0007 TARGET_BUILD_VARIANT=eng
+
+# 编译user版的镜像
+$ make PRODUCT-A0007-user
+或
+$ make TARGET_PRODUCT=A0007 TARGET_BUILD_VARIANT=user
+}}}

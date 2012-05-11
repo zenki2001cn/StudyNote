@@ -1,0 +1,28 @@
+= 编译SDK =
+
+%toc
+
+== 加入自定义的SDK ==
+=== 1.编写自定义的Android.mk ===
+{{{class="brush:"
+$ vim framework/base/Android.mk
+
+在non_base_dirs变量后加入自定义的包名，如:
+non_base_dirs := \
+	../../external/apache-http/src/org/apache/http
+	../../vender/mokoid/frameworks/base/core/service/java
+}}}
+
+=== 2.运行编译命令 ===
+{{{class="brush: bash"
+$lunch sdk-eng
+$make sdk
+或者
+$make PRODUCT-dma6410xp-sdk
+}}}
+
+=== 3.生成SDK ===
+{{{class="brush:text"
+生成的SDK目录:out/host/linux-x86/sdk/
+}}}
+

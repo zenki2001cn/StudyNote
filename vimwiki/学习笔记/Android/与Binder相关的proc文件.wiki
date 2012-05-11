@@ -1,0 +1,133 @@
+= 与Binder相关的proc文件 =
+
+%toc
+
+== 设备驱动的文件说明 ==
+{{{class="brush:text"
+    binder驱动程序是一个miscdevice，主设备号为10，此设备号使用动态获得（MISC_DYNAMIC_MINOR），
+其设备的节点为/dev/binder
+    binder驱动程序会在proc文件系统中建立自己的信息，其文件夹为/proc/binder，其中包含如下内容：
+
+    proc目录：调用Binder各个进程的内容
+    state文件：使用函数binder_read_proc_state，保存各个进程的状态
+    stats文件：使用函数binder_read_proc_stats，保存各个进程的数据
+    transactions文件：使用函数binder_read_proc_transactions，保存各个进程数据传输的地址及大小信息
+    transaction_log文件：使用函数binder_read_proc_transaction_log，其参数为binder_transaction_log
+(类型为struct binder_transaction_log)
+    failed_transaction_log文件：使用函数binder_read_proc_transaction_log，其参数为
+binder_transaction_log_failed(类型为struct binder_transaction_log)
+}}}
+
+== state文件示例 ==
+{{{class="brush:text"
+binder state:
+proc 1197
+  thread 1197: l 00
+  thread 1199: l 00
+  thread 1202: l 12
+  thread 1203: l 11
+  node 1211: u00177980 c0013ef28 hs 1 hw 1 ls 0 lw 0 is 1 iw 1 proc 798
+  node 1252: u0019c2c8 c0019c2a8 hs 1 hw 1 ls 0 lw 0 is 1 iw 1 proc 798
+  node 1282: u001afde0 c001afdc0 hs 1 hw 1 ls 0 lw 0 is 1 iw 1 proc 798
+  node 1284: u001afdf8 c001adc60 hs 1 hw 1 ls 0 lw 0 is 1 iw 1 proc 798
+  node 1286: u001afe30 c001afe10 hs 1 hw 1 ls 0 lw 0 is 1 iw 1 proc 798
+  ref 1206: desc 0 node 1 s 1 w 1 d (null)
+  ref 1209: desc 1 node 47 s 1 w 1 d (null)
+  ref 1225: desc 2 node 111 s 1 w 1 d (null)
+  ref 1226: desc 3 node 97 s 1 w 1 d (null)
+  ref 1227: desc 4 node 43 s 1 w 1 d (null)
+  ref 1232: desc 5 node 17 s 1 w 1 d (null)
+  ref 1235: desc 6 node 312 s 1 w 1 d (null)
+  ref 1238: desc 7 node 316 s 1 w 1 d (null)
+  ref 1274: desc 8 node 83 s 1 w 1 d (null)
+  ref 1298: desc 10 node 23 s 1 w 1 d (null)
+  ref 1324: desc 12 node 161 s 1 w 1 d (null)
+  ref 1408: desc 13 node 155 s 1 w 1 d (null)
+}}}
+
+== stats文件示例 ==
+{{{class="brush:text"
+binder stats:
+BC_TRANSACTION: 2810
+BC_REPLY: 1228
+BC_FREE_BUFFER: 4035
+BC_INCREFS: 348
+BC_ACQUIRE: 392
+BC_RELEASE: 129
+BC_DECREFS: 128
+BC_INCREFS_DONE: 260
+BC_ACQUIRE_DONE: 260
+BC_REGISTER_LOOPER: 133
+BC_ENTER_LOOPER: 26
+BC_REQUEST_DEATH_NOTIFICATION: 166
+BC_CLEAR_DEATH_NOTIFICATION: 99
+BR_TRANSACTION: 2810
+BR_REPLY: 1228
+BR_TRANSACTION_COMPLETE: 4038
+BR_INCREFS: 260
+BR_ACQUIRE: 260
+BR_RELEASE: 123
+BR_DECREFS: 122
+proc: active 13 total 25
+thread: active 76 total 231
+node: active 138 total 261
+ref: active 240 total 392
+death: active 67 total 166
+transaction: active 0 total 4038
+transaction_complete: active 0 total 4038
+proc 1197
+  threads: 4
+  requested threads: 0+1/15
+  ready threads 2
+  free async space 524288
+  nodes: 5
+  refs: 12 s 12 w 12
+  buffers: 0
+  pending transactions: 0
+  BC_TRANSACTION: 153
+  BC_FREE_BUFFER: 151
+  BC_INCREFS: 16
+  BC_ACQUIRE: 16
+  BC_RELEASE: 4
+  BC_DECREFS: 4
+  BC_INCREFS_DONE: 38
+  BC_ACQUIRE_DONE: 38
+  BC_REGISTER_LOOPER: 1
+  BC_ENTER_LOOPER: 1
+  BR_TRANSACTION: 31
+  BR_REPLY: 120
+  BR_TRANSACTION_COMPLETE: 153
+  BR_INCREFS: 38
+  BR_ACQUIRE: 38
+  BR_RELEASE: 33
+  BR_DECREFS: 33
+}}}
+
+== transactions文件示例 ==
+{{{class="brush:text"
+binder transactions:
+proc 1155
+  buffer 1758: d3e00028 size 8:0 delivered
+proc 837
+  buffer 4732: d1e00028 size 4:0 delivered
+proc 798
+  buffer 1053: d1c00028 size 16:4 delivered
+}}}
+
+== transaction_log文件示例 ==
+{{{class="brush:text"
+4726: async from 798:851 to 1170:0 node 1097 handle 37 size 112:0
+4727: reply from 798:851 to 837:837 node 0 handle -1 size 4:0
+4728: call  from 837:837 to 798:0 node 23 handle 9 size 92:4
+4729: reply from 798:851 to 837:837 node 0 handle -1 size 4:0
+4730: call  from 837:853 to 798:0 node 23 handle 9 size 72:4
+4731: call  from 837:837 to 798:0 node 39 handle 8 size 156:0
+4732: reply from 798:802 to 837:853 node 0 handle -1 size 4:0
+4733: reply from 798:798 to 837:837 node 0 handle -1 size 4:0
+4734: call  from 837:837 to 798:0 node 47 handle 1 size 356:0
+4735: reply from 798:851 to 837:837 node 0 handle -1 size 8:0
+4736: async from 798:817 to 837:0 node 283 handle 2 size 428:4
+4737: async from 798:817 to 1155:0 node 934 handle 11 size 428:4
+4738: async from 798:817 to 837:0 node 283 handle 2 size 332:4
+......
+}}}

@@ -1,0 +1,15 @@
+= Event输入系统 =
+_Event输入系统支持键盘、鼠标、摇杆和触摸屏。_
+
+%toc
+
+== Keyboard输入系统 ==
+- [[Keyboard按键映射]]
+
+== Event输入系统实现 ==
+=== Android 2.1实现 ===
+- [[Event事件的实现2_1]]
+
+=== Android 2.3实现 ===
+- [[Event事件的实现2_3]]
+

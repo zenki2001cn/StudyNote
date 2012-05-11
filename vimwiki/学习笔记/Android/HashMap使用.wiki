@@ -1,0 +1,32 @@
+= HashMap使用 =
+
+{{{class="brush:java"
+HashMap<String,Object> map=new HashMap<String,Object>();
+
+// 存储数据
+People p1=new People();
+People p2=new People();
+People p3=new People();
+People p4=new People();
+
+map.put("People3", p1);
+map.put("People1", p2);
+map.put("People4", p3);
+map.put("People2", p4); 
+
+// 提取数据
+// 效率高
+Iterator iter = map.entrySet().iterator();
+while (iter.hasNext()) {
+    Map.Entry entry = (Map.Entry) iter.next();
+    Object key = entry.getKey();
+    Object val = entry.getValue();
+}
+
+// 效率低
+Iterator iter = map.keySet().iterator();
+while (iter.hasNext()) {
+    Object key = iter.next();
+    Object val = map.get(key);
+}
+}}}

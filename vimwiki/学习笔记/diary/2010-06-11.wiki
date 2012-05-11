@@ -1,0 +1,5 @@
+=== deplate ===
+能够将好多文本转换成如html,latex等格式的工具，需要ruby支持。
+
+=== Viki ===
+vim上的另一个wiki工具,优点是能够进行deplate支持。

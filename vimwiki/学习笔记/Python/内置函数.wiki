@@ -1,0 +1,232 @@
+= 内置函数 =
+
+%toc
+
+== type和types（判断对象类型） ==
+- type用来判定成员对象的类型。
+
+{{{class="brush:python"
+>>> type(1)           
+<type 'int'>
+
+>>> li = []
+>>> type(li)          
+<type 'list'>
+
+>>> import odbchelper
+>>> type(odbchelper)  
+<type 'module'>
+
+>>> import types      
+>>> type(odbchelper) == types.ModuleType
+True
+}}}
+
+== global、globals（全局变量引用）和locals（局部变量引用） ==
+- 当一行代码要使用变量x的值时，Python会到所有可用的名字空间去查找变量，按照如下顺序：
+    - 局部名字空间――特指当前函数或类的方法。如果函数定义了一个局部变量x，或一个参数x，Python将使用它，然后停止搜索。
+    - 全局名字空间――特指当前的模块。如果模块定义了一个名为x的变量，函数或类，Python将使用它然后停止搜索。
+    - 内置名字空间――对每个模块都是全局的。作为最后的尝试，Python将假设x是内置函数或变量。
+- 在Python中，函数内部的变量引用都被认为是局部变量，global修饰符用来引用全局变量。
+    - globals是内部方法，返回所有的全局变量定义，`该方法返回的值可以被修改`。
+    - locals是内部方法，返回所有的局部变量定义，`该方法返回的值是只读的`。
+
+{{{class="brush:python"
+# 通过global修饰的变量引用，才能在函数内部修改。
+G_VAR = 10
+
+def show_global:
+    global G_VAR
+
+    G_VAR = 20
+    print G_VAR
+
+# 获取全局变量引用的方法
+'''
+globals(...)
+    globals() -> dictionary
+    Return the dictionary containing the current scope's global variables.
+'''
+
+# 获取局部变量引用的方法
+'''
+locals(...)
+    locals() -> dictionary
+    Update and return a dictionary containing the current scope's local variables.
+'''
+}}}
+
+== str（字符串转换） ==
+- str将所有对象转换成一个字符串类型。
+
+{{{class="brush:python"
+>>> str(1)          
+'1'
+>>> horsemen = ['war', 'pestilence', 'famine']
+>>> str(horsemen)   
+"['war', 'pestilence', 'famine']"
+>>> str(odbchelper) 
+"<module 'odbchelper' from 'c:\\docbook\\dip\\py\\odbchelper.py'>"
+>>> str(None)       
+'None'
+}}}
+
+== dir（获取对象方法列表） ==
+- 接收一个对象作为参数，返回该对象类型的方法列表。
+
+{{{class="brush:python"
+# 列举list对象的成员
+>>> li = []
+>>> dir(li)           
+['append', 'count', 'extend', 'index', 'insert', 'pop', 'remove', 'reverse', 'sort']
+
+# 列举dict对象的成员
+>>> d = {}
+>>> dir(d)            
+['clear', 'copy', 'get', 'has_key', 'items', 'keys', 'setdefault', 'update', 'values']
+
+# 列举odbchelper对象的成员
+>>> import odbchelper
+>>> dir(odbchelper)   
+['__builtins__', '__doc__', '__file__', '__name__', 'buildConnectionString']
+}}}
+
+== callable（判断方法是否可执行） ==
+{{{class="brush:python"
+# 列举string的两个成员，一个是字符串，一个是函数
+>>> import string
+>>> string.punctuation           
+'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+>>> string.join                  
+<function join at 00C55A7C>
+
+# 使用callable来测试这两个成员是否可调用
+>>> callable(string.punctuation) 
+False
+>>> callable(string.join)        
+True
+>>> print string.join.__doc__    
+join(list [,sep]) -> string
+}}}
+
+== eval（执行字符串代码） ==
+- eval接收string类型的对象作为参数，并执行该对象包含的代码，返回执行结果
+
+{{{class="brush:python"
+# 示例一
+>>> a = 345
+>>> b = 556
+>>> sum = 'a+b'
+
+>>> eval(sum)
+>>> 901
+
+# 示例二
+>>> openFile = 'open("~/hello.txt", "r")'
+>>> file = eval(openFile)
+<open file '~/hello.txt', mode 'r' at 0x98577b0>
+
+>>> file.read()
+helloworld
+}}}
+
+== enumerate（为list对象成员编号） ==
+- enumerate为一个list对象排序，返回每个成员对应的序号。
+
+{{{class="brush:python"
+>>> l = ['orange', 'apple', 'black', 'white']
+>>> e = enumerate(l)
+>>> for i in e:
+>>>     print i
+>>>     
+(0, 'orange')
+(1, 'apple')
+(2, 'black')
+(3, 'white')
+}}}
+
+== getattr（获取对象的方法引用） ==
+- 在运行时获取一个对象的方法的引用。
+
+{{{class="brush:python"
+>>> li = ["Larry", "Curly"]
+# 获取list的pop方法引用
+>>> getattr(li, "pop")           
+<built-in method pop of list object at 010DF884>
+# 直接调用该方法的引用
+>>> getattr(li, "append")("Moe") 
+>>> li
+["Larry", "Curly", "Moe"]
+}}}
+
+== lambda（匿名函数） ==
+- 匿名函数的语法：lambda {param}:{statement}
+
+{{{class="brush:python"
+>>> g = lambda x: x*2 
+>>> g(3)
+6
+
+>>> (lambda x: x*2)(3)
+6
+}}}
+
+== ___import___（动态导入模块） ==
+- 内建__import__函数与import语句实现的功能相同，用来导入一个模块。但它是一个真正的函数，并接受一个字符串作为参数。
+
+{{{class="brush:python"
+# 将模块名的字符串作为参数传入__import__方法
+>>> sys = __import__('sys')
+>>> os = __import__('os')
+>>> re = __import__('re')
+>>> unittest = __import__('unittest')
+
+# 查看返回的变量
+>>> sys
+>>> <module 'sys' (built-in)>
+>>> os
+>>> <module 'os' from '/usr/local/lib/python2.2/os.pyc'>
+}}}
+
+== map（方法的批量调用） ==
+- 将一组参数列表传入到给定的函数中，并依次调用该函数，最后将函数的执行结果传入到列表中并返回。
+
+{{{class="brush:python"
+# 将模块名作为参数列表传入映射给__import__方法
+>>> moduleNames = ['sys', 'os', 're', 'unittest']
+>>> modules = map(__import__, moduleNames)
+
+# 返回一组模块对象的列表
+>>> modules
+[<module 'sys' (built-in)>,
+<module 'os' from 'c:\Python22\lib\os.pyc'>,
+<module 're' from 'c:\Python22\lib\re.pyc'>,
+<module 'unittest' from 'c:\Python22\lib\unittest.pyc'>]
+
+# 通过列表元素调用sys模块的方法
+>>> modules[0].version
+'2.2.2 (#37, Nov 26 2002, 10:24:37) [MSC 32 bit (Intel)]'
+}}}
+
+== filter（列表过滤器） ==
+- 将一组参数列表传入给定的函数中，该函数返回bool类型。如果函数调用结果为真，则该结果会出现在结果的列表中，结果为假，则被过滤掉。调用的过程同map一样。
+
+{{{class="brush:python"
+# 定义一个取模的lambda方法，并应用于一组列表[1, 2, 3, 4, 5]
+>>> filter(lambda x : x % 2 == 0, [1, 2, 3, 4, 5])
+[2, 4]
+}}}
+
+== reduce（列表递减调用） ==
+- 将一组参数列表的前两个数作为参数传给指定的函数，并将结果置为列表顶端，同时删除前两个数，依次执行这个过程，返回最终的数。
+- 第三个参数作为一个初始值，代替列表中的第一个数。
+
+{{{class="brush:python"
+# 本例中[1, 2, 3, 4]列表中的数会连续相加，求解过程为：1 + 2 + 3 + 4 = 10
+>>> reduce(lambda x, y : x + y,[1, 2, 3, 4])
+10
+
+# 10为初始值，作为列表的第一个数，求解过程为：10 + 1 + 2 + 3 + 4 = 20
+>>> reduce(lambda x, y : x + y, [1, 2, 3, 4], 10)
+20
+}}}

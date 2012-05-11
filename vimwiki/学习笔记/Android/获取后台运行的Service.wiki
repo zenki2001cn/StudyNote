@@ -1,0 +1,35 @@
+= 如何获取后台运行的Service =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Context;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
+}}}
+
+- 通过getSystemService(Context.ACTIVITY_SERVICE)获取ActivityManager对象 
+- 通过ActivityManager对象的getRunningServices()方法获取Service列表
+
+例程源码(JAVA)
+{{{class="brush:java"
+public static String getRunningServicesInfo(Context context) {
+    StringBuffer serviceInfo = new StringBuffer();
+    final ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+    List<RunningServiceInfo> services = activityManager.getRunningServices(100);
+
+    Iterator<RunningServiceInfo> lter = services.iterator();
+    while (lter.hasNext()) {
+            RunningServiceInfo si = (RunningServiceInfo) lter.next();
+            serviceInfo.append("pid: ").append(si.pid);
+            serviceInfo.append("\nprocess: ").append(si.process);
+            serviceInfo.append("\nservice: ").append(si.service);
+            serviceInfo.append("\ncrashCount: ").append(si.crashCount);
+            serviceInfo.append("\nclientCount: ").append(si.clientCount);
+            serviceInfo.append("\nactiveSince: ").append(ToolHelper.formatData(si.activeSince));
+            serviceInfo.append("\nlastActivityTime: ").append(ToolHelper.formatData(si.lastActivityTime));
+            serviceInfo.append("\n\n");
+    }
+     
+    return serviceInfo.toString();
+}
+}}}

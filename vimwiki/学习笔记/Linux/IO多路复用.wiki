@@ -1,0 +1,466 @@
+= IO多路复用 =
+
+%toc
+
+== IO模型 ==
+- 在UNIX/linux中有4中IO模型，分别为：
+    - 阻塞IO
+    - 非阻塞IO
+    - IO多路复用
+    - 信号驱动IO
+
+{{{class="brush:text"
+    这几种IO模型，阻塞IO是最长用到的，并且操作相对简单，但是缺点在于效率低下，尤其是在，
+同时操作多个IO的时候，不能随时的处理各个IO操作。而非阻塞IO可以解决这个问题，但是同样也存在
+的问题，因为使用非阻塞IO模型的时候，就需要对每个IO操作进行轮训操作，而实际上轮空的几率是
+很大的，多以非阻塞IO模型是在那种轮空几率相对较小的的时候才会使用。因为轮训是会占用相当多的
+cpu时间片的。基于这种考虑多路复用模型变产生了。
+    多路复用模型是对多个IO操作进行检测，返回可操作集合，这样就可以对其进行操作了。这样就避免
+了阻塞IO不能随时处理各个IO和非阻塞占用系统资源的确定。
+    多路复用中有两个常用的系统调用select和poll。
+}}}
+
+== select ==
+=== 函数原型 ===
+{{{class="brush:c"
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+int select(int nfds, 
+            fd_set *readfds,
+            fd_set *writefds, 
+            fd_set *exceptfds,
+            struct timeval *timeout);
+}}}
+
+=== 参数解析 ===
+nfds :: 需要检查的文件描述符个数，数值应该比是三组fd_set中最大数更大，而不是实际文件描述符的总数。
+readset :: 用来检查可读性的一组文件描述符。
+writeset :: 用来检查可写性的一组文件描述符。
+exceptset :: 用来检查意外状态的文件描述符。(注：错误并不是意外状态)
+timeout :: NULL 指针代表无限等待，否则是指向timeval结构的指针，代表最长等待时间。(如果其中tv_sec和tv_usec都等于0, 则文件描述符的状态不被影响，但函数并不挂起)
+
+=== 操作宏 ===
+- 在使用select的时候需要注意，在调用select后者几个集合就会变化，变为是操作的集合，即可读写或发生异常，所以在调用select之前需要保存以前的集合。
+- 系统为我们提供了下面四个宏来操作这些文件描述符集合：
+    - FD_SET：用来将一个文件描述符加入到文件描述符集合里。
+    - FD_CLR：是删除。
+    - FD_ISSET：是判断文件描述符是否在这个集合里。
+    - FD_ZERO：是将这个集合清零。
+
+{{{class="brush:c"
+void FD_SET(int fd, fd_set *set);   /* 将fd加入set */
+void FD_CLR(int fd, fd_set *set);   /* 将fd从set中清除 */
+int FD_ISSET(int fd, fd_set *set);  /* 如果fd在set中则真 */
+void FD_ZERO(fd_set *set);          /* 将set清零 */
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+int isready(int fd)
+{
+    int rc;
+    fd_set fds;
+    struct timeval tv;
+    int maxfd;
+
+    FD_ZERO(&fds);
+    FD_SET(fd,&fds);
+    tv.tv_sec = tv.tv_usec = 0;
+    maxfd = fd + 1;
+
+    // 注意需要设置比最大描述符的值大的整数
+    rc = select(maxfd, &fds, NULL, NULL, &tv);
+    if (rc < 0)
+        return -1;
+
+    if (FD_ISSET(fd,&fds)) {
+        ......
+    }
+}
+}}}
+
+== poll ==
+- poll()接受一个指向结构struct pollfd列表的指针，其中包括了你想测试的文件描述符和事件。事件由一个在结构中事件域的比特掩码确定。当前的结构在调用后将被填写并在事件发生后返回。
+- 在SVR4(可能更早的一些版本)中的 "poll.h"文件中包含了用于确定事件的一些宏定义。事件的等待时间精确到毫秒(但令人困惑的是等待时间的类型却是int)，当等待时间为0时，poll()函数立即返回-1，则使poll()一直挂起直到一个指定事件发生。
+- 当返回正值时，代表满足响应事件的文件描述符的个数。如果返回0则代表在规定事件内没有事件发生。如发现返回为负则应该立即查看errno，因为这代表有错误发生。
+
+=== 函数原型 ===
+{{{class="brush:c"
+#include <poll.h>
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+
+struct pollfd {
+    int   fd;       /* file descriptor */
+    short events;   /* requested events */
+    short revents;  /* returned events */
+};
+}}}
+
+=== poll事件的类型 ===
+{{{class="brush:c"
+POLLIN      // 无数据
+POLLPRI     // 紧急数据
+POLLOUT     // 立即写入，无阻塞
+POLLERR     // 错误条件，仅输出有效
+POLLHUP     // 挂起，仅输出有效
+POLLNVAL    // 错误请求
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <sys/types.h>
+#include <stropts.h>
+#include <poll.h>
+
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+
+#define NORMAL_DATA 1
+#define HIPRI_DATA 2
+  
+int poll_two_normal(int fd1,int fd2)
+{
+   struct pollfd poll_list[2];
+   int retval;
+
+   poll_list[0].fd = fd1;
+   poll_list[1].fd = fd2;
+   poll_list[0].events = POLLIN|POLLPRI;
+   poll_list[1].events = POLLIN|POLLPRI;
+
+    while (1) {
+        /* retval 总是大于0或为-1，因为我们在阻塞中工作 */
+        retval = poll(poll_list,(unsigned long)2,-1);
+
+        if(retval < 0) {
+           fprintf(stderr,"poll 错误: %s/n",strerror(errno));
+           return -1;
+        }
+
+        if(((poll_list[0].revents&POLLHUP) == POLLHUP) ||
+            ((poll_list[0].revents&POLLERR) == POLLERR) ||
+            ((poll_list[0].revents&POLLNVAL) == POLLNVAL) ||
+            ((poll_list[1].revents&POLLHUP) == POLLHUP) ||
+            ((poll_list[1].revents&POLLERR) == POLLERR) ||
+            ((poll_list[1].revents&POLLNVAL) == POLLNVAL))
+            return 0;
+
+        if((poll_list[0].revents&POLLIN) == POLLIN)
+            handle(poll_list[0].fd,NORMAL_DATA);
+        if((poll_list[0].revents&POLLPRI) == POLLPRI)
+            handle(poll_list[0].fd,HIPRI_DATA);
+        if((poll_list[1].revents&POLLIN) == POLLIN)
+            handle(poll_list[1].fd,NORMAL_DATA);
+        if((poll_list[1].revents&POLLPRI) == POLLPRI)
+            handle(poll_list[1].fd,HIPRI_DATA);
+    }
+}
+}}}
+
+== epoll ==
+=== select/epoll的特点 ===
+{{{class="brush:text"
+    select的特点：select选择句柄的时候，是遍历所有句柄，也就是说句柄有事件响应时，
+select需要遍历所有句柄才能获取到哪些句柄有事件通知，因此效率是非常低。但是如果连接
+很少的情况下，select和epoll的LT触发模式相比，性能上差别不大。这里要多说一句，select
+支持的句柄数是有限制的，同时只支持1024个，这个是句柄集合限制的，如果超过这个限制，
+很可能导致溢出，而且非常不容易发现问题，当然可以通过修改linux的socket内核调整这个参数。
+
+    epoll的特点：epoll 对于句柄事件的选择不是遍历的，是事件响应的，就是句柄上事件来就
+马上选择出来，不需要遍历整个句柄链表，因此效率非常高，内核将句柄用红黑树保存的。
+对于epoll而言还有ET和LT的区别，LT表示水平触发，ET表示边缘触发，两者在性能以及代码实现
+上差别也是非常大的。
+}}}
+
+=== epoll的LT和ET的区别 ===
+{{{class="brush:text"
+    LT：水平触发，效率会低于ET触发，尤其在大并发，大流量的情况下。但是LT对代码编写
+要求比较低，不容易出现问题。LT模式服务编写上的表现是：只要有数据没有被获取，内核就不断
+通知你，因此不用担心事件丢失的情况。
+
+    ET：边缘触发，效率非常高，在并发，大流量的情况下，会比LT少很多epoll的系统调用，
+因此效率高。但是对编程要求高，需要细致的处理每个请求，否则容易发生丢失事件的情况。
+下面举一个列子来说明LT和ET的区别（都是非阻塞模式，阻塞就不说了，效率太低）： 采用LT模式下，
+如果accept调用有返回就可以马上建立当前这个连接了，再epoll_wait等待下次通知， 和select一样。
+但是对于ET而言，如果accpet调用有返回，除了建立当前这个连接外，不能马上就epoll_wait还需要
+继续循环accpet，直到返回-1，且errno==EAGAIN。
+}}}
+
+==== ET示例代码 ====
+- 从本质上讲：与LT相比，ET模型是通过减少系统调用来达到提高并行效率的。
+
+{{{class="brush:c"
+if(ev.events & EPOLLIN) {
+    do {
+        struct sockaddr_in stSockAddr;
+        socklen_t iSockAddrSize = sizeof(sockaddr_in);
+        TC_Socket cs;
+        cs.setOwner(false);
+        //接收连接
+        TC_Socket s;
+        s.init(fd, false, AF_INET);
+        int iRetCode = s.accept(cs, (struct sockaddr *) &stSockAddr, iSockAddrSize);
+        if (iRetCode > 0) {
+            ...建立连接
+        } else {
+            //直到发生EAGAIN才不继续accept
+            if(errno == EAGAIN) {
+                break;
+            }
+        }
+    } while(true);
+}
+}}}
+
+=== 相关函数 ===
+==== epoll_create ====
+{{{class="brush:c"
+/** 
+ * @brief   该函数生成一个epoll专用的文件描述符。它其实是在内核申请一空间，
+ *          用来存放你想关注的socket fd上是否发生以及发生了什么事件。
+ * 
+ * @param   size    在这个epoll fd上能关注的最大fd数
+ * @return  生成的文件描述符
+ */
+int epoll_create(int size);
+}}}
+
+==== epoll_ctl ====
+{{{class="brush:c"
+/** 
+ * @brief   该函数用于控制某个epoll文件描述符上的事件，可以注册事件，修改事件，删除事件。
+ * 
+ * @param   epfd    由epoll_create 生成的epoll专用的文件描述符
+ * @param   op      要进行的操作例如注册事件，可能的取值EPOLL_CTL_ADD 注册、EPOLL_CTL_MOD修改、
+ *                  EPOLL_CTL_DEL删除
+ * @param   fd      关联的文件描述符
+ * @param   event   指向epoll_event的指针
+ * 
+ * @return  0   succ
+ *          -1  fail
+ */
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
+}}}
+
+==== epoll_event ====
+- 常用的事件类型:
+    - EPOLLIN：表示对应的文件描述符可以读；
+    - EPOLLOUT：表示对应的文件描述符可以写；
+    - EPOLLPRI：表示对应的文件描述符有紧急的数据可读;
+    - EPOLLERR：表示对应的文件描述符发生错误；
+    - EPOLLHUP：表示对应的文件描述符被挂断；
+    - EPOLLET：表示对应的文件描述符有事件发生；
+
+{{{class="brush:c"
+struct epoll_event {
+    __uint32_t events; /* Epoll events */
+    epoll_data_t data; /* User data variable */
+};
+
+typedef union epoll_data { 
+    void *ptr;
+    int fd;
+    __uint32_t u32;
+    __uint64_t u64;
+} epoll_data_t; 
+}}}
+
+- epoll_event初始化示例
+
+{{{class="brush:c"
+struct epoll_event ev;
+
+// 设置与要处理的事件相关的文件描述符
+ev.data.fd=listenfd;
+// 设置要处理的事件类型
+ev.events=EPOLLIN|EPOLLET;
+// 注册epoll事件
+epoll_ctl(epfd,EPOLL_CTL_ADD,listenfd,&ev);
+}}}
+
+==== epoll_wait ====
+
+{{{class="brush:c"
+/** 
+ * @brief   该函数用于轮询I/O事件的发生
+ * 
+ * @param   epfd        由epoll_create 生成的epoll专用的文件描述符
+ * @param   events      用于回传代处理事件的数组
+ * @param   maxevents   每次能处理的事件数
+ * @param   timeout     等待I/O事件发生的超时值；-1相当于阻塞，0相当于非阻塞。一般用-1即可
+ * 
+ * @return  >= 0        返回发生事件数
+ *          -1          错误
+ */
+int epoll_wait(int epfd,struct epoll_event * events,int maxevents,int timeout);
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <fcntl.h>
+#include <sys/epoll.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#define MAXBUF 1024
+#define MAXEPOLLSIZE 10000
+
+// setnonblocking - 设置句柄为非阻塞方式
+int setnonblocking(int sockfd)
+{
+    if (fcntl(sockfd, F_SETFL, 
+              fcntl(sockfd, F_GETFD, 0)|O_NONBLOCK) == -1) {
+        return -1;
+    }
+    return 0;
+}
+
+// handle_message - 处理每个socket上的消息收发
+int handle_message(int new_fd)
+{
+    char buf[MAXBUF + 1];
+    int len;
+    
+    /* 开始处理每个新连接上的数据收发 */
+    bzero(buf, MAXBUF + 1);
+    /* 接收客户端的消息 */
+    len = recv(new_fd, buf, MAXBUF, 0);
+    if (len > 0) {
+        printf("%d接收消息成功:'%s'，共%d个字节的数据\n",
+             new_fd, buf, len);
+    } else {
+        if (len < 0)
+            printf("消息接收失败！错误代码是%d，错误信息是'%s'\n",
+                    errno, strerror(errno));
+        close(new_fd);
+        return -1;
+    }
+    /* 处理每个新连接上的数据收发结束 */
+    return len;
+}
+
+int main(int argc, char **argv)
+{
+    int listener, new_fd, kdpfd, nfds, n, ret, curfds;
+    socklen_t len;
+    struct sockaddr_in my_addr, their_addr;
+    unsigned int myport, lisnum;
+    struct epoll_event ev;
+    struct epoll_event events[MAXEPOLLSIZE];
+    struct rlimit rt;
+    myport = 5000;
+    lisnum = 2; 
+    
+    /* 设置每个进程允许打开的最大文件数 */
+    rt.rlim_max = rt.rlim_cur = MAXEPOLLSIZE;
+    if (setrlimit(RLIMIT_NOFILE, &rt) == -1) {
+        perror("setrlimit");
+        exit(1);
+    } else {
+        printf("设置系统资源参数成功！\n");
+    }
+    
+    /* 开启 socket 监听 */
+    if ((listener = 
+            socket(PF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("socket");
+        exit(1);
+    } else {
+        printf("socket 创建成功！\n");
+    }
+    
+    setnonblocking(listener);
+    bzero(&my_addr, sizeof(my_addr));
+    my_addr.sin_family = PF_INET;
+    my_addr.sin_port = htons(myport);
+    my_addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(listener, (struct sockaddr*)&my_addr, 
+             sizeof(struct sockaddr)) == -1) {
+        perror("bind");
+        exit(1);
+    } else {
+        printf("IP 地址和端口绑定成功\n");
+    }
+    
+    if (listen(listener, lisnum) == -1) {
+        perror("listen");
+        exit(1);
+    } else {
+        printf("开启服务成功！\n");
+    }
+    
+    /* 创建epoll句柄，把监听socket加入到epoll 集合里 */
+    kdpfd = epoll_create(MAXEPOLLSIZE);
+    len = sizeof(struct sockaddr_in);
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.fd = listener;
+    if (epoll_ctl(kdpfd, EPOLL_CTL_ADD, listener, &ev) < 0) {
+        fprintf(stderr, "epoll set insertion error: fd=%d\n", listener);
+        return -1;
+    } else {
+        printf("监听 socket 加入 epoll 成功！\n");
+    }
+    
+    curfds = 1;
+    while (1) {
+        /* 等待有事件发生 */
+        nfds = epoll_wait(kdpfd, events, curfds, -1);
+        if (nfds == -1) {
+            perror("epoll_wait");
+            break;
+        }
+        
+        /* 处理所有事件 */
+        for (n = 0; n < nfds; ++n) {
+            if (events[n].data.fd == listener) {
+                new_fd = accept(listener, 
+                                (struct sockaddr*)&their_addr, &len);
+                if (new_fd < 0) {
+                    perror("accept");
+                    continue;
+                } else {
+                    printf("有连接来自于：%d:%d， 分配的socket为:%d\n",
+                            inet_ntoa(their_addr.sin_addr), 
+                            ntohs(their_addr.sin_port), new_fd);
+                }
+                
+                setnonblocking(new_fd);
+                ev.events = EPOLLIN | EPOLLET;
+                ev.data.fd = new_fd;
+                if (epoll_ctl(kdpfd, EPOLL_CTL_ADD, new_fd, &ev) < 0) {
+                    fprintf(stderr, "把socket '%d' 加入epoll失败！%s\n",
+                            new_fd, strerror(errno));
+                    return -1;
+                }
+                curfds++;
+            } else {
+                ret = handle_message(events[n].data.fd);
+                if (ret < 1 && errno != 11) {
+                    epoll_ctl(kdpfd, EPOLL_CTL_DEL, events[n].data.fd,&ev);
+                    curfds--;
+                }
+            }
+        }
+    }
+    
+    close(listener);
+    return 0;
+}
+}}}

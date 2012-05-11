@@ -1,0 +1,81 @@
+= 字符编码 =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Arrays;
+import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+}}}
+
+== 列出可用字符集 ==
+{{{class="brush:java"
+public class Main {
+    public static void main(String[] argv) throws Exception {
+        Map map = Charset.availableCharsets();
+        Iterator it = map.keySet().iterator();
+        while (it.hasNext()) {
+            // Get charset name
+            String charsetName = (String) it.next();
+            // Get charset
+            Charset charset = Charset.forName(charsetName);
+        }
+    }
+}
+}}}
+
+== 转换Unicode字符 ==
+{{{class="brush:java"
+public class Main {
+    public static void main(String[] argv) throws Exception {
+        Charset charset = Charset.forName("ISO-8859-1");
+        CharsetDecoder decoder = charset.newDecoder();
+        CharsetEncoder encoder = charset.newEncoder();
+
+        ByteBuffer bbuf = encoder.encode(CharBuffer.wrap("a string"));
+        CharBuffer cbuf = decoder.decode(bbuf);
+        String s = cbuf.toString();
+    }
+}
+}}}
+
+== 使用ByteBuffer编码器和解码器 ==
+{{{class="brush:java"
+public class Main {
+    public static void main(String[] argv) throws Exception {
+        Charset charset = Charset.forName("ISO-8859-1");
+        CharsetDecoder decoder = charset.newDecoder();
+        CharsetEncoder encoder = charset.newEncoder();
+        
+        ByteBuffer bbuf = ByteBuffer.allocateDirect(1024);
+        CharBuffer cbuf = CharBuffer.allocate(1024);
+
+        encoder.encode(cbuf, bbuf, false);
+        bbuf.flip();
+
+        decoder.decode(bbuf, cbuf, false);
+        cbuf.flip();
+    }
+}
+}}}
+
+== 检测非ASCII的字符串 ==
+{{{class="brush:java"
+public class Main {
+    public static void main(String[] args) throws Exception {
+        byte[] invalidBytes = "© ".getBytes();
+        byte[] validBytes = "(c)".getBytes();
+
+        CharsetDecoder decoder = Charset.forName("US-ASCII").newDecoder();
+        CharBuffer buffer = decoder.decode(ByteBuffer.wrap(validBytes));
+        System.out.println(Arrays.toString(buffer.array()));
+
+        buffer = decoder.decode(ByteBuffer.wrap(invalidBytes));
+        System.out.println(Arrays.toString(buffer.array()));
+    }
+}
+}}}

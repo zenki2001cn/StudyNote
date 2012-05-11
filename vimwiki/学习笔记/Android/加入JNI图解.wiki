@@ -1,0 +1,15 @@
+= 加入JNI图解 =
+
+%toc
+
+== 定义JNI方法 ==
+[[pic/native_define.png]]
+
+== 方法列表 ==
+[[pic/jni_table.png]]
+
+== 虚拟机加载 ==
+[[pic/jni_onload.png]]
+
+== 虚拟机注册 ==
+[[pic/jni_register.png]]

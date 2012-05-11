@@ -1,0 +1,139 @@
+= XML资源文件示例 =
+
+== res/values/arrays.xml ==
+{{{class="brush:xml"
+<resources>
+    <array name="preloaded_drawables">
+        <item>@drawable/sym_def_app_icon</item>
+        <item>@drawable/arrow_down_float</item>
+        <item>@drawable/indicator_code_lock_point_area_red</item>
+    </array>
+
+    <integer-array name="maps_starting_lat_lng">
+        <item>36149777</item>
+        <item>-95993398</item>
+    </integer-array>
+    
+    <string-array name="status_bar_icon_order">
+        <item>
+            <xliff:g id="id">clock</xliff:g>
+        </item>
+    </string-array>
+    
+    <string-array name="default_web_search_providers">
+        <item>
+            com.google.android.providers.enhancedgooglesearch/.Launcher
+        </item>
+        <item>com.android.googlesearch/.GoogleSearch</item>
+        <item>com.android.websearch/.Search.1</item>
+    </string-array>
+</resources>
+}}}
+
+== res/values/colors.xml ==
+{{{class="brush:xml"
+<resources>
+    <drawable name="screen_background_light">#ffffffff</drawable>
+    <drawable name="screen_background_dark">#ff000000</drawable>
+    <drawable name="status_bar_closed_default_background">#ff000000</drawable>
+    
+    <color name="safe_mode_text">#80ffffff</color>
+    <color name="white">#ffffffff</color>
+    <color name="black">#ff000000</color>
+    
+    <drawable name="stat_notify_sync_noanim">@drawable/stat_notify_sync_anim0</drawable>
+    <drawable name="stat_sys_download_done">@drawable/stat_sys_download_anim0</drawable>
+    <drawable name="stat_sys_upload_done">@drawable/stat_sys_upload_anim0</drawable>
+    
+    <color name="search_widget_corpus_item_background">@android:color/lighter_gray</color>
+</resources>
+}}}
+
+== res/values/config.xml ==
+{{{class="brush:xml"
+<resources>
+    <bool name="config_sf_limitedAlpha">true</bool>
+    <bool name="config_sf_slowBlur">true</bool>
+
+    <integer name="config_shortAnimTime">150</integer>
+    <integer name="config_mediumAnimTime">300</integer>
+
+    <string-array translatable="false" name="networkAttributes">
+        <item>"default,wifi,0"</item>
+        <item>"default,mobile,0"</item>
+    </string-array>
+
+    <string-array translatable="false" name="radioAttributes">
+        <item>"wifi,1,1"</item>
+        <item>"mobile,0,1"</item>
+    </string-array>
+
+    <integer-array name="config_longPressVibePattern">
+        <item>0</item>
+        <item>1</item>
+    </integer-array>
+</resources>
+}}}
+
+== res/values/public.xml ==
+{{{class="brush:xml"
+<resources>
+    <private-symbols package="com.android.internal"/>
+    
+    <eat-comment/>
+    <eat-comment/>
+    
+    <public type="attr" name="theme" id="0x01010000"/>
+    <public type="attr" name="label" id="0x01010001"/>
+    <public type="attr" name="icon" id="0x01010002"/>
+</resources>
+}}}
+
+== res/color/primary_text_dark.xml ==
+{{{class="brush:xml"
+<selector>
+    <item android:state_enabled="false" android:color="@android:color/bright_foreground_dark_disabled"/>
+    <item android:state_window_focused="false" android:color="@android:color/bright_foreground_dark"/>
+    <item android:state_pressed="true" android:color="@android:color/bright_foreground_dark_inverse"/>
+    <item android:state_selected="true" android:color="@android:color/bright_foreground_dark_inverse"/>
+    <item android:state_focused="true" android:drawable="@android:drawable/btn_close_selected"/>
+    <item android:drawable="@drawable/btn_erase_default"/>
+    <item android:color="@android:color/bright_foreground_dark"/>
+</selector>
+}}}
+
+== res/drawable/battery_charge_fill.xml ==
+{{{class="brush:xml"
+<level-list>
+    <item android:maxLevel="29" android:drawable="@android:drawable/battery_charge_fill_empty"/>
+    <item android:maxLevel="49" android:drawable="@android:drawable/battery_charge_fill_warning"/>
+    <item android:maxLevel="100" android:drawable="@android:drawable/battery_charge_fill_full"/>
+</level-list>
+}}}
+
+== res/layout/battery_low.xml ==
+{{{class="brush:xml"
+<LinearLayout 
+    android:id="@+id/padding" 
+    android:orientation="vertical" 
+    android:gravity="center">
+    
+    <TextView 
+        android:id="@+id/subtitle" 
+        android:layout_width="fill_parent" 
+        android:layout_height="wrap_content" 
+        android:textSize="18dp" 
+        android:paddingLeft="19dp" 
+        android:textColor="#ffffffff" 
+        android:gravity="left" 
+        android:text="@string/battery_low_subtitle"/>
+        
+    <ImageView 
+        android:id="@+id/image" 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content" 
+        android:paddingBottom="15px" 
+        android:src="@drawable/battery_low_battery" 
+        android:paddingTop="10px"/>
+</LinearLayout>
+}}}

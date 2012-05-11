@@ -1,0 +1,106 @@
+= 异常和错误处理 =
+
+== 异常处理语句格式 ==
+{{{class="brush: java"
+try {
+    // do something
+} catch (Type1 id1) {
+    // do something
+} catch (Type2 id2) {
+    // do something
+} catch (Type3 id3) {
+}
+}}}
+
+== 异常抛出 ==
+{{{class="brush:java"
+public void function() throws MyException1, MyException2 {
+    // do something
+    throw new MyException();
+}
+}}}
+
+== 异常类常用的方法 ==
+获取详细信息
+{{{class="brush:text"
+String getMessage( )
+String getLocalizedMessage( )
+}}}
+
+返回对 Throwable 的简单描述,要是有详细信息的话,也会把它包含在内
+{{{class="brush:text"
+String toString( )
+}}}
+
+打印 Throwable 和 Throwable 的调用栈轨迹
+{{{class="brush:text"
+void printStackTrace( )
+void printStackTrace(PrintStream)
+void printStackTrace(java.io.PrintWriter)
+}}}
+
+用于在 Throwable 对象的内部记录栈框架的当前状态
+{{{class="brush:text"
+Throwable fillInStackTrace( )
+}}}
+
+返回该类型对象或名称
+{{{class="brush:text"
+getClass( ) 
+getName( )
+}}}
+
+== 重新抛出异常 ==
+可以再捕捉到本次异常后重新抛出异常,再次抛出异常时,不会自动更新上次异常调用栈的信息,
+
+需要使用fillInStackTrace方法来更新该信息,并且抛出的异常为Throwable类
+{{{class="brush:java"
+try {
+    f();
+} catch(Exception e) {
+    System.err.println("Inside g(),e.printStackTrace()");
+    e.printStackTrace();
+    throw e.fillInStackTrace(); 
+}
+}}}
+
+== 关键字finally ==
+使用finally可以保证无论是否抛出异常,总能执行该代码
+{{{class="brush:java"
+try {
+    // The guarded region: Dangerous activities
+    // that might throw A, B, or C
+} catch(A a1) {
+    // Handler for situation A
+} catch(B b1) {
+    // Handler for situation B
+} catch(C c1) {
+    // Handler for situation C
+} finally {
+    // Activities that happen every time
+}
+}}}
+
+== 异常与继承 ==
+* 构造器和方法可以声明异常而不抛出
+* 如果基类实现了一个方法的异常,那么在继承类的方法中就不能抛出其他类型的异常
+* 构造器可以抛出任何类型的异常
+* 如果基类定义的方法没有声明异常,那么派生类和基类就不能抛出任何异常
+* 不能根据异常类型的说明来重载方法
+ 
+== 异常匹配 ==
+* 异常处理程序按顺序查找与抛出的异常相匹配的处理程序,找到后就不再查找
+* 异常处理程序也可以匹配基类的异常对象
+
+== 异常使用指南 ==
+你应该在下列情况下使用异常:
+# 在恰当的级别处理问题。(在你知道该如何处理的情况下才捕获异常)。
+# 解决问题并且重新调用产生异常的方法。
+# 进行少许修补,然后绕过异常发生的地方继续执行。
+# 用别的数据进行计算,以代替方法返回的期望值。
+# 把当前运行环境下能做的事情尽量作完,然后把相同的异常重抛(rethrow)到更高层。
+# 把当前运行环境下能做的事情尽量作完,然后把不同的异常抛(throw)到更高层。
+# 终止程序。
+# 进行简化。(如果异常把问题搞得太复杂,那用起来会非常痛苦也很烦人。)
+# 让类库和程序更安全。(这既是在为调试做短期投资,也是在为程序的健壮性做长期投资。)
+

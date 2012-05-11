@@ -1,0 +1,101 @@
+= Makefile关键字 =
+
+%toc
+
+== 关键字解析 ==
+=== vpath ===
+- 它可以为不同类型的文件(由文件名区分)指定不同的搜索目录。它的使用方法有三种:
+    - `vpath PATTERN DIRECTORIES` (为所有符合模式“PATTERN”的文件指定搜索目录“DIRECTORIES”。多个目录使用空格或者冒号`:`分开。)
+    - `vpath PATTERN` (清除之前为符合模式“PATTERN”的文件设置的搜索路径。)
+    - `vpath` (清除所有已被设置的文件搜索路径。)
+
+{{{class="brush:bash"
+# Makefile中出现的.h文件;如果不能在当前目录下找到,则到目录“../headers”下寻找。
+vpath %.h ../headers
+}}}
+
+=== define ===
+- 通常我们把使用“define”定义的一组命令称为一个命令包。定义一个命令包的语法以“define”开始, “endef”以结束。
+- 由于使用“define”定义的变量属于递归展开式变量，因此，命令包中所有命令中对其它变量的引用，在规则被执行时会被完全展开。
+
+{{{class="brush:bash"
+define frobnicate
+    @echo "frobnicating target $@"
+    frob-step-1 $< -o $@-step-1
+    frob-step-2 $@-step-1 -o $@
+endef
+}}}
+
+{{{class="brush:bash"
+frob.out: frob.in
+    @$(frobnicate)
+}}}
+
+=== override ===
+- 变量在定义时使用了“override”,则后续对它值进行追加时,也需要使用带有“override”指示符的追加方式。否则对此变量值的追加不会生效。
+
+{{{class="brush:bash"
+override VARIABLE = VALUE
+
+# 或者:
+override VARIABLE := VALUE
+
+#也可以对变量使用追加方式:
+override VARIABLE += MORE TEXT
+}}}
+
+=== ifeq ===
+- 此关键字用来判断参数是否相等。
+
+{{{class="brush:bash"
+ifeq ($(strip $(foo)),)
+    TEXT-IF-EMPTY
+endif
+}}}
+
+=== ifneq ===
+- 此关键字是用来判断参数是否不相等。
+
+{{{class="brush:bash"
+ifneq ($(strip $(foo)),)
+    TEXT-NO-EMPTY
+endif
+}}}
+
+=== ifdef ===
+- 关键字“ifdef”用来判断一个变量是否已经定义。
+
+{{{class="brush:bash"
+foo = $(bar)
+
+ifdef foo
+    frobozz = yes
+else
+    frobozz = no
+endif
+}}}
+
+=== ifndef ===
+- 关键字“ifndef”实现的功能和“ifdef”相反。
+
+{{{class="brush:bash"
+foo = $(bar)
+
+ifndef foo
+    frobozz = no
+else
+    frobozz = yes
+endif
+}}}
+
+=== include ===
+- “include”指示符告诉make暂停读取当前的Makefile,而转去读取“include”指定的一个或者多个文件,完成以后再继续当前Makefile的读取。
+- 语法：include FILENAMES...
+
+{{{class="brush:bash"
+include foo *.mk $(bar)
+
+# 等价于
+
+include foo a.mk b.mk c.mk bish bash
+}}}

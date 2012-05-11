@@ -1,0 +1,54 @@
+= 对象的概念 =
+
+== 抽象的进步 ==
+所有语言的最终目的都是提供一种“抽象”方法
+
+== 对象和接口 ==
+使用class创建类，并为类设置接口
+
+== 实现方案的隐藏 ==
+{{{class="brush: text"
+public: 对外部和内部都是公开的
+private: 对于内部是可见的，其他是不可见的
+protected: 对于继承的对象是可见的
+friendly: 对于Package而言，在这个包内是可见的,对于外部而言是private的，不加任何关键字时的默认访问权限
+}}}
+
+== 继承 ==
+使用extends来实现继承
+
+== 动态绑定 ==
+Java自动实现动态绑定
+
+{{{class="brush: java"
+Circle c = new Circle();
+Line l = new Line();
+
+do_something(c);
+do_something(l);
+}}}
+
+== 抽象的基础类和接口 ==
+abstract表示创建一个抽象类，并向下提供接口，但不能创建一个抽象类的对象
+
+== 垃圾收集器 ==
+Java提供了一个垃圾收集器，不需要程序员手动的释放未用的资源
+
+== 单根结构 ==
+Java的所有类都继承自一个Object类
+
+== 异常处理 ==
+Exception类用于处理异常情况
+{{{class="brush: java"
+try {
+    // do something
+}
+catch (Exception e) {
+    // do something
+}
+}}}
+
+== 多线程 ==
+Java内置的将线程作为一个对象，使用Thread
+
+

@@ -1,0 +1,179 @@
+= Handle的消息处理 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.os.Handler;   
+import android.os.Handler.Callback;
+import android.os.Message;
+import android.os.Looper;
+}}}
+
+== Handler类 ==
+- Handler可以发送和处理相关线程中的Message和Runnable对象
+- Handler可以在将来某个时间点处理或执行一个Message和Runnable对象
+- 可以在另一个线程中压入Message队列，在另一个线程中执行
+- `View.post()`方法可以投递一个Runnable对象给UI线程
+
+=== 主要方法 ===
+void dispatchMessage(Message msg) :: 投递系统消息
+
+void handleMessage(Message msg) :: 处理消息的接口，子类需要实现
+
+final boolean postAtTime(Runnable r, long uptimeMillis) :: 在特定的时间加入消息队列
+
+final boolean postDelayed(Runnable r, long delayMillis) :: 延迟加入消息队列
+
+final void removeMessages(int what) :: 移除消息
+
+final boolean sendMessage(Message msg) :: 发送消息
+
+final boolean sendEmptyMessageAtTime(int what, long uptimeMillis) :: 在特定时间发送空消息
+
+final boolean sendMessageDelayed(Message msg, long delayMillis) :: 延迟发送消息
+
+final Message obtainMessage(int what, Object obj) :: 设置what和obj的值，并返回Message
+
+== Message类 ==
+- Handler用来处理的消息对象
+- obtain()方法可以从全局pool里获取一个Message对象
+
+=== 基本属性 ===
+public int arg1 :: int型的参数
+
+public int arg2 :: int型的参数
+
+public Object obj :: Object对象
+
+public Messenger replyTo :: Handler的引用，主要用于基于消息的进程间通信
+
+public int what :: 用户自定义的消息ID
+
+=== 基本处理流程 ===
+
+==== 在线程中投递消息 ====
+{{{class="brush:java"
+// 自定义消息ID
+protected static final int GUIUPDATEIDENTIFIER = 0x101;
+
+class myThread implements Runnable {    
+    public void run() {   
+        while (!Thread.currentThread().isInterrupted()) {     
+            // 组装信息
+            Message message = new Message();//生成消息，并赋予ID值    
+            message.what = TestHandler.GUIUPDATEIDENTIFIER;    
+            // 投递消息
+            TestHandler.this.myHandler.sendMessage(message);
+            
+            // 线程休眠
+            try {    
+                 Thread.sleep(100);     
+            } 
+            catch (InterruptedException e) {    
+                 Thread.currentThread().interrupt();    
+            }    
+        }    
+   }    
+} 
+}}}
+
+==== 接收处理消息 ====
+{{{class="brush:java"
+//自定义Handler子类，需要实现handleMessage方法
+Handler myHandler = new Handler() {   
+    public void handleMessage(Message msg) {    
+        switch (msg.what) {    
+        case TestHandler.GUIUPDATEIDENTIFIER:    
+            myBounceView.invalidate();   
+            break;    
+        }    
+        
+        super.handleMessage(msg);    
+    }    
+};
+}}}
+
+== Looper类 ==
+=== 主要方法 ===
+synchronized final static Looper getMainLooper() :: 获取主线程的Looper
+
+final static Looper myLooper() :: 获取当前线程的Looper
+
+final static void prepareMainLooper() :: 初始化当前线程的Looper，并使其成为主线程Looper
+
+final static void prepare() :: 初始化当前线程的Looper
+
+final static void loop() :: 进入当前线程的消息循环
+
+=== 基本处理流程 ===
+==== 带有消息循环的线程 ====
+- 普通线程是没有消息循环队列的，而UI线程有消息循环队列，创建一个带有循环队列的线程需要`Looper`类
+
+{{{class="brush:java"
+class LooperThread extends Thread {
+    public Handler mHandler;
+  
+    public void run() {
+        Looper.prepare();
+      
+        mHandler = new Handler() {
+            public void handleMessage(Message msg) {
+                // process incoming messages here
+            }
+        };
+      
+        Looper.loop();
+    }
+}
+}}}
+
+==== 子线程向主线程投递消息 ====
+- 通过`Looper.getMainLooper`获取主线程的Looper，并初始化一个Handler
+- 通过该Handler向主线程投递消息
+
+{{{class="brush:java"
+Handler handler = new Handler(){
+    public void handleMessage(Message msg) {
+        Handler hd = new Handler(Looper.getMainLooper());
+        String obj = (String) msg.obj + ", myThread";
+        Message msg = hd.obtainMessage(1, 1, 1, obj);
+        hd.sendMessage(msg);
+    }
+};
+}}}
+
+== 实现Callback接口 ==
+- 实现android.os.Handler.Callback接口，实现`handleMessage()`方法。
+- 可参考[[消息处理机制]]中关于Callback的部分。
+
+=== 实现Callback接口 ===
+{{{class="brush:java"
+public class MyClass implements Callback {
+    ...
+    // 实现Callback的handleMessage
+    public boolean handleMessage(Message msg) {
+        switch ( msg.what ) {
+            case 0 :
+                break;
+            case 1 :
+                break;
+            default :
+                break;
+        }
+
+        return super.handleMessage(msg);
+    }
+}
+}}}
+
+=== 发送带有Callback的消息 ===
+- 通过Message.obtain()方法构造一个带有Callback的对象。
+- 通过Handler对象投递该消息。
+
+{{{class="brush:java"
+public void someFunction() {
+    Message msg = Message.obtain(mHandler, mMyClass);
+    mHandler.sendMessage(msg);
+}
+}}}

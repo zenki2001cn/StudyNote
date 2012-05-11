@@ -1,0 +1,33 @@
+= ProgressDialog使用 =
+
+- 标题的设置，调用setTitle()方法。
+- 消息的设置，调用setMessage()方法。
+- 在确定（indeterminate=false）的进度条对话框里，进度最大值的设置，调用setMax()方法。
+- 当前进度值的设置，调用setProgress()方法。
+- 第2个进度值的设置，调用setSecondaryProgress()方法
+- 当前进度值的设置，调用incrementProgressBy()方法
+- 第2进度值的增减，调用incrementSecondaryProgressBy()方法
+
+- 进度对话框风格的设置，调用setProgressStyle()方法。
+    # ProgressDialog.STYLE_SPINNER  旋体进度条风格
+    # ProgressDialog.STYLE_HORIZONTAL 横向进度条风格
+    # 默认风格是ProgressDialog.STYLE_SPINNER旋体进度条风格
+- 取消按钮的设置，调用setCancelable()方法。
+- 进度对话框的表示，调用show()方法。
+
+
+例程源码(Resource)
+{{{class="brush: java"
+ProgressDialog progressDialog = new ProgressDialog(this);
+ 
+progressDialog.setTitle("This is Title");
+progressDialog.setMessage("This is Message");
+progressDialog.setIndeterminate(false);
+progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+progressDialog.setMax(100);
+progressDialog.incrementProgressBy(30);
+progressDialog.incrementSecondaryProgressBy(70);
+progressDialog.setCancelable(false);
+progressDialog.show();
+}}}
+

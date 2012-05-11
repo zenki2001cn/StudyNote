@@ -1,0 +1,37 @@
+= hardware_hardware目录结构 =
+
+== 目录结构 ==
+{{{class="brush:c"
+|......
+|~libhardware/                  新的stub形式
+| |~include/
+| | `~hardware/
+| |   |-copybit.h*              图形接口
+| |   |-gralloc.h*
+| |   |-hardware.h*             需要继承的HAL结构类头文件
+| |   |-lights.h*               背光接口
+| |   |-overlay.h*
+| |   |-qemud.h*                模拟器接口
+| |   `-sensors.h*              sensors接口
+| |~modules/
+| | |~gralloc/
+| | | |-Android.mk*
+| | | |-framebuffer.cpp*
+| | | |-gr.h*
+| | | |-gralloc.cpp*
+| | | |-gralloc_priv.h*
+| | | `-mapper.cpp*
+| | |~overlay/
+| | | |-Android.mk*
+| | | |-overlay.cpp*
+| | | `-README.android*
+| | `-README.android*
+| |-Android.mk*
+| |-CleanSpec.mk*
+| |-hardware.c*
+| |-MODULE_LICENSE_APACHE2*
+| `-NOTICE*
+|+libhardware_legacy/           弃用的形式
+|......
+}}}
+

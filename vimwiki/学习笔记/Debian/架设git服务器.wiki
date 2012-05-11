@@ -1,0 +1,111 @@
+= 架设git服务器 =
+
+%toc
+
+== 创建git服务器 ==
+=== 1.下载安装包 ===
+{{{class="brush:bash"
+$ sudo apt-get install git-core gitosis git-daemon-run openssh-server openssh-client
+}}}
+
+=== 2.创建git用户 ===
+{{{class="brush:bash"
+$ sudo useradd -m git
+$ sudo passwd git
+}}}
+
+=== 3.创建ssh的公钥和密钥 ===
+- 生成的一组公钥和密钥在~/.ssh/目录下
+
+{{{class="brush:bash"
+$ ssh-keygen
+$ ssh-keygen -t rsa
+$ ssh-keygen -t rsa -b 4096
+}}}
+
+=== 4. 初始化gitosis ===
+- 运行以下命令，会在/home/git/目录下生成gitosis、repositories两个目录：
+    - repositories目录作为Server端的仓库根目录，用来保存各种项目的仓库信息。
+    - repositories/gitosis-admin.git目录作为管理员的配置文件，同样以git仓库的形式供客户端访问。
+- 在push之前，需要在gitosis-admin.git/gitosis.conf配置指定的项目的组和访问权限
+
+{{{class="brush:bash"
+$ sudo -H -u git gitosis-init < ~/.ssh/id_rsa.pub
+}}}
+
+=== 5.加入一个工程到仓库中 ===
+{{{class="brush:bash"
+# 切换到某个工程目录，并创建一个文件
+$ cd matroska
+$ touch readme
+
+# 初始化git仓库，
+$ git init
+
+# 添加一个远程的仓库
+$ git remote add origin git@127.0.0.1:matroska.git
+
+# 将matroska目录下的所有文件设置成staged状态
+$ git add .
+
+# 使用commit提交修改
+$ git commit -m "init matroska"
+
+# 在gitosis.conf文件中加入该项目的配置
+$ vim /home/git/repositories/gitosis-admin.git/gitosis.conf
+[gitosis]
+
+[group gitosis-admin]
+writable = gitosis-admin
+members = zenki@zenki-ubuntu
+
+[group matroska]
+writable = matroska
+members = zenki@zenki-ubuntu
+
+# 将数据提交repositories/matroska.git目录中，该目录则为该项目的仓库。
+$ git push origin master
+}}}
+
+=== 6.抓取仓库中的项目 ===
+{{{class="brush:bash"
+$ git clone git@127.0.0.1:matroska.git
+}}}
+
+== 通过SSH协议访问git服务器 ==
+=== 1. 生成rsa公钥 ===
+{{{class="brush:bash"
+# 生成的公钥和密钥默认在~/.ssh/下
+$ ssh-keygen -t rsa -C "zenki.j.zha@foxconn.com"
+}}}
+
+=== 2. 添加公钥信息 ===
+{{{class="brush:bash"
+# 将公钥信息添加到服务器，服务器会提供如Web方式，导入你的公钥。
+# 同时修改你的公钥和密钥权限
+$ chmod 700 ~/.ssh/
+$ chmod 600 ~/.ssh/*
+}}}
+
+=== 3. 配置文件 ===
+{{{class="brush:bash"
+# 添加以下信息到~/.ssh/config，用来管理登录信息
+Host tr
+  Hostname gerrit.ext.ti.com
+  Port 29418
+  User Zenki
+}}}
+
+=== 4. 添加rsa的密钥 ===
+{{{class="brush:bash"
+$ ssh-add ~/.ssh/id_rsa
+Identity added: /home/zenki/.ssh/id_rsa (/home/zenki/.ssh/id_rsa)
+}}}
+
+=== 5. 启用ssh-agent ===
+{{{class="brush:bash"
+$ ssh-agent 
+SSH_AUTH_SOCK=/tmp/ssh-wlxQyJ4684/agent.4684; export SSH_AUTH_SOCK;
+SSH_AGENT_PID=4685; export SSH_AGENT_PID;
+echo Agent pid 4685;
+}}}

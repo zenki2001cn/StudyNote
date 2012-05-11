@@ -1,0 +1,29 @@
+= BluetoothServerSocket =
+
+== 功能描述 ==
+{{{class="brush:text"
+    该类用于实现一个蓝牙的监听端口，蓝牙端口的监听接口和TCP端口类似：Socket和ServerSocket类。
+在服务器端，使用 BluetoothServerSocket类来创建一个监听服务端口。当一个连接被BluetoothServerSocket所接受，
+它会返回一个新的BluetoothSocket来管理该连接。在客户端，使用一个单独的BluetoothSocket类去初始化
+一个外接连接和管理该连接。最通常使用的蓝牙端口是RFCOMM，它是被Android API支持的类型。
+RFCOMM是一个面向连接，通过蓝牙模块进行的数据流传输方式，它也被称为串行端口规范（Serial Port Profile，SPP）。
+为了创建一个对准备好的新来的连接去进行监听BluetoothServerSocket类，使用BluetoothAdapter.listenUsingRfcommWithServiceRecord()方法。
+然后调用accept()方法去监听该链接的请求。在连接建立之前，该调用会被阻断，也就是说，它将返回一个BluetoothSocket类去管理该连接。
+每次获得该类之后，如果不再需要接受连接，最好调用在BluetoothServerSocket类下的close()方法。
+关闭BluetoothServerSocket类不会关闭这个已经返回的BluetoothSocket类。
+    BluetoothSocket类线程安全。特别的，close()方法总会马上放弃外界操作并关闭服务器端口。
+如果使用需要BLUETOOTH权限的许可。
+}}}
+
+== 相关方法说明 ==
+=== 方法说明 ===
+| 类型            | 名称                | 描述                 |
+|-----------------+---------------------+----------------------|
+| BluetoothSocket | accept()            | 阻塞监听直到连接建立 |
+| BluetoothSocket | accept(int timeout) | 带有超时的阻塞监听   |
+| void            | close()             | 关闭端口并释放资源   |
+
+    accept()函数将在一个成功建立的连接上返回一个已连接的BluetoothSocket类。
+    每当该调用返回的时候，它可以在此调用去接收以后新来的连接。close()方法可以用来放弃从另一线程来的调用。
+    close()将马上关闭端口，并释放所有相关的资源。在其他线程的该端口中引起阻塞，从而使系统马上抛出一个IO异常。
+    关闭BluetoothServerSocket不会关闭接受自accept()的任意BluetoothSocket。

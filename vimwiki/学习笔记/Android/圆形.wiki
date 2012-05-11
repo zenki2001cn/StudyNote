@@ -1,0 +1,24 @@
+= 画圆 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+}}}
+
+- 描画圆形，调用Canvas.drawCircle()方法。
+ 
+在参数中指定中心点x,y，半径，以及Paint实例。
+
+例程源码(Java)
+{{{class="brush:java"
+@Override
+protected void onDraw(Canvas canvas) {
+    Paint paint = new Paint();
+    paint.setColor(Color.argb(255, 255, 255, 255));
+    paint.setAntiAlias(true);
+    
+    canvas.drawCircle(50.5f, 30.5f, 10.0f, paint);
+}
+}}}
+

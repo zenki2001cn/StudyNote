@@ -1,0 +1,150 @@
+= apt使用详解 =
+
+%toc
+
+== 1.dpkg包管理工具 ==
+{{{class="brush: text"
+dpkg --info "软件包名" --列出软件包解包后的包名称.
+
+dpkg -l --列出当前系统中所有的包.可以和参数less一起使用在分屏查看.
+
+dpkg -l |grep -i "软件包名" --查看系统中与"软件包名"相关联的包.
+
+dpkg -s 查询已安装的包的详细信息.
+
+dpkg -L 查询系统中已安装的软件包所安装的位置.
+
+dpkg -S 查询系统中某个文件属于哪个软件包.
+
+dpkg -I 查询deb包的详细信息,在一个软件包下载到本地之后看看用不用安装(看一下呗).
+
+dpkg -i 手动安装软件包(这个命令并不能解决软件包之前的依赖性问题),
+如果在安装某一个软件包的时候遇到了软件依赖的问题,可以用apt-get -f install在解决信赖性这个问题.
+
+dpkg -r 卸载软件包.不是完全的卸载,它的配置文件还存在.
+
+dpkg -P 全部卸载(但是还是不能解决软件包的依赖性的问题)
+
+dpkg -reconfigure 重新配置
+}}}
+
+== 2. apt高级包管理工具 ==
+{{{class="brush: text"
+(1)GTK图形的"synaptic",这是APT的前端工具.
+
+(2)"aptitude",这也是APT的前端工具.
+用APT管理工具进行包的管理,可以有以下几种方法做源:
+
+(1)拿安装盘做源,方法如下:
+apt-cdrom ident 扫描光盘的信息
+apt-cdrom add 添加光盘源
+
+(2)这也是最常用的方法就是把源添加到/etc/apt/source.list中,之后更新列apt-get update
+APT管理工具常用命令
+apt-cache 加上不同的子命令和参数的使用可以实现查找,显示软件,包信息及包信赖关系等功能.
+
+apt-cache stats 显示当前系统所有使用的Debain数据源的统计信息.
+
+apt-cache search +"包名",可以查找相关的软件包.
+
+apt-cache show +"包名",可以显示指定软件包的详细信息.
+
+apt-cache depends +"包名",可以查找软件包的依赖关系.
+
+apt-get upgrade 更新系统中所有的包到最新版
+
+apt-get install 安装软件包
+
+apt-get --reindtall install 重新安装软件包
+
+apt-get remove 卸载软件包
+
+apt-get --purge remove 完全卸载软件包
+
+apt-get clean 清除无用的软件包
+
+在用命令apt-get install之前,是先将软件包下载到/var/cache/apt/archives中,
+之后再进行安装的.所以我们可以用apt-get clean清除/var/cache/apt/archives目录中的软件包.源码包安装
+apt-cache showsrc 查找看源码包的文件信息(在下载之前)
+
+apt-get source 下载源码包.
+
+apt-get build-dep +"包名" 构建源码包的编译环境.
+}}}
+
+== 3.apt-get与dpkg的一些基本用法 ==
+{{{class="brush: text"
+apt-get install packagename #安装一个新软件包
+
+apt-get remove packagename #卸载一个已安装的软件包（保留配置文件）
+
+apt-get --purge remove packagename #卸载一个已安装的软件包（删除配置文件）
+
+dpkg --force-all --purge packagename #强制卸载，风险大！
+
+apt-get upgrade #更新所有已安装的软件包
+
+apt-get dist-upgrade #将系统升级到新版本
+
+apt-get clean #清理所有软件缓存
+
+apt-get autoclean #清理旧版本的软件缓存
+
+apt-get autoremove #删除系统不再使用的孤立软件
+
+apt-cdrom add #增加一个光盘源
+
+auto-apt run ./configure #编译时缺少h文件的自动处理
+
+apt-cache search 正则表达式 #在软件包列表中搜索字符串
+
+dpkg -l 正则表达式 #列出所有与模式相匹配的软件包
+
+dpkg -l |grep ^rc|awk '{print $2}' |  #xargs dpkg -P #清除所有已删除包的残馀配置文件
+
+dpkg -i, --install XXX.deb #安装XXX.deb软件包:dpkg --install stardict_3.0.1-1_i386.deb
+
+dpkg -r, --remove, -P, --purge package...|-a|--pending #删除一个软件包:dpkg -r stardict
+}}}
+
+== 4.apt-spy 是一个管理安装媒体的程序 ==
+{{{class="brush: text"
+使用方法: apt-spy [options]
+选项：
+-d distribution 选择 debian 的发行版本，例如 stable 。除升级外，必须使用此参数。
+
+-a area 选择进行测试的区域，例如 Aisa 。
+
+-c config 指定配置文件。
+
+-e number 指定测试的服务器数量。
+
+-f file 测试时抓取制定的文件（文件相对 debian base 的路径）。
+
+-i file 指定输入的文件，配合 -w 参数使用。
+
+-m mirror-list 指定要升级的镜像列表文件。
+
+-o output-file 重定向输出到指定文件。
+
+-p proxy 指定使用的代理服务器，需要遵从 [server]:[port] 的格式。
+
+-s country_list 指定要进行测试的国家。不能和 -a 参数同时使用。
+
+-t time 指定进行测试时每台服务器的超时时间，只能是正整数。
+
+-u update-URL 从指定的 URL 获得镜像列表更新。
+
+-w file 输出 -i 参数提供的服务器列表中速度最快的前几台镜像服务器（缺省是前 5 台）。
+
+-n number 制定 -w 参数输出的服务器数量。
+
+-v 输出版本信息。
+
+-h 输出当前帮助信息
+
+update 升级镜像站点列表。
+
+USEAGE:    apt-spy -t 60 -d testing -A Asia
+}}}
+

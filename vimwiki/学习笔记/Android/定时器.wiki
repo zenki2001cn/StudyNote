@@ -1,0 +1,146 @@
+= 定时器 =
+
+== 相关类 ==
+{{{class="brush:java"
+// Receiver
+import android.content.Context;
+import android.content.Intent;
+import android.content.BroadcastReceiver;
+
+// Sender
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.os.SystemClock;
+
+import java.util.Calendar;
+}}}
+
+== AlarmManager主要方法 ==
+- *AlarmManager提供客户端的闹铃注册，其通过Binder机制与AlarmManagerService通信，而AlarmManagerService真正提供服务*
+
+| 返回值 | 方法名称                                                                           | 描述               |
+|--------+------------------------------------------------------------------------------------+--------------------|
+| void   | cancel(PendingIntent operation)                                                    | 取消已注册的闹铃   |
+| void   | set(int type, long triggerAtTime, PendingIntent operation)                         | 注册一个新闹铃     |
+| void   | setRepeating(int type, long triggerAtTime, long interval, PendingIntent operation) | 注册一个重复的闹铃 |
+| void   | setTime(long millis)                                                               | 设置系统时钟       |
+| void   | setTimeZone(String timeZone)                                                       | 设置时区           |
+
+== AlarmManager的闹铃类型 ==
+| 类型 | 标识                    | 描述                                                                                                                            |
+|------+-------------------------+---------------------------------------------------------------------------------------------------------------------------------|
+| int  | ELAPSED_REALTIME        | 当系统进入睡眠状态时，该闹铃不会唤醒系统，直到系统下次被唤醒才传递它。该闹铃使用相对时间，通过SystemClock.elapsedRealtime()获得 |
+| int  | ELAPSED_REALTIME_WAKEUP | 能唤醒系统，用法同ELAPSED_REALTIME                                                                                              |
+| int  | RTC                     | 当系统进入睡眠状态时，该闹铃不会唤醒系统，直到系统下次被唤醒才传递它。该闹铃使用绝对时间，通过System.currentTimeMillis()获得    |
+| int  | RTC_WAKEUP              | 能唤醒系统，用法同RTC                                                                                                           |
+| int  | POWER_OFF_WAKEUP        | 能唤醒系统，它是一种关机闹铃，就是说设备在关机状态下也可以唤醒系统，所以我们把它称之为关机闹铃。使用方法同RTC类型               |
+
+== PendingIntent主要方法 ==
+- *PendingIntent可以说是Intent的进一步封装，它既包含了Intent的描述又包含了Intent行为的执行*
+
+| 返回值               | 方法名称                                                                                             | 描述                      |
+|----------------------+------------------------------------------------------------------------------------------------------+---------------------------|
+| static PendingIntent | getActivity(Context context, int requestCode, Intent intent, int flags)                              | 获得一个Activity的Intent  |
+| static PendingIntent | getBroadcast(Context context, int requestCode, Intent intent, int flags)                             | 获得一个Broadcast的Intent |
+| static PendingIntent | getService(Context context, int requestCode, Intent intent, int flags)                               | 获得一个Service的Intent   |
+| IntentSender         | getIntentSender()                                                                                    | 获得IntentSender对象      |
+| void                 | send(int code)                                                                                       | 执行相关的Intent          |
+| void                 | send(Context context, int code, Intent intent)                                                       | 执行相关的Intent          |
+| void                 | send(int code, PendingIntent.OnFinished onFinished, Handler handler)                                 | 执行相关的Intent          |
+| void                 | send(Context context, int code, Intent intent, PendingIntent.OnFinished onFinished, Handler handler) | 执行相关的Intent          |
+| void                 | send()                                                                                               | 执行相关的Intent          |
+| void                 | cancel()                                                                                             | 取消当前激活的Intent      |
+
+== 示例代码 ==
+=== 单次报警器 ===
+- 创建一个BroadcastReceiver的派生类,作为接收方,重写onReceive方法
+- 创建一个PendingIntent的实例作为发送方,使用getBroadcast方法将之与接收方关联
+- 创建Calendar实例,设置一个时钟,用在将来一个时间点触发
+- 通过getSystemService获取一个AlarmManager对象实例,进行定时发送
+
+==== 发送方 ====
+{{{class="brush:java"
+public void onClick(View v) {
+    // When the alarm goes off, we want to broadcast an Intent to our
+    // BroadcastReceiver.  Here we make an Intent with an explicit class
+    // name to have our own receiver (which has been published in
+    // AndroidManifest.xml) instantiated and called, and then create an
+    // IntentSender to have the intent executed as a broadcast.
+    Intent intent = new Intent(AlarmController.this, OneShotAlarm.class);
+    PendingIntent sender = PendingIntent.getBroadcast(AlarmController.this,
+            0, intent, 0);
+
+    // We want the alarm to go off 30 seconds from now.
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTimeInMillis(System.currentTimeMillis());
+    calendar.add(Calendar.SECOND, 30);
+
+    // Schedule the alarm!
+    AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
+    am.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), sender);
+}
+}}}
+
+==== 接收方 ====
+{{{class="brush:java"
+public class OneShotAlarm extends BroadcastReceiver
+{
+    @Override
+    public void onReceive(Context context, Intent intent)
+    {
+        Toast.makeText(context, R.string.one_shot_received, Toast.LENGTH_SHORT).show();
+    }
+}
+}}}
+
+=== 重复报警器 ===
+- 创建一个BroadcastReceiver的派生类,作为接收方,并重写onReceive方法
+- 创建一个PendingIntent的实例作为发送方,使用getBroadcast方法将之与接收方关联
+- 设置第一次报警的时间
+- 通过getSystemService获取一个AlarmManager对象实例,并通过setRepeting方法设置重复的报警器
+- 通过cancel方法取消重复报警
+
+==== 发送方 ====
+{{{class="brush:java"
+public void onClick(View v) {
+    // When the alarm goes off, we want to broadcast an Intent to our
+    // BroadcastReceiver.  Here we make an Intent with an explicit class
+    // name to have our own receiver (which has been published in
+    // AndroidManifest.xml) instantiated and called, and then create an
+    // IntentSender to have the intent executed as a broadcast.
+    // Note that unlike above, this IntentSender is configured to
+    // allow itself to be sent multiple times.
+    Intent intent = new Intent(AlarmController.this, RepeatingAlarm.class);
+    PendingIntent sender = PendingIntent.getBroadcast(AlarmController.this,
+            0, intent, 0);
+            
+    // We want the alarm to go off 30 seconds from now.
+    long firstTime = SystemClock.elapsedRealtime();
+    firstTime += 15*1000;
+
+    // Schedule the alarm!
+    AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
+    am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    firstTime, 15*1000, sender);
+}
+}}}
+
+==== 接收方 ====
+{{{class="brush:java"
+public class RepeatingAlarm extends BroadcastReceiver
+{
+    @Override
+    public void onReceive(Context context, Intent intent)
+    {
+        Toast.makeText(context, R.string.repeating_received, Toast.LENGTH_SHORT).show();
+    }
+}
+}}}
+
+==== 取消重复报警 ====
+{{{class="brush:java"
+// And cancel the alarm.
+AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
+am.cancel(sender);
+}}}

@@ -1,0 +1,81 @@
+= View关键方法集合 =
+
+| 返回值                        | 方法名                                                       | 描述                                   |
+|-------------------------------+--------------------------------------------------------------+----------------------------------------|
+| public void                   | addFocusables(ArrayList<View> views, int direction)          | 添加可聚焦的View列表                   |
+| public void                   | addTouchables(ArrayList<View> views)                         |                                        |
+| public void                   | bringToFront()                                               |                                        |
+| public void                   | cancelLongPress()                                            |                                        |
+| public void                   | clearAnimation()                                             |                                        |
+| public void                   | clearFocus()                                                 |                                        |
+| public void                   | createContextMenu(ContextMenu menu)                          |                                        |
+| public void                   | dispatchConfigurationChanged(Configuration newConfig)        |                                        |
+| public void                   | dispatchDisplayHint(int hint)                                |                                        |
+| public boolean                | dispatchKeyEvent(KeyEvent event)                             |                                        |
+| public boolean                | dispatchKeyEventPreIme(KeyEvent event)                       |                                        |
+| public boolean                | dispatchKeyShortcutEvent(KeyEvent event)                     |                                        |
+| public boolean                | dispatchTouchEvent(MotionEvent event)                        |                                        |
+| public boolean                | dispatchTrackballEvent(MotionEvent event)                    |                                        |
+| public boolean                | dispatchPopulateAccessibilityEvent(AccessibilityEvent event) |                                        |
+| public boolean                | dispatchUnhandledMove(View focused, int direction)           |                                        |
+| public void                   | dispatchWindowFocusChanged(boolean hasFocus)                 |                                        |
+| public void                   | dispatchWindowVisibilityChanged(int visibility)              |                                        |
+| public View                   | findFocus()                                                  |                                        |
+| public final View             | findViewById(int id)                                         |                                        |
+| public final View             | findViewWithTag(Object tag)                                  |                                        |
+| public View                   | focusSearch(int direction)                                   |                                        |
+| public Animation              | getAnimation()                                               |                                        |
+| public Drawable               | getBackground()                                              |                                        |
+| public final int              | getBottom()                                                  |                                        |
+| public int                    | getBaseline()                                                |                                        |
+| public static int             | getDefaultSize(int size, int measureSpec)                    |                                        |
+| public final int[]            | getDrawableState()                                           |                                        |
+| public void                   | getDrawingRect(Rect outRect)                                 |                                        |
+| public long                   | getDrawingTime()                                             |                                        |
+| public ArrayList<View>        | getFocusables(int direction)                                 |                                        |
+| public Handler                | getHandler()                                                 |                                        |
+| public int                    | getId()                                                      |                                        |
+| public boolean                | getKeepScreenOn()                                            |                                        |
+| public ViewGroup.LayoutParams | getLayoutParams()                                            |                                        |
+| public int                    | getNextFocusDownId()                                         |                                        |
+| public int                    | getNextFocusLeftId()                                         |                                        |
+| public int                    | getNextFocusRightId()                                        |                                        |
+| public int                    | getNextFocusUpId()                                           |                                        |
+| public Resources              | getResources()                                               |                                        |
+| public Object                 | getTag(int key)                                              |                                        |
+| public int                    | getWindowVisibility()                                        |                                        |
+| public boolean                | hasFocus()                                                   |                                        |
+| public boolean                | hasFocus()                                                   |                                        |
+| public boolean                | hasFocusable()                                               |                                        |
+| public boolean                | hasWindowFocus()                                             |                                        |
+| public static View            | inflate(Context context, int resource, ViewGroup root)       |                                        |
+| public void                   | invalidate(int l, int t, int r, int b)                       |                                        |
+| public boolean                | isEnabled()                                                  |                                        |
+| public final boolean          | isFocusable()                                                |                                        |
+| public final boolean          | isFocusableInTouchMode()                                     |                                        |
+| public boolean                | isFocused()                                                  |                                        |
+| public boolean                | isInEditMode()                                               |                                        |
+| public boolean                | isInTouchMode()                                              |                                        |
+| public boolean                | onKeyDown(int keyCode, KeyEvent event)                       |                                        |
+| public boolean                | onKeyLongPress(int keyCode, KeyEvent event)                  |                                        |
+| public boolean                | onKeyUp(int keyCode, KeyEvent event)                         |                                        |
+| public boolean                | onTouchEvent(MotionEvent event)                              |                                        |
+| public boolean                | onTrackballEvent(MotionEvent event)                          |                                        |
+| public void                   | onWindowFocusChanged(boolean hasWindowFocus)                 |                                        |
+| public boolean                | performClick()                                               | 执行该View的OnClickListener方法        |
+| public boolean                | performLongClick()                                           | 执行该View的OnLongClickListener方法    |
+| public boolean                | post(Runnable action)                                        | 将一个线程加入到UI线程中               |
+| public boolean                | postDelayed(Runnable action, long delayMillis)               | 将一个线程加入到UI线程中，指定延迟时间 |
+| public void                   | postInvalidate()                                             | 在非UI线程中刷新该View                 |
+| public void                   | postInvalidateDelayed(long delayMilliseconds)                | 在非UI线程中刷新该View，指定延迟时间   |
+| public void                   | refreshDrawableState()                                       | 刷新Drawable状态                       |
+| public boolean                | removeCallbacks(Runnable action)                             | 将特定的线程移出队列                   |
+| public final boolean          | requestFocus()                                               | 强制该View获取焦点                     |
+|                               |                                                              |                                        |
+|                               |                                                              |                                        |
+|                               |                                                              |                                        |
+|                               |                                                              |                                        |
+|                               |                                                              |                                        |
+|                               |                                                              |                                        |
+|                               |                                                              |                                        |
+

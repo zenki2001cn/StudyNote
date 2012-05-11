@@ -1,0 +1,24 @@
+= 从1970年1月1日经过的毫秒数 =
+
+调用java.lang.System类。
+
+- 调用System.currentTimeMillis()方法，可以取得从1970年1月1日开始经过的毫秒数。
+
+例程源码(Java)
+{{{class="brush:java"
+long currentTimeMillis = System.currentTimeMillis();
+Log.v("Test", String.valueOf(currentTimeMillis));
+ 
+Calendar calendar = Calendar.getInstance();
+calendar.setTimeInMillis(currentTimeMillis);
+Log.v("Test",
+    calendar.get(Calendar.HOUR_OF_DAY) + ":" +
+    calendar.get(Calendar.MINUTE) + ":" +
+    calendar.get(Calendar.SECOND) + ":" +
+    calendar.get(Calendar.MILLISECOND));
+ 
+Date date = new Date(currentTimeMillis);
+SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss SSS");
+Log.v("Test", simpleDateFormat.format(date))
+}}}
+

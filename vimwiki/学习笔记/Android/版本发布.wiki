@@ -1,0 +1,102 @@
+= 版本发布 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+build/tools/releasetools/sign_target_files_apks
+build/tools/releasetools/img_from_target_files
+build/tools/releasetools/ota_from_target_files
+}}}
+
+== release工具目录树 ==
+- Android提供了release版本的工具，在build/tools/releasetools目录下：
+
+{{{class="brush:text"
+releasetools
+|-- check_target_files_signatures       检查目标文件是否签名
+|-- common.py                           脚本通用库
+|-- edify_generator.py
+|-- img_from_target_files               将目标文件转换成img
+|-- ota_from_target_files               将目标文件转换成ota
+`-- sign_target_files_apks              签名所有目标文件的apk
+}}}
+
+=== 签名工具 ===
+{{{class="brush:bash"
+# 参数说明
+# -e <apkname,apkname,apkname,...=key>      根据key过滤某些程序，key可以为空
+# -k <src_key=dest_key>                     设置key_mapping
+# -d <dir>                                  设置key_mapping的路径
+# -o                                        替换OTA包的key
+# -t <+tag>,<-tag>                          添加和移除tag，默认为"-test-keys,+release-keys"
+$ ./build/tools/releasetools/sign_target_files_apks         \
+    -t +test-keys,-release-keys                             \
+    -d vendor/<vendor_name>/security/<product_name>         \
+    -e a.apk,b.apk=path_to_platform -e c.apk=path_to_shared                 \
+    <product_name>-target_files.zip signed-target-files.zip
+}}}
+
+=== img生成工具 ===
+- 将签名的包转成image
+
+{{{class="brush:bash"
+# 使用img_from_target_files工具生成signed-img.zip文件
+$ ./build/tools/releasetools/img_from_target_files          \
+    out/dist/signed-target-files.zip out/dist/signed-img.zip
+creating boot.img...
+creating recovery.img...
+creating system.img...
+creating userdata.img...
+cleaning up...
+done.
+}}}
+
+- 通过fastboot下载signed-img.zip文件
+
+{{{class="brush:bash"
+# 通过fastboot就可以把签了名的系统文件下载到手机上
+$ fastboot update signed-img.zip
+}}}
+
+=== ota包生成工具 ===
+{{{class="brush:bash"
+# ota_from_target_files [flags] input_target_files output_ota_package
+# 参数说明：
+# -k  (--package_key)  <key>
+#   签名使用的私钥(default is "build/target/product/security/testkey").
+# 
+# -i  (--incremental_from)  <file>
+#   生成增量OTA包时用于定义对比包
+#
+# -w  (--wipe_user_data)
+#   是否清除userdata分区
+#
+# -n  (--no_prereq)
+#   是否在升级时不检查时间戳，缺省情况下只能基于老的版本升级
+#
+# -e  (--extra_script)  <file>
+#   定义额外运行的脚本
+# 
+# -m <auto> | <amend> | <edify>
+#   定义采用的脚本格式，目前有两种，amend & edify, 其中amend为较老的格式。对应的，升级时会采用不同的解释器。
+#   缺省情况下，ota_from_target_files 会同时生成两个脚本。这提供了最大灵活性。
+#
+# -p <dir> 
+#   定义脚本用到的一些可执行文件的路径
+# 
+# -s <dir> 
+#   定义额外运行的脚本的路径
+# 
+# -x <key=val> 
+#   定义额外运行的脚本可能用到的键/值对
+# 
+# -v 
+#   冗余模式，让脚本打印出执行的命令
+$ ./build/tools/releasetools/ota_from_target_files      \
+    -m auto                                             \
+    -p out/host/linux-x86                               \
+    -k build/target/product/security/testkey -n         \
+    out/dist/{product-name}-target_files-eng.{uid}.zip  \
+    {output_zip}
+}}}

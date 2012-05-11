@@ -1,0 +1,28 @@
+= TextView的使用 =
+
+[pic/textview.png]
+
+- 设置文字列到TextView，调用setText()方法
+- 取得TextView的文字列，调用getText()方法
+
+== 相关类 ==
+{{{class="brush: java"
+import android.widget.TextView;
+}}}
+
+== 例程源码(Java) ==
+{{{class="brush: java"
+TextView textView = (TextView) findViewById(id.textView);
+ 
+textView.setText(getString(R.string.test));
+ 
+Log.v("Test", String.valueOf(textView.getText()));
+}}}
+
+== 例程源码(Resource) ==
+{{{class="brush: xml"
+<TextView android:id="@+id/textView"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" />
+}}}
+

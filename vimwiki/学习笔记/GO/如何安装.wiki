@@ -1,0 +1,40 @@
+= 如何安装 =
+
+== 几个环境变量 ==
+{{{class="brush: text"
+export GOBIN=/usr/bin       #设置bin的目录
+export GOROOT=$HOME/Go/go   #设置源文件目录
+export GOARCH=386           #硬件架构
+export GOOS=linux           #系统版本
+}}}
+
+== 安装C工具 ==
+{{{class="brush: text"
+sudo apt-get install bison gcc libc6-dev ed gawk make
+}}}
+
+== 获取源码 ==
+如果没有python工具，先执行如下语句：
+{{{class="brush: text"
+apt-get install python-setuptools python-dev build-essential gcc
+}}}
+否则：
+{{{class="brush: text"
+sudo easy_install mercurial
+hg clone -r release https://go.googlecode.com/hg/ $GOROOT
+}}}
+
+== 安装Go ==
+{{{class="brush: text"
+cd $GOROOT/src
+./all.bash
+}}}
+
+== 版本更新 ==
+{{{class="brush: text"
+cd $GOROOT/src
+hg pull
+hg update release
+./all.bash
+}}}
+

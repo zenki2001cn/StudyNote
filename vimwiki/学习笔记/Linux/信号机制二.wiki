@@ -1,0 +1,312 @@
+= 信号机制二 =
+
+%toc
+
+== 信号生命周期 ==
+- 从信号发送到信号处理函数的执行完毕，对于一个完整的信号生命周期(从信号发送到相应的处理函数执行完毕)来说，可以分为三个重要的阶段，这三个阶段由四个重要事件来刻画：
+    - 信号诞生；
+    - 信号在进程中注册完毕；
+    - 信号在进程中的注销完毕；
+    - 信号处理函数执行完毕。
+- 相邻两个事件的时间间隔构成信号生命周期的一个阶段。
+
+[[pic/sig_proc.png]]
+
+=== 信号"诞生" ===
+- 信号的诞生指的是触发信号的事件发生（如检测到硬件异常、定时器超时以及调用信号发送函数kill()或sigqueue()等）。
+
+=== 信号在目标进程中"注册" ===
+- 进程的task_struct结构中有关于本进程中未决信号的数据成员： 
+
+{{{class="brush:c"
+struct sigpending pending：
+struct sigpending{
+	struct sigqueue *head, **tail;
+	sigset_t signal;
+};
+}}}
+
+- 第三个成员是进程中所有未决信号集，第一、第二个成员分别指向一个sigqueue类型的结构链（称之为"未决信号信息链"）的首尾，信息链中的每个sigqueue结构刻画一个特定信号所携带的信息，并指向下一个sigqueue结构:
+
+{{{class="brush:c"
+struct sigqueue{
+    struct sigqueue *next;
+	siginfo_t info;
+}
+}}}
+
+- 信号在进程中注册指的就是信号值加入到进程的未决信号集中（sigpending结构的第二个成员sigset_t signal），并且信号所携带的信息被保留到未决信号信息链的某个sigqueue结构中。只要信号在进程的未决信号集中，表明进程已经知道这些信号的存在，但还没来得及处理，或者该信号被进程阻塞。
+- 当一个实时信号发送给一个进程时，不管该信号是否已经在进程中注册，都会被再注册一次，因此，信号不会丢失，因此，实时信号又叫做"可靠信号"。这意味着同一个实时信号可以在同一个进程的未决信号信息链中占有多个sigqueue结构（进程每收到一个实时信号，都会为它分配一个结构来登记该信号信息，并把该结构添加在未决信号链尾，即所有诞生的实时信号都会在目标进程中注册）；
+- 当一个非实时信号发送给一个进程时，如果该信号已经在进程中注册，则该信号将被丢弃，造成信号丢失。因此，非实时信号又叫做"不可靠信号"。这意味着同一个非实时信号在进程的未决信号信息链中，至多占有一个sigqueue结构。
+- 一个非实时信号诞生后：
+    - 如果发现相同的信号已经在目标结构中注册，则不再注册，对于进程来说，相当于不知道本次信号发生，信号丢失；
+    - 如果进程的未决信号中没有相同信号，则在进程中注册自己。
+
+=== 信号在进程中的注销 ===
+- 在目标进程执行过程中，会检测是否有信号等待处理（每次从系统空间返回到用户空间时都做这样的检查）。如果存在未决信号等待处理且该信号没有被进程阻塞，则在运行相应的信号处理函数前，进程会把信号在未决信号链中占有的结构卸掉。是否将信号从进程未决信号集中删除对于实时与非实时信号是不同的。
+    - 对于非实时信号来说，由于在未决信号信息链中最多只占用一个sigqueue结构，因此该结构被释放后，应该把信号在进程未决信号集中删除（信号注销完毕）；
+    - 而对于实时信号来说，可能在未决信号信息链中占用多个sigqueue结构，因此应该针对占用sigqueue结构的数目区别对待：
+- 如果只占用一个sigqueue结构（进程只收到该信号一次），则应该把信号在进程的未决信号集中删除（信号注销完毕）。否则，不应该在进程的未决信号集中删除该信号（信号注销完毕）。进程在执行信号相应处理函数之前，首先要把信号在进程中注销。
+
+=== 信号生命终止 ===
+- 进程注销信号后，立即执行相应的信号处理函数，执行完毕后，信号的本次发送对进程的影响彻底结束。
+
+{{{class="brush:text"
+注：
+    1、信号注册与否，与发送信号的函数（如kill()或sigqueue()等）以及信号安装函数（signal()
+及 sigaction()）无关，只与信号值有关（信号值小于SIGRTMIN的信号最多只注册一次，信号值在SIGRTMIN
+及SIGRTMAX之间的信号，只要被进程接收到就被注册）。
+    2、在信号被注销到相应的信号处理函数执行完毕这段时间内，如果进程又收到同一信号多次，
+则对实时信号来说，每一次都会在进程中注册；而对于非实时信号来说，无论收到多少次信号，都会视为只收
+到一个信号，只在进程中注册一次。
+}}}
+
+== 信号编程注意事项 ==
+- 防止不该丢失的信号丢失。
+- 程序的可移植性。考虑到程序的可移植性，应该尽量采用POSIX信号函数，POSIX信号函数主要分为两类：
+    * POSIX 1003.1信号函数： Kill()、sigaction()、sigaddset()、sigdelset()、sigemptyset()、sigfillset()、 sigismember()、sigpending()、sigprocmask()、sigsuspend()。
+    * POSIX 1003.1b信号函数。POSIX 1003.1b在信号的实时性方面对POSIX 1003.1做了扩展，包括以下三个函数： sigqueue()、sigtimedwait()、sigwaitinfo()。其中，sigqueue主要针对信号发送，而sigtimedwait及sigwaitinfo()主要用于取代sigsuspend()函数，后面有相应实例。 
+
+{{{class="brush:c"
+#include <signal.h>
+int sigwaitinfo(sigset_t *set, siginfo_t *info);
+}}}
+
+- 该函数与sigsuspend()类似，阻塞一个进程直到特定信号发生，但信号到来时不执行信号处理函数，而是返回信号值。因此为了避免执行相应的信号处理函数，必须在调用该函数前，使进程屏蔽掉set指向的信号，因此调用该函数的典型代码是：
+
+{{{class="brush:c"
+sigset_t newmask;
+int rcvd_sig; 
+siginfo_t info;
+
+sigemptyset(&newmask);
+sigaddset(&newmask, SIGRTMIN);
+sigprocmask(SIG_BLOCK, &newmask, NULL);
+rcvd_sig = sigwaitinfo(&newmask, &info) 
+if (rcvd_sig == -1) {
+	......
+}
+}}}
+
+- 程序的稳定性。为了增强程序的稳定性，在信号处理函数中应使用可重入函数。
+
+{{{class="brush:text"
+    信号处理程序中应当使用可再入（可重入）函数（注：所谓可重入函数是指一个可以被多个任务
+调用的过程，任务在调用时不必担心数据是否会出错）。因为进程在收到信号后，就将跳转到信号处理
+函数去接着执行。如果信号处理函数中使用了不可重入函数，那么信号处理函数可能会修改原来进程中
+不应该被修改的数据，这样进程从信号处理函数中返回接着执行时，可能会出现不可预料的后果。
+不可再入函数在信号处理函数中被视为不安全函数。
+
+    满足下列条件的函数多数是不可再入的：
+    （1）使用静态的数据结构，如 getlogin()，gmtime()，getgrgid()，getgrnam()，getpwuid()以及
+getpwnam()等等；
+    （2）函数实现时，调用了malloc（）或者free()函数；（3）实现时使用了标准I/O函数的。
+The Open Group视下列函数为可再入的：
+    _exit（）、access（）、alarm（）、cfgetispeed（）、cfgetospeed（）、
+    cfsetispeed（）、cfsetospeed（）、chdir（）、chmod（）、chown（）、close（）、
+    creat（）、dup（）、dup2（）、execle（）、execve（）、fcntl（）、fork（）、 
+    fpathconf（）、fstat（）、fsync（）、getegid（）、 geteuid（）、getgid（）、
+    getgroups（）、getpgrp（）、getpid（）、getppid（）、getuid（）、 kill（）、
+    link（）、lseek（）、mkdir（）、mkfifo（）、 open（）、pathconf（）、pause（）、
+    pipe（）、raise（）、read（）、rename（）、rmdir（）、 setgid（）、setpgid（）、
+    setsid（）、setuid（）、 sigaction（）、sigaddset（）、sigdelset（）、sigemptyset（）、
+    sigfillset（）、 sigismember（）、signal（）、sigpending（）、sigprocmask（）、
+    sigsuspend（）、sleep（）、 stat（）、sysconf（）、tcdrain（）、tcflow（）、tcflush（）、
+    tcgetattr（）、tcgetpgrp（）、 tcsendbreak（）、tcsetattr（）、tcsetpgrp（）、time（）、
+    times（）、 umask（）、uname（）、unlink（）、utime（）、wait（）、waitpid（）、write（）。
+
+    即使信号处理函数使用的都是"安全函数"，同样要注意进入处理函数时，首先要保存errno的值，结束时，
+再恢复原值。因为，信号处理过程中，errno值随时可能被改变。另外，longjmp()以及siglongjmp()没有被列为
+可再入函数，因为不能保证紧接着两个函数的其它调用是安全的。
+}}}
+
+== 示例代码 ==
+- linux下的信号应用并没有想象的那么恐怖，程序员所要做的最多只有三件事情：
+   - 1. 安装信号（推荐使用sigaction()）；
+   - 2. 实现三参数信号处理函数，handler(int signal,struct siginfo *info, void *)；
+   - 3. 发送信号，推荐使用sigqueue()。
+- 实际上，对有些信号来说，只要安装信号就足够了（信号处理方式采用缺省或忽略）。其他可能要做的无非是与信号集相关的几种操作。
+
+=== 信号发送及处理 ===
+- 命令行参数为信号值，后台运行sigreceive signo &，可获得该进程的ID，假设为pid，然后在另一终端上运行kill -s signo pid验证信号的发送接收及处理。同时，可验证信号的排队问题。 
+
+{{{class="brush:c"
+#include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
+void new_op(int,siginfo_t*,void*);
+int main(int argc,char**argv)
+{
+	struct sigaction act;	
+	int sig;
+	sig = atoi(argv[1]);
+	
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = SA_SIGINFO;
+	act.sa_sigaction = new_op;
+	
+	if(sigaction(sig,&act,NULL) < 0) {
+		printf("install sigal error\n");
+	}
+	
+	while(1) {
+		sleep(2);
+		printf("wait for the signal\n");
+	}
+}
+
+void new_op(int signum,siginfo_t *info,void *myact)
+{
+	printf("receive signal %d", signum);
+	sleep(5);
+}
+}}}
+
+=== 信号传递附加信息 ===
+- 向进程本身发送信号，并传递指针参数。
+
+{{{class="brush:c"
+#include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
+void new_op(int,siginfo_t*,void*);
+int main(int argc,char**argv)
+{
+	struct sigaction act;	
+	union sigval mysigval;
+	int i;
+	int sig;
+	pid_t pid;		
+	char data[10];
+	memset(data,0,sizeof(data));
+	for(i=0;i < 5;i++)
+		data[i] = '2';
+	mysigval.sival_ptr = data;
+	
+	sig = atoi(argv[1]);
+	pid = getpid();
+	
+	sigemptyset(&act.sa_mask);
+	act.sa_sigaction = new_op;//三参数信号处理函数
+	act.sa_flags = SA_SIGINFO;//信息传递开关
+	if(sigaction(sig,&act,NULL) < 0) {
+		printf("install sigal error\n");
+	}
+	
+	while(1) {
+		sleep(2);
+		printf("wait for the signal\n");
+		sigqueue(pid,sig,mysigval);//向本进程发送信号，并传递附加信息
+	}
+}
+
+// 三参数信号处理函数的实现
+void new_op(int signum,siginfo_t *info,void *myact)
+{
+	int i;
+	for(i=0;i<10;i++) {
+		printf("%c\n ",(*( (char*)((*info).si_ptr)+i)));
+	}
+	printf("handle signal %d over;",signum);
+}
+}}}
+
+=== 不同进程间传递整型参数 ===
+- 把上面程序的信号发送和接收放在两个程序中，并且在发送过程中传递整型参数
+
+==== 信号接收程序 ====
+{{{class="brush:c"
+#include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
+void new_op(int,siginfo_t*,void*);
+int main(int argc,char**argv)
+{
+	struct sigaction act;
+	int sig;
+	pid_t pid;		
+	
+	pid = getpid();
+	sig = atoi(argv[1]);	
+	
+	sigemptyset(&act.sa_mask);
+	act.sa_sigaction = new_op;
+	act.sa_flags = SA_SIGINFO;
+	if(sigaction(sig,&act,NULL)<0) {
+		printf("install sigal error\n");
+	}
+	
+    while(1) {
+		sleep(2);
+		printf("wait for the signal\n");
+	}
+}
+
+void new_op(int signum,siginfo_t *info,void *myact) 
+{
+	printf("the int value is %d \n",info->si_int);
+}
+}}}
+
+==== 信号发送程序 ====
+- 命令行第二个参数为信号值，第三个参数为接收进程ID。
+
+{{{class="brush:c"
+#include <signal.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/types.h>
+main(int argc,char**argv)
+{
+	pid_t pid;
+	int signum;
+	union sigval mysigval;
+	signum = atoi(argv[1]);
+	pid = (pid_t)atoi(argv[2]);
+	mysigval.sival_int = 8;   // 不代表具体含义，只用于说明问题
+	if(sigqueue(pid,signum,mysigval)==-1)
+		printf("send error\n");
+	sleep(2);
+}
+}}}
+
+=== 信号阻塞及信号集操作 ===
+- 编译该程序，并以后台方式运行。在另一终端向该进程发送信号(运行kill -s 42 pid，SIGRTMIN+10为42)，查看结果可以看出几个关键函数的运行机制，信号集相关操作比较简单。
+
+{{{class="brush:c"
+#include "signal.h"
+#include "unistd.h"
+static void my_op(int);
+
+void main()
+{
+	sigset_t new_mask,old_mask,pending_mask;
+	struct sigaction act;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = SA_SIGINFO;
+	act.sa_sigaction = (void*)my_op;
+	
+	if(sigaction(SIGRTMIN+10,&act,NULL))
+		printf("install signal SIGRTMIN+10 error\n");
+		
+	sigemptyset(&new_mask);
+	sigaddset(&new_mask,SIGRTMIN+10);
+	if(sigprocmask(SIG_BLOCK, &new_mask,&old_mask))
+		printf("block signal SIGRTMIN+10 error\n");
+	sleep(10);	
+	
+	printf("now begin to get pending mask and unblock SIGRTMIN+10\n");
+	if(sigpending(&pending_mask)<0)
+		printf("get pending mask error\n");
+	if(sigismember(&pending_mask,SIGRTMIN+10))
+		printf("signal SIGRTMIN+10 is pending\n");
+	if(sigprocmask(SIG_SETMASK,&old_mask,NULL)<0)
+		printf("unblock signal error\n");
+	printf("signal unblocked\n");
+	sleep(10);
+}
+static void my_op(int signum)
+{
+	printf("receive signal %d \n",signum);
+}
+}}}

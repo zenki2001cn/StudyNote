@@ -1,0 +1,331 @@
+= jni使用范例 =
+
+%toc
+
+== 数据类型定义 ==
+=== 基本数据类型 ===
+| Java     | C        | 符号类型 | 字节   | 对应签名字母 |
+|----------+----------+----------+--------+--------------|
+| boolean  | jboolean | 无符号   | 8  位  | Z            |
+| byte     | jbyte    | 无符号   | 8  位  | B            |
+| char     | jchar    | 无符号   | 16  位 | C            |
+| short    | jshort   | 有符号   | 16  位 | S            |
+| int      | jint     | 有符号   | 32  位 | I            |
+| long     | jlong    | 有符号   | 64  位 | J            |
+| float    | jfloat   | 有符号   | 32  位 | F            |
+| double   | jdouble  | 有符号   | 64  位 | D            |
+| 无返回值 | void     |          |        | V            |
+
+=== 引用数据类型 ===
+| Java                | C             | 符号类型 | 字节 | 对应签名字母          |
+|---------------------+---------------+----------+------+-----------------------|
+| all objects         | jobjects      |          |      | L/java/lang/object;   |
+| java.lang.Class     | jcalss        |          |      | L/java/lang/Class     |
+| java.lang.String    | jstring       |          |      | L/java/lang/String    |
+| Object[]            | jobjectArray  |          |      | [L/java/lang/Object;  |
+| boolean[]           | jbooleanArray |          |      | [Z                    |
+| byte[]              | jbyteArray    |          |      | [B                    |
+| java.lang.Throwable | jthrowable    |          |      | L/java/lang/Throwable |
+| char[]              | jcharArray    |          |      | [C                    |
+| short[]             | jshortArray   |          |      | [S                    |
+| int[]               | jintArray     |          |      | [I                    |
+| long[]              | jlongArray    |          |      | [J                    |
+| float[]             | jfloatArray   |          |      | [F                    |
+| double[]            | jdoubleArray  |          |      | [D                    |
+
+== 函数类型签名的使用 ==
+    - 函数类型签名可用来查询数据类型定义表，解决方法的重载问题。格式为`(参数类型)返回类型`，括号内为参数类型，括号外为返回值类型，数组类型以`[`开头，如“(I[B)Z”。其中如果是Java对象类型，则需要以`L类名;`的形式标识，类名是以`/`分隔的完整包-类名称，如“Ljava/lang/String;”。如果是内部类，则以`L类名$内部类名;`形式标识，如“Landroid/os/FileUtils$FileStatus;”。
+    - 使用javap工具可帮助生产函数或变量的签名信息。
+
+{{{class="brush:bash"
+$ javap -s -p demo.class
+}}}
+
+函数签名示例
+| 函数签名               | Java函数定义           |
+|------------------------+------------------------|
+| "()Ljava/lang/String"  | String()               |
+| "(ILjava/lang/Class)J" | long f(int i, Class c) |
+| "([B)V"                | void f(Byte[] byte)    |
+
+== 方法的注册和加载 ==
+=== 方法表的定义 ===
+- 方法表数组成员分别为`注册的方法名`、`类型签名`、`本地函数指针`。
+    - 注册的方法名是提供给Java层调用的方法。
+    - 本地函数指针是对应注册的方法名的C/C++函数指针。
+
+{{{class="brush:c"
+static const JNINativeMethod gMethods[] = {
+    // 无参数，返回值为boolean
+    {"_init", "()Z", (void*)mokoid_init},
+    // 参数为int，返回值为boolean
+    { "_set_on", "(I)Z", (void*)mokoid_setOn },
+    // 参数为jbyte数组，返回值为long 
+    { "_set_on", "([B)J", (void*)mokoid_setOn },
+    // 第一个参数为String，第二个参数为Parcel，返回值为Canvas
+    { "_func2", "(Ljava/lang/String;Landroid/os/Parcel)Landroid/graphics/Canvas;", 
+        (void*)func2 },
+};
+}}}
+
+=== 方法表的注册 ===
+- 参数env表示Java虚拟机环境指针。
+- kClassName变量指定了为哪个类注册JNI方法。
+- env->RegisterNatives方法用来注册JNI的方法表。
+
+{{{class="brush:c"
+int registerMethods(JNIEnv* env) {
+    // 指定类名称
+    static const char* const kClassName = "com/mokoid/server/LedService";
+    jclass clazz;
+
+    // 查找指定类
+    clazz = env->FindClass(kClassName);
+    if (clazz == NULL) {
+        return -1;
+    }
+
+    // 将方法列表注册给指定的类
+    if (env->RegisterNatives(clazz, gMethods,
+            sizeof(gMethods) / sizeof(gMethods[0])) != JNI_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+}}}
+
+=== 虚拟机在加载时注册方法表 ===
+- JNI_OnLoad是Java加载so的入口方法，可以在该方法中调用注册方法表的函数。
+- 该方法的vm参数表示Java虚拟机，vm->GetEnv方法可以初始化环境指针env，并可检查JNI的版本信息。
+
+{{{class="brush:c"
+jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+    JNIEnv* env = NULL;
+    jint result = -1;
+
+    if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
+	    goto bail;
+    }
+    assert(env != NULL);
+
+    // 调用注册方法表
+    registerMethods(env);
+    // 调用其他注册函数
+    registerMethods2(env);
+    registerMethods3(env);
+
+    /* success -- return valid version number */
+    result = JNI_VERSION_1_4;
+
+bail:
+    return result;
+}
+}}}
+
+== 使用范例 ==
+=== Java对象和成员的操作 ===
+{{{class="brush:c"
+jobject Java_setLineBreaksForCharArray(JNIEnv *env, 
+                                     jobject thiz, 
+                                     jcharArray data, 
+                                     jint offset, 
+                                     jint length, 
+                                     jstring lang, 
+                                     jbyteArray breaks) {
+    // 获取Java类
+    jclass cls;
+    cls = env->GetObjectClass(thiz);
+    cls = env->FindClass("com/foxconn/example/reader");
+    
+    // 获取Java对象
+    jobject obj;
+    obj = env->GetObjectField(thiz, reader);
+    
+    // 获取类并通过构造函数生成的新对象, <init>为构造函数, V为返回值类型签名, I为参数类型签名
+    jmethodID constr;
+    jobject newObj;
+    jclass clazz = env->FindClass("com/misoo/thread/myData");
+    constr = env->GetMethodID(clazz, "<init>", "(I)V");
+    newObj = env->NewObject(clazz, constr);
+    
+    // 获取java对象成员的ID标识
+    // 第一个参数：jclass对象
+    // 第二个参数：成员变量名
+    // 第三个参数：变量类型
+    jfieldID fid;
+    fid = env->GetFieldID(cls, "retbytes", "[B"]);
+    
+    // 给该ID标识的变量赋值
+    // 第一个参数：jobject对象
+    // 第二个参数：变量的ID标识
+    // 第三个参数：赋予的变量值
+    env->SetObjectField(obj, fid, bytearray);
+    
+    return newObj;
+}}}
+
+=== Java类方法调用 ===
+{{{class="brush:c"
+void Java_setLineBreaksForCharArray(JNIEnv *env, 
+                                 jobject thiz, 
+                                 jcharArray data, 
+                                 jint offset, 
+                                 jint length, 
+                                 jstring lang, 
+                                 jbyteArray breaks) {
+    // 获取对象方法ID
+    // 第一个参数：jclass对象
+    // 第二个参数：方法名
+    // 第三个参数：(I)V，参数和返回类型签名                                                                     
+    int mid = GetMethodID(clazz, "getD1", "(I)V");
+    if(mid == 0) {
+        return;
+    }
+    // 调用对象的方法
+    // 第一个参数：jobject对象
+    // 第二个参数：方法ID
+    // 后面可跟方法的参数列表
+    env->CallVoidMethod(jobj, mid, ...);
+
+    // 获取静态方法ID
+    // 第一个参数：jclass对象
+    // 第二个参数：方法名 
+    // 第三个参数：()I，参数和返回值类型签名
+    int mid = env->GetStaticMethodID(clazz, "getD2", "()I");
+    if(mid == 0) {
+        return;
+    }
+    // 调用静态方法
+    // 第一个参数：jobject对象
+    // 第二个参数：方法ID
+    // 后面可跟方法的参数列表
+    int a = env->CallStaticIntMethod(clazz, mid, ...);
+}}}
+
+=== 创建和释放Java对象的引用 ===
+- 本地引用：JNI层函数使用的非全局引用对象，一旦JNI层函数返回，这些对象可能被垃圾回收。
+- 全局引用：这种对象除非被主动释放，否则不会被垃圾回收。
+- 弱全局引用：在运行过程中可能被回收。因此在使用时需要做判断。
+
+{{{class="brush:c"
+void Java_setLineBreaksForCharArray(JNIEnv *env, 
+                                 jobject thiz, 
+                                 jcharArray data, 
+                                 jint offset, 
+                                 jint length, 
+                                 jstring lang, 
+                                 jbyteArray breaks) {
+    jobject jref;
+    
+    // 创建一个全局引用
+    jref = env->NewGlobalRef(thiz);
+    if(jref == null) {
+        return;
+    }
+    // 释放一个全局引用
+    env->DeleteGlobalRef(jref);
+    
+    // 创建一个本地引用
+    jref = env->NewLocalRef(thiz);
+    if(jref == null) {
+        return;
+    }
+    // 释放一个本地引用
+    env->DeleteLocalRef(jref);
+    
+    // 创建一个弱全局引用
+    jref = env->NewWeakGlobalRef(thiz);
+    if(jref == null) {
+        return;
+    }
+    // 判断弱全局引用是否被垃圾回收
+    if (!env->IsSameObject(jref, thiz)) {
+        return;
+    }
+    // 释放一个弱全局引用
+    env->DeleteWeakGlobalRef(jref);
+}}}
+
+=== 解析Java参数 ===
+{{{class="brush:c"
+void Java_setLineBreaksForCharArray(JNIEnv *env, 
+                                 jobject thiz, 
+                                 jcharArray data, 
+                                 jint offset, 
+                                 jint length, 
+                                 jstring lang, 
+                                 jbyteArray breaks) {
+    // 转换Java的char数组类型, 用完后释放内存
+    jchar* dataArray = env->GetCharArrayElements(data, 0);
+    env->ReleaseCharArrayElements(data, dataArray, 0);
+	
+    // 转换Java的byte数组类型, 用完后释放内存
+    jbyte* breaksArray = env->GetByteArrayElements(breaks, 0);
+    env->ReleaseByteArrayElements(breaks, breaksArray, 0);
+	
+    // 转换Java的string类型, 用完后释放内存
+    const char *langArray = (lang != 0) ? env->GetStringUTFChars(lang, 0) : 0;
+    if (lang != 0) {
+        env->ReleaseStringUTFChars(lang, langArray);
+    }
+
+    // 将转换后的类型可与C类型兼容
+    set_linebreaks_utf16(dataArray + offset, length, langArray, (char*)breaksArray);
+
+}}}
+
+=== 给Java传递返回值 ===
+{{{class="brush:c"
+jstring Java_setLineBreaksForCharArray(JNIEnv *env, 
+                                     jobject thiz, 
+                                     jcharArray data, 
+                                     jint offset, 
+                                     jint length, 
+                                     jstring lang, 
+                                     jbyteArray breaks) {
+    // 创建字节数组类型，并拷贝buffer内容
+    jbyteArray bytearray; 
+    bytearray = env->NewByteArray(len);
+    env->SetByteArrayRegion(bytearray, 0, len, buffer);
+    
+    return bytearray;
+    
+    // 创建string类型变量并返回给java
+    char charStr[50];
+    jstring jstr;
+    jstr = env -> NewStringUTF(charStr);
+    
+    return jstr;
+}
+}}}
+
+=== JNI层的异常处理 ===
+{{{class="brush:c"
+jstring Java_setLineBreaksForCharArray(JNIEnv *env, 
+                                     jobject thiz, 
+                                     jcharArray data, 
+                                     jint offset, 
+                                     jint length, 
+                                     jstring lang, 
+                                     jbyteArray breaks) {
+    jbyteArray bytearray; 
+    bytearray = env->NewByteArray(len);
+    const char* const kClassName = "com/mokoid/server/LedService";
+    jclass clazz;
+    clazz = env->FindClass(kClassName);
+
+    // 获取当前的异常对象
+    jthrowable jthrow = ExceptionOccurred();
+    if (jthrow != null) {
+        // 抛出异常
+        Throw(jthrow);
+        ThrowNew(clazz, "send exception message to java");
+    }
+    
+    // 清除异常
+    ExceptionClear();
+    
+    return bytearray;
+}
+}}}

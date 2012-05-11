@@ -1,0 +1,98 @@
+= 手写轨迹 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+}}}
+
+== 要点解析 ==
+- 初始化`Paint`、`Canvas`和`Path`
+- 实现`View.onTouchEvent`方法，处理`MotionEvent`事件
+- 通过`onDraw`方法更新显示结果
+
+== 示例代码 ==
+{{{class="brush:java"
+// 初始化Paint, Canvas和Path
+public init() {
+    // 初始显示的背景
+    mBitmap = Bitmap.createBitmap(CANVAS_WIDTH, CANVAS_HEIGHT, Bitmap.Config.ARGB_8888);		
+    mBitmap.eraseColor(0xFFFFFFFF);
+    
+    // 初始化画布和路径变量
+    mCanvas = new Canvas(mBitmap);		
+    mPath = new Path();
+    
+    // 设置Paint属性
+    mPaint = new Paint();    	
+    mPaint.setAntiAlias(true);
+    mPaint.setDither(false);
+    mPaint.setColor(CANVAS_PAINT_COLOR);
+    mPaint.setStyle(Paint.Style.STROKE);
+    mPaint.setStrokeJoin(Paint.Join.ROUND);
+    mPaint.setStrokeCap(Paint.Cap.ROUND);
+    mPaint.setStrokeWidth(CANVAS_PAINT_SIZE);
+    mPaint.setAntiAlias(true);
+}
+
+// 通过onDraw来更新显示
+protected void onDraw(Canvas canvas) {
+    if (!mBitmap.isRecycled()) {
+        canvas.drawBitmap(mBitmap, 0, 0, mPaint);
+        canvas.drawPath(mPath, mPaint);
+    }
+    if (mNeedRecycle) {
+        mBitmap.recycle();
+    }
+}
+
+// 实现该方法处理屏幕的触摸事件
+public boolean onTouchEvent(MotionEvent event) {
+    float x = event.getX();
+    float y = event.getY();
+
+    switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+            touch_start(x, y);
+            break;
+        case MotionEvent.ACTION_MOVE:
+            touch_move(x, y);
+            touch_start(x, y);
+            break;
+        case MotionEvent.ACTION_UP:
+            touch_up();
+            break;
+    }
+    return true;
+}
+
+// 触摸按下时回调的方法
+private void touch_start(float x, float y) {
+    mPath.reset();
+    mPath.moveTo(x, y);
+    mX = x;
+    mY = y;
+}
+
+// 触摸移动中回调的方法
+private void touch_move(float x, float y) {
+    float dx = Math.abs(x - mX);
+    float dy = Math.abs(y - mY);
+    
+    if (dx >= 0 || dy >= 0) {
+        mPath.quadTo(mX, mY, (x + mX)/2, (y + mY)/2);
+    }
+    
+    mX = x;
+    mY = y;
+    touch_up();
+}
+
+// 触摸离开时回调的方法
+private void touch_up() {
+    mPath.lineTo(mX, mY);
+    mCanvas.drawPath(mPath, mPaint);	
+    mPath.reset();
+}
+}}}

@@ -1,0 +1,15 @@
+= android.view.View =
+{{{class="brush: text"
+java.lang.Object
+   ↳ android.view.View
+}}}
+
+    - [[View初始化]]
+    - [[创建菜单]]
+    - [[通用布局]]
+    - [[绑定数据]]      ------ 未完成
+    - [[处理UI事件]]
+    - [[自定义View的步骤]] 
+    - [[怎样绘制View]]
+    - [[使用View]]
+

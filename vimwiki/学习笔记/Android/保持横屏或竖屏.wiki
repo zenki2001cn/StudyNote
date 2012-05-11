@@ -1,0 +1,15 @@
+= 怎样保持Android程序横屏或竖屏 =
+
+- 在XML中对需要保持横屏或竖屏的Activity设置屏幕属性
+
+| 选项      | 描述 |
+|-----------+------|
+| landscape | 横向 |
+| portrait  | 纵向 |
+
+在Manifest文件中添加Activity属性
+{{{class="brush:xml"
+<activity android:name=".GamePlay"  
+    android:screenOrientation="portrait">
+</activity>
+}}}

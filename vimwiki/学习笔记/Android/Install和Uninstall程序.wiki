@@ -1,0 +1,13 @@
+= Install和Uninstall程序 =
+
+{{{class="brush:java"
+// 安装程序
+Uri installUri = Uri.fromParts("package", "xxx", null);
+Intent it = new Intent(Intent.ACTION_PACKAGE_ADDED, installUri);
+startActivity(it);
+
+// 卸载程序
+Uri uri = Uri.fromParts("package", strPackageName, null);   
+Intent it = new Intent(Intent.ACTION_DELETE, uri);   
+startActivity(it);
+}}}

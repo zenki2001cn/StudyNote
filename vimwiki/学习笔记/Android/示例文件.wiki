@@ -1,0 +1,364 @@
+= 示例文件 =
+
+%toc
+
+== main.mk ==
+{{{class="brush:bash"
+......
+BUILD_SYSTEM := $(TOPDIR)build/core
+
+......
+# Set up various standard variables based on configuration
+# and host information.
+include $(BUILD_SYSTEM)/config.mk
+
+# This allows us to force a clean build - included after the config.make
+# environment setup is done, but before we generate any dependencies.  This
+# file does the rm -rf inline so the deps which are all done below will
+# be generated correctly
+include $(BUILD_SYSTEM)/cleanbuild.mk
+
+......
+# Bring in standard build system definitions.
+include $(BUILD_SYSTEM)/definitions.mk
+
+# Bring in dex_preopt.mk
+include $(BUILD_SYSTEM)/dex_preopt.mk
+
+......
+# 查找所有子目录的Android.mk
+subdir_makefiles := \
+	$(shell build/tools/findleaves.py --prune=out --prune=.repo --prune=.git $(subdirs) Android.mk)
+
+include $(subdir_makefiles)
+
+......
+# build/core/Makefile contains extra stuff that we don't want to pollute this
+# top-level makefile with.  It expects that ALL_DEFAULT_INSTALLED_MODULES
+# contains everything that's built during the current make, but it also further
+# extends ALL_DEFAULT_INSTALLED_MODULES.
+# 最终调用Makefile
+ALL_DEFAULT_INSTALLED_MODULES := $(modules_to_install)
+include $(BUILD_SYSTEM)/Makefile
+modules_to_install := $(sort $(ALL_DEFAULT_INSTALLED_MODULES))
+ALL_DEFAULT_INSTALLED_MODULES :=
+}}}
+
+== config.mk ==
+{{{class="brush:bash"
+......
+# Try to include buildspec.mk, which will try to set stuff up.
+# If this file doesn't exist, the environemnt variables will
+# be used, and if that doesn't work, then the default is an
+# arm build
+# 包含自定义的mk
+-include $(TOPDIR)buildspec.mk
+
+# Define most of the global variables.  These are the ones that
+# are specific to the user's build configuration.
+# 环境变量设置
+include $(BUILD_SYSTEM)/envsetup.mk
+
+# Boards may be defined under $(SRC_TARGET_DIR)/board/$(TARGET_DEVICE)
+# or under vendor/*/$(TARGET_DEVICE).  Search in both places, but
+# make sure only one exists.
+# Real boards should always be associated with an OEM vendor.
+# 查找board_config_mk
+board_config_mk := \
+	$(strip $(wildcard \
+		$(SRC_TARGET_DIR)/board/$(TARGET_DEVICE)/BoardConfig.mk \
+		device/*/$(TARGET_DEVICE)/BoardConfig.mk \
+		vendor/*/$(TARGET_DEVICE)/BoardConfig.mk \
+	))
+ifeq ($(board_config_mk),)
+  $(error No config file found for TARGET_DEVICE $(TARGET_DEVICE))
+endif
+ifneq ($(words $(board_config_mk)),1)
+  $(error Multiple board config files for TARGET_DEVICE $(TARGET_DEVICE): $(board_config_mk))
+endif
+include $(board_config_mk)
+TARGET_DEVICE_DIR := $(patsubst %/,%,$(dir $(board_config_mk)))
+board_config_mk :=
+
+......
+# 平台相关
+combo_target := HOST_
+include $(BUILD_SYSTEM)/combo/select.mk
+
+# on windows, the tools have .exe at the end, and we depend on the
+# host config stuff being done first
+
+combo_target := TARGET_
+include $(BUILD_SYSTEM)/combo/select.mk
+
+# Pick a Java compiler.
+include $(BUILD_SYSTEM)/combo/javac.mk
+}}}
+
+== pathmap.mk ==
+- 定义了各种路径的变量和映射
+- include-path-for可以根据短名来查找对应的路径
+
+{{{class="brush:bash"
+#
+# A mapping from shorthand names to include directories.
+#
+pathmap_INCL := \
+    bluedroid:system/bluetooth/bluedroid/include \
+    bluez:external/bluetooth/bluez \
+    glib:external/bluetooth/glib \
+    bootloader:bootable/bootloader/legacy/include \
+    corecg:external/skia/include/core \
+    dbus:external/dbus \
+    frameworks-base:frameworks/base/include \
+    graphics:external/skia/include/core \
+    libc:bionic/libc/include \
+    libdrm1:frameworks/base/media/libdrm/mobile1/include \
+    libhardware:hardware/libhardware/include \
+    libhardware_legacy:hardware/libhardware_legacy/include \
+    libhost:build/libs/host/include \
+    libm:bionic/libm/include \
+    libnativehelper:dalvik/libnativehelper/include \
+    libpagemap:system/extras/libpagemap/include \
+    libril:hardware/ril/include \
+    libstdc++:bionic/libstdc++/include \
+    libthread_db:bionic/libthread_db/include \
+    mkbootimg:system/core/mkbootimg \
+    recovery:bootable/recovery \
+    system-core:system/core/include
+    
+#
+# Returns the path to the requested module's include directory,
+# relative to the root of the source tree.  Does not handle external
+# modules.
+#
+# $(1): a list of modules (or other named entities) to find the includes for
+#
+define include-path-for
+$(foreach n,$(1),$(patsubst $(n):%,%,$(filter $(n):%,$(pathmap_INCL))))
+endef
+}}}
+
+== envsetup.mk ==
+- 该文件定义了相关的环境变量，请查看[[Build环境变量]]。
+
+{{{class="brush:bash"
+......
+# Set up version information.
+include $(BUILD_SYSTEM)/version_defaults.mk
+
+......
+# Read the product specs so we an get TARGET_DEVICE and other
+# variables that we need in order to locate the output files.
+include $(BUILD_SYSTEM)/product_config.mk
+}}}
+
+== node_fns.mk ==
+- import-nodes创建xxx.xxx.xxx形式的字符串，并赋予特定的值，如`PRODUCTS.build/target/product/core.mk.PRODUCT_NAME:=core`。
+    - $(1)是一个字串，是输出变量的主干名。例如”PRODUCTS"和”DEVICES“。
+    - $(2)是一个makefile文件列表，这些文件中应该含有对$(3)中变量的定义。
+    - $(3)是一个变量列表。
+
+{{{class="brush:bash"
+......
+#
+# $(1): output list variable name, like "PRODUCTS" or "DEVICES"
+# $(2): list of makefiles representing nodes to import
+# $(3): list of node variable names
+#
+define import-nodes
+$(if \
+  $(foreach _in,$(2), \
+    $(eval _node_import_context := _nic.$(1).[[$(_in)]]) \
+    $(if $(_include_stack),$(eval $(error ASSERTION FAILED: _include_stack \
+                should be empty here: $(_include_stack))),) \
+    $(eval _include_stack := ) \
+    $(call _import-nodes-inner,$(_node_import_context),$(_in),$(3)) \
+    $(call move-var-list,$(_node_import_context).$(_in),$(1).$(_in),$(3)) \
+    $(eval _node_import_context :=) \
+    $(eval $(1) := $($(1)) $(_in)) \
+    $(if $(_include_stack),$(eval $(error ASSERTION FAILED: _include_stack \
+                should be empty here: $(_include_stack))),) \
+   ) \
+,)
+endef
+......
+}}}
+
+== product_config.mk ==
+- 根据TARGET_PRODUCT查找相应的路径，并设置相关的环境变量
+- 加载三个mk文件
+
+{{{class="brush:bash"
+# Convert a short name like "sooner" into the path to the product
+# file defining that product.
+#
+INTERNAL_PRODUCT := $(call resolve-short-product-name, $(TARGET_PRODUCT))
+#$(error TARGET_PRODUCT $(TARGET_PRODUCT) --> $(INTERNAL_PRODUCT))
+
+# Find the device that this product maps to.
+TARGET_DEVICE := $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_DEVICE)
+
+# Figure out which resoure configuration options to use for this
+# product.
+PRODUCT_LOCALES := $(strip $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_LOCALES))
+
+# Include the product definitions.
+# We need to do this to translate TARGET_PRODUCT into its
+# underlying TARGET_DEVICE before we start defining any rules.
+#
+include $(BUILD_SYSTEM)/node_fns.mk
+include $(BUILD_SYSTEM)/product.mk
+include $(BUILD_SYSTEM)/device.mk
+}}}
+
+== product.mk ==
+{{{class="brush:bash"
+# 查找AndroidProducts.mk
+define _find-android-products-files
+$(shell test -d device && find device -maxdepth 6 -name AndroidProducts.mk) \
+  $(shell test -d vendor && find vendor -maxdepth 6 -name AndroidProducts.mk) \
+  $(SRC_TARGET_DIR)/product/AndroidProducts.mk
+endef
+
+# Returns the sorted concatenation of PRODUCT_MAKEFILES
+# variables set in the given AndroidProducts.mk files.
+# $(1): the list of AndroidProducts.mk files.
+#
+define get-product-makefiles
+$(sort \
+  $(foreach f,$(1), \
+    $(eval PRODUCT_MAKEFILES :=) \
+    $(eval LOCAL_DIR := $(patsubst %/,%,$(dir $(f)))) \
+    $(eval include $(f)) \
+    $(PRODUCT_MAKEFILES) \
+   ) \
+  $(eval PRODUCT_MAKEFILES :=) \
+  $(eval LOCAL_DIR :=) \
+ )
+endef
+
+# Returns the sorted concatenation of all PRODUCT_MAKEFILES
+# variables set in all AndroidProducts.mk files.
+# $(call ) isn't necessary.
+#
+define get-all-product-makefiles
+$(call get-product-makefiles,$(_find-android-products-files))
+endef
+
+# Functions for including product makefiles
+
+_product_var_list := \
+    PRODUCT_NAME \
+    PRODUCT_MODEL \
+    PRODUCT_LOCALES \
+    PRODUCT_PACKAGES \
+    PRODUCT_DEVICE \
+    PRODUCT_MANUFACTURER \
+    PRODUCT_BRAND \
+    PRODUCT_PROPERTY_OVERRIDES \
+    PRODUCT_CHARACTERISTICS \
+    PRODUCT_COPY_FILES \
+    PRODUCT_OTA_PUBLIC_KEYS \
+    PRODUCT_PACKAGE_OVERLAYS \
+    DEVICE_PACKAGE_OVERLAYS \
+    PRODUCT_CONTRIBUTORS_FILE \
+    PRODUCT_TAGS \
+    PRODUCT_SDK_ADDON_NAME \
+    PRODUCT_SDK_ADDON_COPY_FILES \
+    PRODUCT_SDK_ADDON_COPY_MODULES \
+    PRODUCT_SDK_ADDON_DOC_MODULE \
+    PRODUCT_DEFAULT_WIFI_CHANNELS
+}}}
+
+== Makefile ==
+- 编译工作完成后会执行Makefile做一些文件拷贝和镜像打包的工作。
+
+{{{class="brush:bash"
+......
+# #################################################################
+# Targets for boot/OS images
+# #################################################################
+# the ramdisk
+INTERNAL_RAMDISK_FILES := $(filter $(TARGET_ROOT_OUT)/%, \
+	$(ALL_PREBUILT) \
+	$(ALL_COPIED_HEADERS) \
+	$(ALL_GENERATED_SOURCES) \
+	$(ALL_DEFAULT_INSTALLED_MODULES))
+
+BUILT_RAMDISK_TARGET := $(PRODUCT_OUT)/ramdisk.img
+
+# We just build this directly to the install location.
+INSTALLED_RAMDISK_TARGET := $(BUILT_RAMDISK_TARGET)
+$(INSTALLED_RAMDISK_TARGET): $(MKBOOTFS) $(INTERNAL_RAMDISK_FILES) | $(MINIGZIP)
+	$(call pretty,"Target ram disk: $@")
+	$(hide) $(MKBOOTFS) $(TARGET_ROOT_OUT) | $(MINIGZIP) > $@
+
+......
+# #################################################################
+# system image
+# #################################################################
+systemimage_intermediates := \
+	$(call intermediates-dir-for,PACKAGING,systemimage)
+BUILT_SYSTEMIMAGE := $(systemimage_intermediates)/system.img
+
+INTERNAL_SYSTEMIMAGE_FILES := $(filter $(TARGET_OUT)/%, \
+	$(ALL_PREBUILT) \
+	$(ALL_COPIED_HEADERS) \
+	$(ALL_GENERATED_SOURCES) \
+	$(ALL_DEFAULT_INSTALLED_MODULES))
+
+ifeq ($(INTERNAL_USERIMAGES_USE_EXT),true)
+## generate an ext2 image
+# $(1): output file
+define build-systemimage-target
+    @echo "Target system fs image: $(1)"
+    $(call build-userimage-ext-target,$(TARGET_OUT),$(1),system,$(INTERNAL_USERIMAGES_EXT_VARIANT),$(BOARD_SYSTEMIMAGE_PARTITION_SIZE))
+endef
+
+else # INTERNAL_USERIMAGES_USE_EXT != true
+
+## generate a yaffs2 image
+# $(1): output file
+define build-systemimage-target
+    @echo "Target system fs image: $(1)"
+    @mkdir -p $(dir $(1))
+    $(hide) $(MKYAFFS2) -f $(mkyaffs2_extra_flags) $(TARGET_OUT) $(1)
+endef
+endif # INTERNAL_USERIMAGES_USE_EXT
+
+$(BUILT_SYSTEMIMAGE): $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
+	$(call build-systemimage-target,$@)
+
+INSTALLED_SYSTEMIMAGE := $(PRODUCT_OUT)/system.img
+SYSTEMIMAGE_SOURCE_DIR := $(TARGET_OUT)
+
+......
+# #################################################################
+# data partition image
+# #################################################################
+INTERNAL_USERDATAIMAGE_FILES := \
+	$(filter $(TARGET_OUT_DATA)/%,$(ALL_DEFAULT_INSTALLED_MODULES))
+
+ifeq ($(INTERNAL_USERIMAGES_USE_EXT),true)
+## Generate an ext image
+define build-userdataimage-target
+    $(call pretty,"Target userdata fs image: $(INSTALLED_USERDATAIMAGE_TARGET)")
+    @mkdir -p $(TARGET_OUT_DATA)
+    $(call build-userimage-ext-target,$(TARGET_OUT_DATA),$(INSTALLED_USERDATAIMAGE_TARGET),data,$(INTERNAL_USERIMAGES_EXT_VARIANT),$(BOARD_USERDATAIMAGE_PARTITION_SIZE))
+    $(hide) $(call assert-max-image-size,$(INSTALLED_USERDATAIMAGE_TARGET),$(BOARD_USERDATAIMAGE_PARTITION_SIZE),yaffs)
+endef
+
+else # INTERNAL_USERIMAGES_USE_EXT != true
+
+## Generate a yaffs2 image
+define build-userdataimage-target
+    $(call pretty,"Target userdata fs image: $(INSTALLED_USERDATAIMAGE_TARGET)")
+    @mkdir -p $(TARGET_OUT_DATA)
+    $(hide) $(MKYAFFS2) -f $(mkyaffs2_extra_flags) $(TARGET_OUT_DATA) $(INSTALLED_USERDATAIMAGE_TARGET)
+    $(hide) $(call assert-max-image-size,$(INSTALLED_USERDATAIMAGE_TARGET),$(BOARD_USERDATAIMAGE_PARTITION_SIZE),yaffs)
+endef
+endif # INTERNAL_USERIMAGES_USE_EXT
+
+BUILT_USERDATAIMAGE_TARGET := $(PRODUCT_OUT)/userdata.img
+}}}

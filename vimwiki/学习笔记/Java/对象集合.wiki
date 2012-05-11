@@ -1,0 +1,257 @@
+= 对象集合 =
+
+== 数组 ==
+- 声明一个数组，并需要对数组做初始化
+- 对象数组存储的是对象的引用，而基本类型的数组存储的时基本类型数据的值
+- length属性返回数组的最大长度而不是实际元素个数，"[]"用于访问数组的元素
+
+{{{class="brush:java"
+class Weeble {};
+
+Weeble[] a;     // 没有做初始化
+Weeble[] b = new Weeble[4];     // 声明了Weeble数组，但没有为其中的元素做初始化
+Weeble[] c = {new Weeble(), new Weeble(), new Weeble()};    // 初始化了数组元素的数组
+a = new Weeble[] {new Weeble(), new Weeble(), new Weeble()};    // 为a做动态初始化
+}}}
+
+- Java允许返回一个数组
+
+=== Arrays类 ===
+- 该类成员都是静态类型的
+- 四种常用方法
+
+{{{class="brush:text"
+equals()    比较两个数组是否相等
+fill()      使用某个值填充整个数组
+sort()      对数组进行排序
+binarySearch()      对数组进行排序
+}}}
+
+=== 复制数组 ===
+- 标准的static方法System.arraycopy()
+- 参数说明
+
+{{{class="brush:text"
+System.arrarcopy(src, src_i, des, des_i, len)
+src     源数组
+src_i   源数组起始位置
+des     目标数组
+des_i   目标数组起始位置
+len     复制元素个数
+}}}
+
+=== 数组的比较 ===
+- 通过Arrays.equals()方法比较各元素及数组长度
+
+{{{class="brush:java"
+static boolean 	equals(boolean[] a, boolean[] a2)
+          如果两个指定的 boolean 型数组彼此相等，则返回 true。
+static boolean 	equals(byte[] a, byte[] a2)
+          如果两个指定的 byte 型数组彼此相等，则返回 true。
+static boolean 	equals(char[] a, char[] a2)
+          如果两个指定的 char 型数组彼此相等，则返回 true。
+static boolean 	equals(double[] a, double[] a2)
+          如果两个指定的 double 型数组彼此相等，则返回 true。
+static boolean 	equals(float[] a, float[] a2)
+          如果两个指定的 float 型数组彼此相等，则返回 true。
+static boolean 	equals(int[] a, int[] a2)
+          如果两个指定的 int 型数组彼此相等，则返回 true。
+static boolean 	equals(long[] a, long[] a2)
+          如果两个指定的 long 型数组彼此相等，则返回 true。
+static boolean 	equals(Object[] a, Object[] a2)
+          如果两个指定的 Objects 数组彼此相等，则返回 true。
+static boolean 	equals(short[] a, short[] a2)
+          如果两个指定的 short 型数组彼此相等，则返回 true。
+}}}
+
+=== 数组元素的比较与排序 ===
+- 通常程序设计“将不变的事物与变化的事物相分离”,因此使用回调函数来处理变化的事物，在Java中即通过Interface来实现
+- 通过实现java.lang.Comparable接口,实现compareTo方法
+- 生成一个比较器Comparator接口对象，实现compare方法
+- 通过Arrays.sort()方法来实现数组的排序
+
+{{{class="brush:java"
+static void	sort(byte[] a, int fromIndex, int toIndex)
+          对指定 byte 型数组的指定范围按数字升序进行排序。
+static void	sort(char[] a)
+          对指定的 char 型数组按数字升序进行排序。
+static void	sort(char[] a, int fromIndex, int toIndex)
+          对指定 char 型数组的指定范围按数字升序进行排序。
+static void	sort(double[] a)
+          对指定的 double 型数组按数字升序进行排序。
+static void	sort(double[] a, int fromIndex, int toIndex)
+          对指定 double 型数组的指定范围按数字升序进行排序。
+static void	sort(float[] a)
+          对指定的 float 型数组按数字升序进行排序。
+static void	sort(float[] a, int fromIndex, int toIndex)
+          对指定 float 型数组的指定范围按数字升序进行排序。
+static void	sort(int[] a)
+          对指定的 int 型数组按数字升序进行排序。
+static void	sort(int[] a, int fromIndex, int toIndex)
+          对指定 int 型数组的指定范围按数字升序进行排序。
+static void	sort(long[] a)
+          对指定的 long 型数组按数字升序进行排序。
+static void	sort(long[] a, int fromIndex, int toIndex)
+          对指定 long 型数组的指定范围按数字升序进行排序。
+static void	sort(Object[] a)
+          根据元素的自然顺序，对指定对象数组按升序进行排序。
+static void	sort(Object[] a, int fromIndex, int toIndex)
+          根据元素的自然顺序，对指定对象数组的指定范围按升序进行排序。
+static void	sort(short[] a)
+          对指定的 short 型数组按数字升序进行排序。
+static void	sort(short[] a, int fromIndex, int toIndex)
+          对指定 short 型数组的指定范围按数字升序进行排序。
+static <T> void
+	sort(T[] a, Comparator<? super T> c)
+          根据指定比较器产生的顺序对指定对象数组进行排序。
+static <T> void
+	sort(T[] a, int fromIndex, int toIndex, Comparator<? super T> c)
+          根据指定比较器产生的顺序对指定对象数组的指定范围进行排序。
+}}}
+
+=== 数组的查找 ===
+- 在查找前必须对数组排序
+- 使用binarySearch方法进行查找
+
+{{{class="brush:java"
+static int 	binarySearch(byte[] a, byte key)
+          使用二进制搜索算法来搜索指定的 byte 型数组，以获得指定的值。
+static int 	binarySearch(char[] a, char key)
+          使用二进制搜索算法来搜索指定的 char 型数组，以获得指定的值。
+static int 	binarySearch(double[] a, double key)
+          使用二进制搜索算法来搜索指定的 double 型数组，以获得指定的值。
+static int 	binarySearch(float[] a, float key)
+          使用二进制搜索算法来搜索指定的 float 型数组，以获得指定的值。
+static int 	binarySearch(int[] a, int key)
+          使用二进制搜索算法来搜索指定的 int 型数组，以获得指定的值。
+static int 	binarySearch(long[] a, long key)
+          使用二进制搜索算法来搜索指定的 long 型数组，以获得指定的值。
+static int 	binarySearch(Object[] a, Object key)
+          使用二进制搜索算法来搜索指定数组，以获得指定对象。
+static int 	binarySearch(short[] a, short key)
+          使用二进制搜索算法来搜索指定的 short 型数组，以获得指定的值。
+static <T> int
+	binarySearch(T[] a, T key, Comparator<? super T> c)
+          使用二进制搜索算法来搜索指定数组，以获得指定对象。
+}}}
+
+== 容器类 ==
+容器类的用途是“持有你的对象”,并划分为两个不同的概念
+# Collection：一组独立的元素，List必须保持数据有序性，Set不能有重复的元素。
+# Map：一组键值对对象。
+# 不能将基本类型数据放入容器。
+ 
+=== 容器类的缺点 ===
+# 因为将对象的引用加入容器时就丢失了类型信息，所以对于添入容器的对象没有类型限制。
+# 在使用容器中的元素前必须做类型转换操作，否则会抛出RuntimeException。
+
+=== 迭代器 ===
+迭代器是一个对象，它可以遍历并选择序列中的对象
+# 使用interator()方法返回一个Interator对象。
+# 调用next()方法，返回序列的第一个元素。
+# 使用hasNext()方法，检查序列是否还有元素。
+# 使用remove()方法，将上一次返回的元素从迭代器中移除。
+
+_容器集合示例图_
+
+[pic/容器集合.png]
+
+=== List ===
+| 类              | 说    明                                                               |
+|-----------------+------------------------------------------------------------------------|
+| List(Interface) | 次序是List最重要的特点，它保证维护元素特定的次序                       |
+| ArrayList       | 由数组实现的List，允许对元素进行快速随机访问，但是插入和移除的速度很慢 |
+| LinkedList      | 对顺序访问做了优化，插入和删除的开销不大，但随机访问速度较慢           |
+
+=== Set ===
+| 类             | 说    明                                                                           |
+|----------------+------------------------------------------------------------------------------------|
+| Set(Interface) | 存入Set的元素必须是唯一的，并且加入的元素必须定义equals()方法，Set不保证元素的次序 |
+| HashSet        | 为快速查找设计的Set，存入的元素必须定义hashCode()                                  |
+| TreeSet        | 保持次序的Set                                                                      |
+| LinkedHashSet  | 具有HashSet的速度，且维护元素的插入次序                                            |
+
+=== Map ===
+
+| 类              | 说    明                                             |
+|-----------------+------------------------------------------------------|
+| Map(Interface)  | 通过键来查找值                                       |
+| HashMap         | Map基于散列表的实现，插入和查询的开销是固定的        |
+| LinkedHashMap   | 类似于HashMap,其内部维护元素次序                     |
+| TreeMap         | 基于红黑树的实现，它的特点在于得到的结果是经过排序的 |
+| WeakHashMap     | Map中的对象在没有引用时允许被释放                    |
+| IdentityHashMap | 使用==代替equals()对键进行比较的HashMap              |
+
+=== Collections类 ===
+- 该类提供了类似于Arrays类的各种静态方法，用于操作容器类对象
+
+{{{class="brush:text"
+static <T> int
+	binarySearch(List<? extends Comparable<? super T>> list, T key)
+          使用二分搜索法搜索指定列表，以获得指定对象。
+static <T> void
+	copy(List<? super T> dest, List<? extends T> src)
+          将所有元素从一个列表复制到另一个列表。
+static boolean 	disjoint(Collection<?> c1, Collection<?> c2)
+          如果两个指定 collection 中没有相同的元素，则返回 true。
+static <T> void
+	fill(List<? super T> list, T obj)
+          使用指定元素替换指定列表中的所有元素。
+static int 	frequency(Collection<?> c, Object o)
+          返回指定 collection 中等于指定对象的元素数。
+static int 	indexOfSubList(List<?> source, List<?> target)
+          返回指定源列表中第一次出现指定目标列表的起始位置；如果没有出现这样的列表，则返回 -1。
+static int 	lastIndexOfSubList(List<?> source, List<?> target)
+          返回指定源列表中最后一次出现指定目标列表的起始位置；如果没有出现这样的列表，则返回 -1。
+static <T> ArrayList<T>
+	list(Enumeration<T> e)
+          返回一个数组列表，它按返回顺序包含指定枚举返回的元素。
+static <T extends Object & Comparable<? super T>> T
+	max(Collection<? extends T> coll)
+          根据元素的自然顺序，返回给定 collection 的最大元素。
+static <T> T
+	max(Collection<? extends T> coll, Comparator<? super T> comp)
+          根据指定比较器产生的顺序，返回给定 collection 的最大元素。
+static <T extends Object & Comparable<? super T>> T
+	min(Collection<? extends T> coll)
+          根据元素的自然顺序 返回给定 collection 的最小元素。
+static <T> T
+	min(Collection<? extends T> coll, Comparator<? super T> comp)
+          根据指定比较器产生的顺序，返回给定 collection 的最小元素。
+static <T> boolean
+	replaceAll(List<T> list, T oldVal, T newVal)
+          使用另一个值替换列表中出现的所有某一指定值。
+static void	reverse(List<?> list)
+          反转指定列表中元素的顺序。
+static <K,V> Map<K,V>
+	singletonMap(K key, V value)
+          返回一个不可变的映射，它只将指定键映射到指定值。
+static void 	swap(List<?> list, int i, int j)
+          在指定列表的指定位置处交换元素。
+static <T> Collection<T>
+	synchronizedCollection(Collection<T> c)
+          返回指定 collection 支持的同步（线程安全的）collection。
+static <T> List<T>
+	synchronizedList(List<T> list)
+          返回指定列表支持的同步（线程安全的）列表。
+static <K,V> Map<K,V>
+	synchronizedMap(Map<K,V> m)
+          返回由指定映射支持的同步（线程安全的）映射。
+static <T> Set<T>
+	synchronizedSet(Set<T> s)
+          返回指定 set 支持的同步（线程安全的）set。
+static <T> Collection<T>
+	unmodifiableCollection(Collection<? extends T> c)
+          返回指定 collection 的不可修改视图。
+static <T> List<T>
+	unmodifiableList(List<? extends T> list)
+          返回指定列表的不可修改视图。
+static <K,V> Map<K,V>
+	unmodifiableMap(Map<? extends K,? extends V> m)
+          返回指定映射的不可修改视图。
+static <T> Set<T>
+	unmodifiableSet(Set<? extends T> s)
+          返回指定 set 的不可修改视图。
+......
+......
+}}}

@@ -1,0 +1,60 @@
+= StatusBarView =
+_该类是一个自定义的视图类，决定了状态栏的布局、属性等。_
+
+%toc
+
+== 要点分析 ==
+- 状态栏实际上包含三个区域，`NotificationIcon`、`StatusIcon`和`Date`，分别标识通知区域，ICON区域和时间区域。
+- `onLayout`方法中处理子视图。
+- `getViewOffset`获取最左边的视图位置。
+- `onTouchEvent`和`onInterceptTouchEvent`处理触摸事件。
+
+== 代码片断解析 ==
+{{{class="brush:java"
+// 初始化视图控件
+protected void onFinishInflate() {
+    super.onFinishInflate();
+    
+    mNotificationIcons = (ViewGroup)findViewById(R.id.notificationIcons);
+    mStatusIcons = (ViewGroup)findViewById(R.id.statusIcons);
+    mDate = findViewById(R.id.date);
+    
+    ......
+}
+
+// 刷新子视图
+protected void onLayout(boolean changed, int l, int t, int r, int b) {
+    super.onLayout(changed, l, t, r, b);
+    ......
+}
+
+// 获取最左边视图位置
+private int getViewOffset(View v) {
+    int offset = 0;
+    while (v != this) {
+        offset += v.getLeft();
+        ViewParent p = v.getParent();
+        if (v instanceof View) {
+            v = (View)p;
+        } else {
+            throw new RuntimeException(v + " is not a child of " + this);
+        }
+    }
+    return offset;
+}
+
+// 处理触摸事件回调
+public boolean onTouchEvent(MotionEvent event) {
+    if (event.getAction() != MotionEvent.ACTION_DOWN) {
+        mService.interceptTouchEvent(event);
+    }
+    return true;
+}
+
+// 阻止触摸事件回调
+public boolean onInterceptTouchEvent(MotionEvent event) {
+    return mService.interceptTouchEvent(event)
+            ? true : super.onInterceptTouchEvent(event);
+}
+}}}
+

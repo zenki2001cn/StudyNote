@@ -1,0 +1,67 @@
+= ATI显卡重装 =
+
+%toc
+
+== 更新内核 ==
+{{{class="brush:bash"
+$ sudo update-grub update-grub2
+
+# 修改/boot/grub/grub.cfg
+}}}
+
+== 删除旧的驱动 ==
+{{{class="brush:bash"
+$ cd /usr/share/ati/
+
+$ sudo ./fglrx-uninstall.sh
+
+$ sudo apt-get remove xorg-driver-fglrx xserver-xorg-video-ati xserver-xgl
+
+$ sudo reboot
+}}}
+
+== 安装新驱动 ==
+{{{class="brush:bash"
+$ sudo sh ./ati-driver-installer-8-11-x86.x86_64.run
+
+# 安装完毕后，把配置文件初始化一下，执行
+$ sudo aticonfig --initial -f
+
+#生成 modules.dep 和 map 文件，保证模块和驱动的正常加载。
+$ sudo depmod -a
+
+$ sudo reboot
+}}}
+
+== 检查是否成功 ==
+{{{class="brush:bash"
+# 显示信息
+$ fglrxinfo
+
+# 是否在xv模式下
+$ xvinfo
+
+# 如果显示的结果很多很多，那就是工作在xv模式下了,否则需要设置
+$ sudo aticonfig –overlay-type=xv
+
+# 硬件加速
+$ glxinfo | grep direct
+$ glxgears
+}}}
+
+== 没有标题栏的解决办法 ==
+{{{class="brush:text"
+// 在xorg.conf中添加
+Section "Device"
+......
+......
+Option "AddARGBGLXVisuals" "True"
+......
+......
+EndSection
+
+或者打开gconf-editor，
+选择“/apps/metacity/general”,把button_layout项的值改回
+"menu:minimize,maximize,close"
+保存即可。
+}}}

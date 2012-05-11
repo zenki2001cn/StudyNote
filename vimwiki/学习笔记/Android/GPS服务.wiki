@@ -1,0 +1,448 @@
+= GPS服务 =
+
+%toc
+
+== 功能概述 ==
+{{{class="brush:text"
+    GPS的服务是由LocationManagerService实现，它主要用来获取底层传来的GPS数据，
+并传递给上层应用；同时接收管理层的控制指令，向下层传递。需要注意的是该类实现了Runnable接口，
+因此它会作为一个线程运行。
+}}}
+
+== 权限声明 ==
+- 如果要使用GPS，在APP层需要加入以下几种权限声明：
+    - ACCESS_FINE_LOCATION：允许获取精确定位的权限。
+    - ACCESS_COARSE_LOCATION：允许通过Wifi获取粗略定位的权限。
+    - ACCESS_MOCK_LOCATION：允许模拟定位以供测试的权限。
+    - ACCESS_LOCATION_EXTRA_COMMANDS：允许发送其他指令的权限。
+    - INSTALL_LOCATION_PROVIDER：允许安装Provider的权限。
+
+=== LocationManagerService ===
+{{{class="brush:java"
+public class LocationManagerService extends ILocationManager.Stub implements Runnable {
+    ......
+    private static final String ACCESS_FINE_LOCATION =
+        android.Manifest.permission.ACCESS_FINE_LOCATION;
+    private static final String ACCESS_COARSE_LOCATION =
+        android.Manifest.permission.ACCESS_COARSE_LOCATION;
+    private static final String ACCESS_MOCK_LOCATION =
+        android.Manifest.permission.ACCESS_MOCK_LOCATION;
+    private static final String ACCESS_LOCATION_EXTRA_COMMANDS =
+        android.Manifest.permission.ACCESS_LOCATION_EXTRA_COMMANDS;
+    private static final String INSTALL_LOCATION_PROVIDER =
+        android.Manifest.permission.INSTALL_LOCATION_PROVIDER;
+    ......
+}
+}}}
+
+== 服务线程的运行 ==
+- LocationManagerService实现了ILocationManager的服务端功能，并且它还实现了Runnable接口，因为它需要不断接收底层传递的GPS信息。
+- 查看线程的run方法，除了设置线程属性并初始化Handler外，它的主要工作在initialize方法中完成：
+    - 获取Wake lock以便在之后的操作前休眠。
+    - 加载所有可用的Provider：
+        - 加载真实的提供GPS功能的Provider 
+        - 加载虚拟的Provider，通常实现为空 
+        - 加载具有网络定位功能的Provider
+        - 加载具有地址信息和经纬度转换功能的Provider
+    - 注册wifi或mobile的连接通知
+    - 注册package的变化通知
+    - 监控settings的设置变化
+
+=== run ===
+{{{class="brush:java"
+public void run() {
+    Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+    Looper.prepare();
+    mLocationHandler = new LocationWorkerHandler();
+    initialize();
+    Looper.loop();
+}
+}}}
+
+=== initialize ===
+{{{class="brush:java"
+private void initialize() {
+    // 首先获取Wake lock
+    PowerManager powerManager = 
+        (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+    mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKELOCK_KEY);
+
+    // 加载所有Provider
+    loadProviders();
+
+    // 注册wifi或mobile的连接通知
+    IntentFilter intentFilter = new IntentFilter();
+    intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+    // 注册package的变化通知
+    intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+    intentFilter.addAction(Intent.ACTION_PACKAGE_RESTARTED);
+    intentFilter.addAction(Intent.ACTION_QUERY_PACKAGE_RESTART);
+    mContext.registerReceiver(mBroadcastReceiver, intentFilter);
+    IntentFilter sdFilter = 
+        new IntentFilter(Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE);
+    mContext.registerReceiver(mBroadcastReceiver, sdFilter);
+
+    // 监控settings的设置变化
+    ......
+    SettingsObserver settingsObserver = new SettingsObserver();
+    mSettings.addObserver(settingsObserver);
+}
+}}}
+
+=== _loadProvidersLocked ===
+{{{class="brush:java"
+private void _loadProvidersLocked() {
+    // 加载真实的具有定位功能的Provider
+    if (GpsLocationProvider.isSupported()) {
+        // Create a gps location provider
+        GpsLocationProvider gpsProvider = new GpsLocationProvider(mContext, this);
+        mGpsStatusProvider = gpsProvider.getGpsStatusProvider();
+        mNetInitiatedListener = gpsProvider.getNetInitiatedListener();
+        addProvider(gpsProvider);
+        mGpsLocationProvider = gpsProvider;
+    }
+
+    // 加载虚拟的Provider
+    PassiveProvider passiveProvider = new PassiveProvider(this);
+    addProvider(passiveProvider);
+    mEnabledProviders.add(passiveProvider.getName());
+
+    // 加载具有网络定位功能的Provider
+    if (mNetworkLocationProviderPackageName != null) {
+        mNetworkLocationProvider =
+            new LocationProviderProxy(mContext, LocationManager.NETWORK_PROVIDER,
+                    mNetworkLocationProviderPackageName, mLocationHandler);
+        addProvider(mNetworkLocationProvider);
+    }
+
+    // 加载具有地址信息和经纬度转换功能的Provider
+    if (mGeocodeProviderPackageName != null) {
+        mGeocodeProvider = new GeocoderProxy(mContext, mGeocodeProviderPackageName);
+    }
+
+    // 更新Provider状态
+    updateProvidersLocked();
+}
+}}}
+
+== 封装定位信息的回调 ==
+- 前面提过LocationManager管理类会向Service注册获取定位信息的回调，那么在Service中是通过内部类UpdateRecord和Receiver来管理这些回调。
+- Receiver是对上层注册的回调的抽象，它包含ILocationListener对象和负责发送处理的PendingIntent对象，并实现了PendingIntent.OnFinished和IBinder.DeathRecipient接口。
+- UpdateRecord会维护同一类型Provider的列表，Receiver会通过该类处理不同的Provider。
+
+=== UpdateRecord ===
+{{{class="brush:java"
+private class UpdateRecord {
+    ......
+    UpdateRecord(String provider, long minTime, 
+                 float minDistance, boolean singleShot,
+                 Receiver receiver, int uid) {
+        mProvider = provider;
+        mReceiver = receiver;
+        ......
+
+        ArrayList<UpdateRecord> records = mRecordsByProvider.get(provider);
+        if (records == null) {
+            records = new ArrayList<UpdateRecord>();
+            mRecordsByProvider.put(provider, records);
+        }
+        if (!records.contains(this)) {
+            records.add(this);
+        }
+    }
+
+    ......
+}
+}}}
+
+=== Receiver ===
+{{{class="brush:java"
+private final class Receiver implements IBinder.DeathRecipient, PendingIntent.OnFinished {
+    final ILocationListener mListener;
+    final PendingIntent mPendingIntent;
+    ......
+    Receiver(ILocationListener listener) {
+        mListener = listener;
+        mPendingIntent = null;
+        mKey = listener.asBinder();
+    }
+
+    Receiver(PendingIntent intent) {
+        mPendingIntent = intent;
+        mListener = null;
+        mKey = intent;
+    }
+    ......
+}
+}}}
+
+== 注册状态信息的回调 ==
+- addGpsStatusListener为LocationManager提供了注册获取状态信息回调的接口，而该回调即注册给了相应的Provider。
+
+{{{class="brush:java"
+public boolean addGpsStatusListener(IGpsStatusListener listener) {
+    ...... 
+    if (mContext.checkCallingOrSelfPermission(ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED) {
+        throw new SecurityException("Requires ACCESS_FINE_LOCATION permission");
+    }
+
+    try {
+        mGpsStatusProvider.addGpsStatusListener(listener);
+    } catch (RemoteException e) {
+        return false;
+    }
+    return true;
+}
+}}}
+
+== 发送定位请求 ==
+- Service通过requestLocationUpdates方法提供更新接口，并通过requestLocationUpdatesLocked方法实现具体功能：
+    - 回调接口会被封装成Receiver对象传给requestLocationUpdatesLocked。
+    - 首先根据名称取得相应的Provider对象。
+    - 通过checkPermissionsSafe验证调用的进程是否具有权限，否则会抛出异常。
+    - 创建新的UpdateRecord对象，之后Receiver会加入Provider并更新该对象。
+    - 接下来isAllowedBySettingsLocked会产生两个分支：
+        - 返回true则调用LocationProviderInterface.enableLocationTracking方法发送定位请求的操作。
+        - 返回false则调用Receiver.callProviderEnabledLocked禁用回调处理。
+
+=== requestLocationUpdates ===
+{{{class="brush:java"
+public void requestLocationUpdates(String provider, Criteria criteria,
+                                    long minTime, float minDistance, 
+                                    boolean singleShot, ILocationListener listener) {
+    ...... 
+    try {
+        synchronized (mLock) {
+            // 将回调接口封装成Receiver对象
+            requestLocationUpdatesLocked(provider, minTime, minDistance, singleShot,
+                    getReceiver(listener));
+        }
+    } 
+    ...... 
+}
+}}}
+
+=== requestLocationUpdatesLocked ===
+{{{class="brush:java"
+private void requestLocationUpdatesLocked(String provider, long minTime, float minDistance,
+        boolean singleShot, Receiver receiver) {
+
+    LocationProviderInterface p = mProvidersByName.get(provider);
+    ......
+    // 验证是否具有权限
+    checkPermissionsSafe(provider);
+    ......
+    try {
+        // 保存回调对象
+        UpdateRecord r = new UpdateRecord(provider, minTime, minDistance, singleShot,
+                receiver, callingUid);
+        UpdateRecord oldRecord = receiver.mUpdateRecords.put(provider, r);
+        ......
+
+        boolean isProviderEnabled = isAllowedBySettingsLocked(provider);
+        if (isProviderEnabled) {
+            long minTimeForProvider = getMinTimeLocked(provider);
+            p.setMinTime(minTimeForProvider, mTmpWorkSource);
+            // 开启Provider导航
+            if (!singleShot || !p.requestSingleShotFix()) {
+                p.enableLocationTracking(true);
+            }
+        } else {
+            // 更新回调的状态
+            receiver.callProviderEnabledLocked(provider, false);
+        }
+    } finally {
+        Binder.restoreCallingIdentity(identity);
+    }
+}
+}}}
+
+=== checkPermissionsSafe ===
+{{{class="brush:java"
+private void checkPermissionsSafe(String provider) {
+    if ((LocationManager.GPS_PROVIDER.equals(provider)
+             || LocationManager.PASSIVE_PROVIDER.equals(provider))
+        && (mContext.checkCallingOrSelfPermission(ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED)) {
+        throw new SecurityException("Provider " + provider
+                + " requires ACCESS_FINE_LOCATION permission");
+    }
+    if (LocationManager.NETWORK_PROVIDER.equals(provider)
+        && (mContext.checkCallingOrSelfPermission(ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED)
+        && (mContext.checkCallingOrSelfPermission(ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED)) {
+        throw new SecurityException("Provider " + provider
+                + " requires ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION permission");
+    }
+}
+}}}
+
+== 获取定位信息 ==
+- 无论是定位信息还是状态信息，最终都是注册回调给Provider，当Provider获取到相应信息后，则会调用Service的reportLocation方法。它会通过Handler的机制进行更新信息的处理：
+    - 同样要先检查是否具有权限。
+    - 通过LocationWorkerHandler发送`MESSAGE_LOCATION_CHANGED`消息来执行变更处理。
+- 从LocationWorkerHandler的处理消息流程分析，当接收到MESSAGE_LOCATION_CHANGED后，主要做两件事情：
+    - 调用LocationProviderInterface.updateLocation方法通知其他Provider更新它的位置信息。
+    - 执行更新定位信息的处理，这里有两个分支：
+        - 如果注册了回调，则调用Receiver.callLocationChangedLocked处理回调的更新接口，如onLocationChanged方法。
+        - 如果没有注册回调，则通过PendingIntent发送这个更新的通知。
+- 这里需要注意的是当调用回调处理信息更新时，会锁定初始化获得的Wake lock，并增加一个引用计数，更新完成后会减少这个引用计数。当该引用计数为0时,才会释放这个Wake lock。
+
+=== reportLocation ===
+{{{class="brush:java"
+public void reportLocation(Location location, boolean passive) {
+    if (mContext.checkCallingOrSelfPermission(INSTALL_LOCATION_PROVIDER)
+            != PackageManager.PERMISSION_GRANTED) {
+        throw new SecurityException("Requires INSTALL_LOCATION_PROVIDER permission");
+    }
+
+    mLocationHandler.removeMessages(MESSAGE_LOCATION_CHANGED, location);
+    Message m = Message.obtain(mLocationHandler, MESSAGE_LOCATION_CHANGED, location);
+    m.arg1 = (passive ? 1 : 0);
+    mLocationHandler.sendMessageAtFrontOfQueue(m);
+}
+}}}
+
+=== handleLocationChangedLocked ===
+{{{class="brush:java"
+private void handleLocationChangedLocked(Location location, boolean passive) {
+    String provider = (passive ? LocationManager.PASSIVE_PROVIDER : location.getProvider());
+    ...... 
+    LocationProviderInterface p = mProvidersByName.get(provider);
+    ...... 
+
+    // 通知并处理所有回调
+    final int N = records.size();
+    for (int i=0; i<N; i++) {
+        ......
+        if ((lastLoc == null) || shouldBroadcastSafe(location, lastLoc, r)) {
+            if (lastLoc == null) {
+                lastLoc = new Location(location);
+                r.mLastFixBroadcast = lastLoc;
+            } else {
+                lastLoc.set(location);
+            }
+            if (!receiver.callLocationChangedLocked(location)) {
+                receiverDead = true;
+            }
+        }
+
+        long prevStatusUpdateTime = r.mLastStatusBroadcast;
+        if ((newStatusUpdateTime > prevStatusUpdateTime) &&
+            (prevStatusUpdateTime != 0 || status != LocationProvider.AVAILABLE)) {
+
+            r.mLastStatusBroadcast = newStatusUpdateTime;
+            if (!receiver.callStatusChangedLocked(provider, status, extras)) {
+                receiverDead = true;
+            }
+        }
+        ...... 
+    }
+    ...... 
+}
+}}}
+
+=== callLocationChangedLocked ===
+{{{class="brush:java"
+public boolean callLocationChangedLocked(Location location) {
+    if (mListener != null) {
+        try {
+            synchronized (this) {
+                // 调用回调处理
+                mListener.onLocationChanged(location);
+                if (mListener != mProximityListener) {
+                    // 增加引用计数
+                    incrementPendingBroadcastsLocked();
+                }
+            }
+        } catch (RemoteException e) {
+            return false;
+        }
+    } else {
+        Intent locationChanged = new Intent();
+        locationChanged.putExtra(LocationManager.KEY_LOCATION_CHANGED, location);
+        try {
+            synchronized (this) {
+                // 使用PendingIntent处理回调
+                mPendingIntent.send(mContext, 0, locationChanged, this, mLocationHandler);
+                // 增加引用计数
+                incrementPendingBroadcastsLocked();
+            }
+        } catch (PendingIntent.CanceledException e) {
+            return false;
+        }
+    }
+    return true;
+}
+}}}
+
+== 内部消息处理 ==
+=== LocationWorkerHandler ===
+{{{class="brush:java"
+private class LocationWorkerHandler extends Handler {
+    @Override
+    public void handleMessage(Message msg) {
+        try {
+            if (msg.what == MESSAGE_LOCATION_CHANGED) {
+                synchronized (mLock) {
+                    ......
+                    if (!passive) {
+                        // 通知其他的Provider更新位置
+                        for (int i = mProviders.size() - 1; i >= 0; i--) {
+                            LocationProviderInterface p = mProviders.get(i);
+                            if (!provider.equals(p.getName())) {
+                                p.updateLocation(location);
+                            }
+                        }
+                    }
+
+                    // 处理位置更新
+                    if (isAllowedBySettingsLocked(provider)) {
+                        handleLocationChangedLocked(location, passive);
+                    }
+                }
+            } else if (msg.what == MESSAGE_PACKAGE_UPDATED) {
+                ......
+                if (mNetworkLocationProvider != null &&
+                    mNetworkLocationProviderPackageName.startsWith(packageDot)) {
+                    mNetworkLocationProvider.reconnect();
+                }
+                if (mGeocodeProvider != null &&
+                    mGeocodeProviderPackageName.startsWith(packageDot)) {
+                    mGeocodeProvider.reconnect();
+                }
+            }
+        } catch (Exception e) {
+        }
+    }
+}
+}}}
+
+== 向Provider发送命令 ==
+- Service向管理层提供了发送命令的接口，该接口可直接向Provider发送命令，并以Bundle作为参数。
+
+=== 命令格式 ===
+| command              | 描述                                  | 备注 |
+|----------------------+---------------------------------------+------|
+| delete_aiding_data   | 删除GPS数据，可根据参数选择删除的类型 |      |
+| force_time_injection | 强制时间同步                          |      |
+| force_xtra_injection | 强制数据同步                          |      |
+
+=== sendExtraCommand ===
+{{{class="brush:java"
+public boolean sendExtraCommand(String provider, String command, Bundle extras) {
+    ......
+    checkPermissionsSafe(provider);
+    ...... 
+    synchronized (mLock) {
+        LocationProviderInterface p = mProvidersByName.get(provider);
+        if (p == null) {
+            return false;
+        }
+
+        return p.sendExtraCommand(command, extras);
+    }
+}
+}}}

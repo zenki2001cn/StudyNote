@@ -1,0 +1,25 @@
+= 精密计时器使用 =
+
+[pic/chronometer.png]
+
+- 计时开始,调用start()方法。
+- 计时结束,调用stop()方法。
+- 在表示的时间前面或者后面追加文字，调用setFormat()方法。
+    # 在参数值的字符串中的”%s”将被置换成时间。
+
+例程源码(Java)
+{{{class="brush: java"
+Chronometer chronometer = (Chronometer) findViewById(id.chronometer);
+ 
+chronometer.setFormat("This is a Chronometer %s");
+chronometer.start();
+}}}
+
+例程源码(Resource)
+{{{class="brush: xml"
+<Chronometer
+    android:id="@+id/chronometer"
+    android:layout_height="wrap_content"
+    android:layout_width="fill_parent"/>
+}}}
+

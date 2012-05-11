@@ -1,0 +1,42 @@
+= 如何在Activity间传递数据 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Intent;
+import android.os.Bundle;
+}}}
+
+- 在通过Intent对象触发另一个Activity时，可以使用putExtra和putExtras方法。
+- 另一端如果想获取传递过来的数据，需要调用getString,getExtras等等方法。
+
+例程源码(JAVA) --- 调用者
+{{{class="brush:java"
+// 方法一
+Intent myintent = new Intent(this,otherPage.class);
+myintent.putExtra(“MY_DATA_NAME_1”,MY_stringDATA_1);
+myintent.putExtra(“MY_DATA_NAME_2”,MY_stringDATA_2);
+startActivity(myintent);
+
+// 方法二
+Bundle mybundle = new Bundle();
+mybundle.putString(“MY_DATA_NAME_1”,MY_stringDATA_1);
+mybundle.putString(“MY_DATA_NAME_2”,MY_stringDATA_2);
+mybundle.putInt(“MY_DATA_NAME_3”,MY_intDATA_3);
+Intent myintent = new Intent(this,otherPage.class);
+myintent.putExtras(mybundle);
+startActivity(myintent);
+}}}
+
+例程源码(JAVA) --- 接受者
+{{{class="brush:java"
+// 对应方法一
+Intent receiver = this.getIntent();
+String mydata1=receiver.getStringExtra(“MY_DATA_NAME_1”);
+String mydata2=receiver.getStringExtra(“MY_DATA_NAME_2”)Intent receiver = this.getIntent();
+
+// 对应方法二
+Bundle mydatas = this.getIntent().getExtras();
+String mydata1 = mydatas.getString(“MY_DATA_NAME_1”);
+String mydata2 = mydatas.getString(“MY_DATA_NAME_2”);
+int mydata3 = mydatas.getInt(“MY_DATA_NAME_3”);
+}}}

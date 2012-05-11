@@ -1,0 +1,143 @@
+= envsetup脚本解析 =
+_envsetup.sh是Android提供的脚本工具，包含了很多实用的命令。_
+
+%toc
+
+== 设置环境 ==
+- 要使用envsetup.sh中定义的命令，需要在bash下切换到源码根目录，并输入以下命令：
+
+{{{class="brush:bash"
+$ . build/envsetup.sh
+}}}
+
+- 设置好脚本后，使用help即可获得帮助信息：
+
+{{{class="brush:bash"
+$ help
+Invoke ". build/envsetup.sh" from your shell to add the following functions to your environment:
+- croot:   Changes directory to the top of the tree.
+- m:       Makes from the top of the tree.
+- mm:      Builds all of the modules in the current directory.
+- mmm:     Builds all of the modules in the supplied directories.
+- cgrep:   Greps on all local C/C++ files.
+- jgrep:   Greps on all local Java files.
+- resgrep: Greps on all local res/*.xml files.
+- godir:   Go to the directory containing a file.
+
+Look at the source to view more functions. The complete list is:
+add_lunch_combo cgrep check_product check_variant choosecombo chooseproduct choosetype choosevariant cproj croot findmakefile gdbclient get_abs_build_var getbugreports get_build_var getprebuilt gettop godir help isviewserverstarted jgrep lunch m mm mmm pid printconfig print_lunch_menu resgrep runhat runtest set_java_home setpaths set_sequence_number set_stuff_for_environment settitle smoketest startviewserver stopviewserver systemstack tapas tracedmdump
+}}}
+
+== 实用命令列表 ==
+=== 编译源码 ===
+{{{class="brush:bash"
+# 从根目录编译
+$ m
+
+# 从当前目录编译
+$ mm
+
+# 指定目录编译
+$ mmm packages/apps/Browser/
+}}}
+
+=== 查找文件 ===
+{{{class="brush:bash"
+# 查找当前目录及子目录中所有.c，.h，.cpp，.S，.java，.mk，.xml，.sh文件，
+# 即源码文件中包含特定单词的行，并颜色显示输出。
+# Usage：
+#      sgrep <YourWord>
+$ sgrep Calendar
+
+# 从当前目录递归查找符合指定内容的C/C++文件
+# 用法同上
+$ cgrep InputManager
+
+# 从当前目录递归查找符合指定内容的java文件
+# 用法同上
+$ jgrep Activity
+
+# 从当前目录递归查找符合指定内容的res/*.xml文件
+# 用法同上
+$ resgrep AndroidManifest.xml
+}}}
+
+=== 设置编译选项 ===
+{{{class="brush:bash"
+# 加入自定义的配置到选项中，默认会加入generic-eng
+$ add_lunch_combo LePad_A1_07-user
+
+# 菜单模式设置环境变量
+# Usage：
+#       lunch [<YourProduct>-<YourBuildVariant>]
+$ lunch
+You're building on Linux
+
+Lunch menu... pick a combo:
+     1. generic-eng
+     2. simulator
+     3. LePad_A1_07-user
+     4. full_passion-userdebug
+     5. full_crespo4g-userdebug
+     6. full_crespo-userdebug
+     7. blaze-eng
+     8. pandaboard-eng
+     9. zoom2-eng
+
+Which would you like? [generic-eng]
+
+# 自定义编译选项，根据提问，选择相应的选项
+$ choosecombo
+Build for the simulator or the device?
+     1. Device
+     2. Simulator
+
+Which would you like? [1]
+
+Build type choices are:
+     1. release
+     2. debug
+}}}
+
+=== 查询系统信息 ===
+- 需要通过usb连接到device上，并保证adb shell可用
+
+{{{class="brush:bash"
+# 查询指定进程的pid
+$ pid servicemanager
+
+# dump系统信息
+$ systemstack
+}}}
+
+=== gdb调试 ===
+- 需要通过usb连接到device上，并保证adb shell可用
+- 在启动调试前先设置对于device的环境变量
+
+{{{class="brush:bash"
+# lunch设置device环境变量
+$ lunch
+Lunch menu... pick a combo:
+     1. generic-eng
+     2. simulator
+     3. LePad_A1_07-user
+     4. full_passion-userdebug
+     5. full_crespo4g-userdebug
+     6. full_crespo-userdebug
+     7. blaze-eng
+     8. pandaboard-eng
+     9. zoom2-eng
+
+Which would you like? [generic-eng] 3
+
+# 需要先adb shell启动gdbserver
+$ adb shell gdbserver 5039 /system/bin/servicemanager
+
+# 使用gdbclient进入调试状态
+# Usage：
+#      gdbclient <EXE> <PORT> <AppName>
+# EXE: AppName的执行名。
+# PORT：gdbserver的端口，例如, 192.168.2.102:5039
+# AppName：手机中ps列出的app名字，据此查pid
+$ gdbclient servicemanager 5039 servicemanager
+}}}

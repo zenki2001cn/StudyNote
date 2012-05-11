@@ -1,0 +1,37 @@
+1、ServerRoot				/etc/apache											apache 服务目录
+
+2、DocumentRoot			/home/zenki/xxx  										主页文件根目录
+
+3、<Directory /home/zenki/xxx>
+	选项																				主页选项
+</Directory>
+
+4、ErrorLog 				/var/log/apache/error.log							log文件目录
+
+5、<IfModule mod_alias.c>
+	Alias /xxx/ /xxx/xxx
+	<Directory /xxx>
+		选项																			共享目录选项
+	</Directory>
+</IfModule>
+
+6、<IfModule mod_alias.c>
+	ScriptAlias /cgi-bin/ /xxx/xxx
+	<Directory /cgi-bin>
+		选项																			cgi目录
+	</Directory>
+</IfModule>
+
+7、AddHandle perl-script .pl													脚本处理
+
+8、<IfModule mod_perl.c>
+  		<IfModule mod_alias.c>													mod_perl选项
+   		Alias /cgi-bin/ /home/zenki/mySITE/CGI
+  		</IfModule>
+  		<Location /cgi-bin>
+    		SetHandler perl-script
+    		PerlHandler Apache::Registry
+    		Options +ExecCGI
+    		PerlSendHeader On
+  		</Location>
+</IfModule>

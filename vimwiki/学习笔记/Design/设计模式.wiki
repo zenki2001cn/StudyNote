@@ -1,0 +1,25 @@
+= 设计模式 =
+
+== 如何有效的利用大脑 ==
+- 边阅读边思考，让大脑想的越深，越容易记住。
+- 勤做练习，记笔记，可以改善学习效果。
+- 看完书后要留给大脑一定的复习时间，记忆才能长久。
+- 要多喝水，保持体力。
+- 多和别人讨论，才能更好的记住新知识。
+- 要注意适当的休息。
+- 将学到的知识运用到实际项目当中。
+
+== 模式分类 ==
+- [[策略模式-Strategy Pattern]]
+- [[观察者模式-Observer Pattern]]
+- [[装饰者模式-Decorator Pattern]]
+- [[工厂方法模式-FactoryMethod Pattern]]
+- [[抽象工厂-AbstractFactory]]
+- [[单件模式-Singleton Pattern]]
+- [[命令模式-Command Pattern]]
+- [[适配器模式-Adapter Pattern]]
+- [[外观模式-Facade Pattern]]
+- [[模板方法模式-TemplateMethod Pattern]]
+- [[迭代器模式-Iterator Pattern]]
+- [[组合模式-Composite Pattern]]
+- [[状态模式-State Pattern]]

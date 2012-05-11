@@ -1,0 +1,129 @@
+= Intent传递对象 =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.io.Serializable; 
+
+import android.content.Intent;
+
+import android.os.Parcel;  
+import android.os.Parcelable;
+import android.os.Bundle;
+}}}
+
+== 基本流程 ==
+- 需要为传递对象实现`Serializable`接口或者`Parcelable`接口。
+- 在发送端生成传递对象实例和Bundle对象实例，通过`putSerializable`或`putParcelable`方法将传递对象加入到Bundle对象中。
+- 接收端通过Intent的`getSerializableExtra`或`getParcelableExtra`获取传递对象。
+
+== 示例代码 ==
+
+=== 定义传递对象 ===
+Serializable接口类
+{{{class="brush:java"
+public class Person implements Serializable {  
+
+    private static final long serialVersionUID = -7060210544600464481L;   
+    private String name;  
+    private int age;  
+    
+    public String getName() {  
+        return name;  
+    }  
+    
+    public void setName(String name) {  
+        this.name = name;  
+    }  
+    
+    public int getAge() {  
+        return age;  
+    }  
+    
+    public void setAge(int age) {  
+        this.age = age;  
+    }  
+}
+}}}
+
+Parcelable接口类
+{{{class="brush:java"
+public class Book implements Parcelable {  
+    private String bookName;  
+    private String author;  
+    private int publishTime;  
+      
+    public String getBookName() {  
+        return bookName;  
+    }  
+    
+    public void setBookName(String bookName) {  
+        this.bookName = bookName;  
+    }  
+    
+    ......  
+      
+    public static final Parcelable.Creator<Book> CREATOR = new Creator<Book>() {  
+        public Book createFromParcel(Parcel source) {  
+            Book mBook = new Book();  
+            mBook.bookName = source.readString();  
+            mBook.author = source.readString();  
+            mBook.publishTime = source.readInt();  
+            return mBook;  
+        }  
+        public Book[] newArray(int size) {  
+            return new Book[size];  
+        }  
+    };  
+      
+    public int describeContents() {  
+        return 0;  
+    }  
+    
+    public void writeToParcel(Parcel parcel, int flags) {  
+        parcel.writeString(bookName);  
+        parcel.writeString(author);  
+        parcel.writeInt(publishTime);  
+    }  
+}
+}}}
+
+=== 发送端传递对象 ===
+传递Serializeable对象
+{{{class="brush:java"
+Person mPerson = new Person();  
+mPerson.setName("frankie");  
+mPerson.setAge(25);  
+
+Intent mIntent = new Intent(this,ObjectTranDemo1.class);  
+Bundle mBundle = new Bundle();  
+mBundle.putSerializable(SER_KEY,mPerson);  
+mIntent.putExtras(mBundle);  
+  
+startActivity(mIntent);
+}}}
+
+传递Pacelable对象
+{{{class="brush:java"
+Book mBook = new Book();  
+mBook.setBookName("Android Tutor");  
+mBook.setAuthor("Frankie");  
+mBook.setPublishTime(2010);  
+
+Intent mIntent = new Intent(this,ObjectTranDemo2.class);  
+Bundle mBundle = new Bundle();  
+mBundle.putParcelable(PAR_KEY, mBook);  
+mIntent.putExtras(mBundle);  
+  
+startActivity(mIntent); 
+}}}
+
+=== 接收端获取对象 ===
+获取Serializeable对象
+{{{class="brush:java"
+Person mPerson = (Person)getIntent().getSerializableExtra(ObjectTranDemo.SER_KEY);
+}}}
+
+获取Pacelable对象
+{{{class="brush:java"
+Book mBook = (Book)getIntent().getParcelableExtra(ObjectTranDemo.PAR_KEY);
+}}}

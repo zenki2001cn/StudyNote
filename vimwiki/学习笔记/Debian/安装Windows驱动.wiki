@@ -1,0 +1,28 @@
+= 安装Windows驱动 =
+
+%toc
+
+== 安装工具ndiswrapper ==
+{{{class="brush:bash"
+$ sudo apt-get install  ndiswrapper-common ndiswrapper-utils ndisgtk
+}}}
+
+== 拷贝windows驱动文件 ==
+{{{class="brush:text"
+拷贝无线网卡的驱动文件到临时目录中。
+例如netMw225.inf，mrvw22x.cat，MRVW223.sys，NRVW225.sys。
+}}}
+
+
+{{{class="brush:bash"
+# 调出nidsgtk界面，点击安装新的驱动程序，选择inf文件(netMw225.inf)
+$ sudo ndisgtk 
+}}}
+
+== 加载驱动 ==
+{{{class="brush:bash"
+$ sudo ndiswrapper -l
+$ sudo ndiswrapper -m
+$ sudo ndiswrapper -mi
+$ sudo modprobe ndiswrapper
+}}}

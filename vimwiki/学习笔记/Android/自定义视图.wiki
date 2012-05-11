@@ -1,0 +1,87 @@
+= 自定义视图 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Service;
+
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.View.OnClickListener;
+
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+}}}
+
+== 处理流程 ==
+- 通过继承`LinearLayout`或`RelativeLayout`类生成自定义视图的类对象。
+- 通过`LayoutInflator`膨胀视图获取LinearLayout或RelativeLayout类对象，并使用`addView()`方法加入该对象。
+- 通过`WindowManager`的`addView()`方法显示自定义视图类。
+- 为自定义视图类添加事件响应，通常通过传入回调对象的方法得到客户端的处理。
+
+== 示例代码 ==
+=== 生成自定义视图类 ===
+{{{class="brush:java"
+// 继承了LinearLayout类
+public class NetworkWifiDetailDialog extends LinearLayout implements OnClickListener {
+
+    // 通过构造方法传入事件响应回调
+    public NetworkWifiDetailDialog(Context context, NetworkBasicDialogCaller caller, String title, Bundle content) {
+		super(context);
+		mCaller = caller;
+		initDialog(title, content);
+	}
+}
+}}}
+
+=== 膨胀视图包含的控件 ===
+{{{class="brush:java"
+// 初始化对话框
+private void initDialog(String title, Bundle content) {
+    LayoutInflater mInflator = (LayoutInflater) this.getContext().getSystemService(Service.LAYOUT_INFLATER_SERVICE);
+    LinearLayout dlg = (LinearLayout) mInflator.inflate(R.layout.network_dialog_wifi_detail, this, false);
+    
+    mTxtTitle = (TextView) dlg.findViewById(R.id.network_wifi_dialog_title);
+    
+    mTxtConnected = (TextView) dlg.findViewById(R.id.network_wifi_dialog_content_connected);
+    mTxtSecurity = (TextView) dlg.findViewById(R.id.network_wifi_dialog_content_security);
+       
+    mButtonOFF = (Button) dlg.findViewById(R.id.network_wifi_dialog_off);
+    mButtonOFF.setOnClickListener(this);
+    
+    // 完成初始化
+    addView(dlg);
+}
+}}}
+
+=== 显示自定义视图 ===
+{{{class="brush:java"
+// 获取WindowManager管理对象
+private WindowManager mWindowManager = (WindowManager) this.getContext().getSystemService(Service.WINDOW_SERVICE);
+
+public void show() {
+    // 设置窗口属性
+    WindowManager.LayoutParams wlp = new WindowManager.LayoutParams(
+            450, 300, WindowManager.LayoutParams.TYPE_APPLICATION,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT);
+    wlp.gravity = Gravity.CENTER;
+    // 完成显示
+    mWindowManager.addView(this, wlp);
+}
+}}}
+
+=== 添加事件响应 ===
+{{{class="brush:java"
+public void onClick(View v) {
+    switch (v.getId()) {
+    case R.id.network_wifi_dialog_off:
+        // 通过回调对象处理事件响应
+        mCaller.onConfirm();
+        // 取消对话框显示
+        mWindowManager.removeView(this);
+        break;
+    }
+}
+}}}

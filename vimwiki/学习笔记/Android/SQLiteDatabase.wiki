@@ -1,0 +1,263 @@
+= SQLiteDatabase =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.Context;
+import android.content.ContentValues;
+
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteQueryBuilder;
+import android.database.sqlite.SQLiteException;
+import android.database.Cursor;
+}}}
+
+== SQLiteOpenHelper ==
+- 通过派生SQLiteOpenHelper子类，并实现其`onCreate()`和`onUpgrade()`方法进行数据库的管理。
+- 通过`getReadableDatabase()`打开只读数据库SQLiteDatabase。
+- 通过`getWritableDatabase()`打开可写数据库SQLiteDatabase。
+
+示例代码
+{{{class="brush:java"
+private class DatabaseHelper extends SQLiteOpenHelper {
+    public DatabaseHelper(Context context, String name, CursorFactory factory, int version) {
+        super(context, name, factory, version);
+    }
+
+    // 创建数据库
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        try {
+            createCommentsTables(db);
+        } catch (SQLException e) {
+        }
+    }
+    
+    // 创建表
+    private void createCommentsTables(SQLiteDatabase db) {
+        String createString;
+        String commentsColumns = BookCommentsColumns.BOOK_ID
+                + " INTEGER NOT NULL, " + BookCommentsColumns.PAGE_NUMBER
+                + " INTEGER, " + BookCommentsColumns.XPOINT
+                + " INTEGER, " + BookCommentsColumns.YPOINT
+                + " INTEGER, " + BookCommentsColumns.LOCATION
+                + " TEXT, " + BookCommentsColumns.COMMENT_PATH
+                + " TEXT NOT NULL";
+
+        // 创建表
+        createString = " (" 
+                        + BookCommentsColumns._ID 
+                        + " integer primary key autoincrement, " 
+                        + commentsColumns 
+                        + ");";
+                
+        // 执行SQL语句
+        db.execSQL("create table " + BOOK_COMMENTS_TABLE_NAME + createString);
+        
+        // 设置需要添加索引的列
+        String indexColumns[] = { BookmarkColumns.LOCATION };
+        
+        // 添加索引
+        for (String columnName : indexColumns) {
+            db.execSQL(createIndex(BOOKMARK_TABLE_NAME, columnName));
+        }
+    }
+    
+    // 创建索引
+    private String createIndex(String tableName, String columnName) {
+        return "create index " 
+                + tableName.toLowerCase() 
+                + '_' + columnName
+                + " on " 
+                + tableName 
+                + " (" + columnName + ");";
+    }
+    
+    // 数据库升级
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        try {
+            db.execSQL(DROP_DATABASE);
+        } catch (SQLException) {
+        }
+        onCreate(db);
+    }
+}
+}}}
+
+== SQLiteDatabase ==
+- 该类进行数据库的创建、销毁、插入、删除、查询和更新等操作。 
+- 可以使用`insert()`、`update()`、`delete()`方法可以进行数据库操作。
+- 也可以用`execSQL()`，该方法以字符串为参数，执行SQL语句。
+
+| 返回值 | 方法名                                                                                                                         | 描述                           |
+|--------+--------------------------------------------------------------------------------------------------------------------------------+--------------------------------|
+| void   | beginTransaction()                                                                                                             | 开始一个事务处理               |
+| void   | endTransaction()                                                                                                               | 停止一个事务处理               |
+| void   | setTransactionSuccessful()                                                                                                     | 设置事务处理成功               |
+| void   | execSQL(String sql)                                                                                                            | 执行SQL语句                    |
+| long   | insertiOrThrow(String table, String nullColumnHack, ContentValues values)                                                      | 插入数据到数据库中，返回行标号 |
+| Cursor | query(String table, String[] columns, String selection, String[] selectionArgs, String groupBy, String having, String orderBy) | 数据查询，返回数据库光标       |
+| int    | update(String table, ContentValues values, String whereClause, String[] whereArgs)                                             | 更新数据，返回生效的行号       |
+
+== Cursor ==
+- 数据库光标，用于操纵查询数据库。
+- 通常使用`getColumnIndexOrThrow`方法定位数据项。
+- 通常使用`get*`方法进行数据查询。
+
+=== 主要方法说明 ===
+| 返回值   | 方法名                                   | 描述                                                           |
+|----------+------------------------------------------+----------------------------------------------------------------|
+| int      | getColumnCount()                         | 返回数据库表的总列数                                           |
+| int      | getColumnIndexOrThrow(String columnName) | 获取对应列名的序号，如果错误就抛出异常IllegalArgumentException |
+| string[] | getColumnNames()                         | 返回列名的数组                                                 |
+| int      | getCount()                               | 返回数据库表的总行数                                           |
+| boolean  | moveToFirst()                            | 光标移动到第一行                                               |
+| boolean  | moveToLast()                             | 光标移动到最后一行                                             |
+| boolean  | moveToNext()                             | 光标移动到下一行                                               |
+| boolean  | moveToPrevious()                         | 光标移动到前一行                                               |
+| int      | getPosition()                            | 返回光标位置                                                   |
+| String   | getString(int columnIndex)               | 返回查询的字符串值                                             |
+| int      | getInt(int columnIndex)                  | 返回查询的int值                                                |
+| long     | getLong(int columnIndex)                 | 返回查询的long值                                               |
+| boolean  | isAfterLast()                            | 是否光标在最后一行后面                                         |
+| boolean  | isBeforeFirst()                          | 是否光标在第一行前面                                           |
+| boolean  | isNull(int columnIndex)                  | 返回指定列是否为空                                             |
+| boolean  | move(int offset)                         | 以偏移量移动光标                                               |
+
+== SQLiteQueryBuilder ==
+- 数据库查询辅助类。
+- 通常使用`setTables`设置数据库表。
+- 通常使用`appendWhere`添加查询条件。
+- 通常使用`buildQuery`生成SQL查询语句。
+
+=== 主要方法说明 ===
+| 返回值 | 方法名                                                                                                                                     | 描述         |
+|--------+--------------------------------------------------------------------------------------------------------------------------------------------+--------------|
+| void   | setTables(String inTables)                                                                                                                 | 设置查询表名 |
+| void   | appendWhere(CharSequence inWhere)                                                                                                          | 添加查询条件 |
+| String | buildQuery(String[] projectionIn, String selection, String[] selectionArgs, String groupBy, String having, String sortOrder, String limit) | 生成SQL语句  |
+| Cursor | query(SQLiteDatabase db, String[] projectionIn, String selection, String[] selectionArgs, String groupBy, String having, String sortOrder) | 查询数据库   |
+
+== SQLiteStatement ==
+- 数据库执行辅助类
+- 通过调用`SQLiteDatabase.compileStatement`方法返回该对象，并使用该对象的`execute()`方法执行语句。
+
+== 常用SQL操作方法 ==
+=== 获取数据库句柄 ===
+{{{class="brush:java"
+SQLiteDataBase db = SQLiteOpenHelper.getWriteableDatabase();
+}}}
+
+=== 创建数据库 ===
+{{{class="brush:java"
+String sql = "create table Student(" + " stud_no text not null, " + " stud_name text);";
+
+db.execSQL(sql);
+}}}
+
+=== 删除数据库 ===
+{{{class="brush:java"
+String sql = "drop table Student";
+
+db.execSQL(sql);
+}}}
+
+=== 插入数据，使用SQL语句 ===
+{{{class="brush:java"
+String sql_1 = "insert into Student (stud_no, stud_name) values('S108', 'Lily Chen');";
+String sql_2 = "insert into Student (stud_no, stud_name) values('S201', 'Tom Kao');";
+String sql_3 = "insert into Student (stud_no, stud_name) values('S333', 'Peter Rabbit');";
+
+db.execSQL(sql_1);
+db.execSQL(sql_2);
+db.execSQL(sql_3);
+}}}
+
+=== 插入数据，使用ContentValues辅助类 ===
+{{{class="brush:java"
+ContentValues cv = new ContentValues();
+cv.put("stud_no", "S108");
+cv.put("stud_name", "Lily Chen");
+db.insert("Student", null, cv);
+
+cv = new ContentValues();
+cv.put("stud_no", "S201");
+cv.put("stud_name", "Tom Kao");
+db.insert("Student", null, cv);
+
+cv = new ContentValues();
+cv.put("stud_no", "S333");
+cv.put("stud_name", "eter Rabbit");
+
+try {
+    db.beginTransaction();
+    db.insert("Student", null, cv);
+    db.setTransactionSuccessful();
+} finally {
+    db.endTransaction();
+}
+}}}
+
+=== 查询数据 ===
+==== 查询参数说明 ====
+- query(String table, String[] columns, String selection, String[] selectionArgs, String groupBy, String having, String orderBy)
+- table: 表名
+- columns: 需要查询的列,如果是null，则返回所有列
+- selection: 与SQL的关键字WHERE关联，但排除WHERE。如果是null，则返回所有列
+- selectionArgs: 
+- groupBy: 与SQL的关键字GROUP BY 关联，但排除GROUP BY。如果是null， 则不分组。
+- having: 与SQL的关键字HAVING关联，但排除HAVING。如果是null，则包含所有行。
+- orderBy: 与SQL的关键字ORDER BY关联，但排除ORDER BY。如果是null，则不排序。
+
+{{{class="brush:java"
+String col[] = { "stud_no", "stud_name" };
+
+// 设置查询条件
+String selection = BookCommentsColumns.BOOK_ID + "=? and "
+				+ BookCommentsColumns.LOCATION + "=?";
+String[] selectionArgs = new String[] {String.valueOf(id), location};
+
+cur = db.query("Student", col, selection, selectionArgs, null, null, null);
+
+// 移动到第一行
+cur.moveToFirst();
+while (!cur.isAfterLast()) {
+    // 手动设置序号
+    cur.getLong(0);
+    cur.getString(1);
+    // 根据列项查询序号
+    cur.getString(cur.getColumnIndexOrThrow(col[1]));
+    // 移动到下一行
+    cur.moveToNext();
+}
+}}}
+
+=== 更新数据 ===
+{{{class="brush:java"
+ContentValues cv = new ContentValues();
+cv.put("stud_no", "S288");
+cv.put("stud_name", "Linda Wang");
+
+try {
+    db.beginTransaction();
+    db.update("Student", cv, "stud_no = 'S201'", null);
+    db.setTransactionSuccessful();
+} finally {
+    db.endTransaction();
+}
+}}}
+
+=== 删除数据 ===
+{{{class="brush:java"
+try {
+    db.beginTransaction();
+    db.delete("Student", "stud_no = 'S108'", null);
+    db.setTransactionSuccessful();
+} finally {
+    db.endTransaction();
+}
+}}}

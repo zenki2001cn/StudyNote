@@ -1,0 +1,60 @@
+= iptables配置脚本 =
+
+== 配置脚本一 ==
+{{{class="brush:bash"
+#!/bin/sh 
+# 
+/sbin/modprobe ipt_MASQUERADE 
+/sbin/modprobe ip_conntrack_ftp 
+/sbin/modprobe ip_nat_ftp 
+/sbin/iptables -F 
+/sbin/iptables -t nat -F 
+/sbin/iptables -X 
+/sbin/iptables -t nat -X 
+/sbin/iptables -t mangle -F 
+
+###########################INPUT键######################### 
+/sbin/iptables -P INPUT DROP 
+/sbin/iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 
+/sbin/iptables -A INPUT -p tcp -m multiport --dports 110,8080,80,25,22 -j ACCEPT 
+#允许内网samba,smtp,pop3,连接 
+
+/sbin/iptables -A INPUT -i eth1 -p udp -m multiport --dports 53 -j ACCEPT 
+#允许dns连接 
+
+/sbin/iptables -A INPUT -p tcp --dport 1723 -j ACCEPT 
+/sbin/iptables -A INPUT -p gre -j ACCEPT 
+允许外网vpn连接 
+/sbin/iptables -A INPUT -p icmp -m limit --limit 3/s -j LOG --log-level INFO --log-prefix "ICMP packet IN: " 
+/sbin/iptables -A INPUT -p icmp -m limit --limit 6/m -j ACCEPT 
+/sbin/iptables -A INPUT -p icmp -j DROP 
+#设置icmp阔值 ,并对攻击者记录在案 
+/sbin/iptables -A INPUT -i eth0 -p tcp --dport 22  -j DROP 
+#拒绝外网对22端口访问. 
+/sbin/iptables -N syn-flood 
+/sbin/iptables -A INPUT -p tcp --syn -j syn-flood 
+/sbin/iptables -I syn-flood -p tcp -m limit --limit 3/s --limit-burst 6 -j RETURN 
+/sbin/iptables -A syn-flood -j REJECT 
+#防止SYN攻击 轻量 
+
+#######################FORWARD链########################### 
+/sbin/iptables -A FORWARD -p tcp -i eth1 -m multiport --dports 80,110,21,25,1723 -j ACCEPT 
+/sbin/iptables -A FORWARD -p udp -i eth1 --dport 53 -j ACCEPT 
+/sbin/iptables -A FORWARD -p gre -i eth1 -j ACCEPT 
+/sbin/iptables -A FORWARD -p icmp -i eth1 -j ACCEPT 
+#允许 vpn客户走vpn网络连接外网 
+######################################################### 
+/sbin/sysctl -w net.ipv4.ip_forward=1 &>;/dev/null 
+#打开转发 
+######################################################### 
+/sbin/sysctl -w net.ipv4.tcp_syncookies=1 &>;/dev/null 
+#打开 syncookie （轻量级预防 DOS 攻击） 
+
+/sbin/sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_timeout_established=3800 &>;/dev/null 
+#设置默认 TCP 连接痴呆时长为 3800 秒（此选项可以大大降低连接数） 
+/sbin/iptables -I INPUT -s 222.x.x.x -j ACCEPT #我自己的机了,全部放行 
+/sbin/iptables -I INPUT -s 202.x.x.x -j ACCEPT#老师的机子,全部放行 
+
+########################OUTPUT链########################### 
+/sbin/iptables -P OUTPUT  ACCEPT
+}}}

@@ -1,0 +1,11 @@
+= 应用程序获取系统权限 =
+
+== 流程解析 ==
+=== 1.加入系统进程 ===
+- 在应用程序的AndroidManifest.xml中的manifest节点中加入`android:sharedUserId="android.uid.system"`这个属性。
+
+=== 2.使用系统签名 ===
+- 修改Android.mk文件，加入`LOCAL_CERTIFICATE := platform`这一行
+
+=== 3.在源码下编译 ===
+- 使用mm来编译工程。

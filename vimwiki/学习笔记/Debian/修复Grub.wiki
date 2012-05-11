@@ -1,0 +1,9 @@
+= 修复Grub =
+
+== Win7光盘修复 ==
+{{{class="brush:text"
+进入修复系统
+进入Dos界面
+cd c:\boot
+bootsect /nt60 sys /mbr
+}}}

@@ -1,0 +1,11 @@
+= 参考网站 =
+
+- https://developer.mozilla.org/Project:cn/Wiki 
+
+- [https://developer.mozilla.org/Project:cn/Wiki标记语法参考]
+
+- http://myth2loki.blog.163.com/blog/static/4546502201061692624221/?latestBlog HTTP详解
+
+- http://cooltext.com/ 酷字
+
+- http://www.fodey.com/generators/animated/ninjatext.asp 忍者劈字

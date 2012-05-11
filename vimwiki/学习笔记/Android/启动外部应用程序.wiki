@@ -1,0 +1,25 @@
+= 如何启动一个外部的应用程序 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.ComponentName;
+import android.content.Intent;
+}}}
+
+- 构造一个ComponentName类对象,它可以定义一个应用程序组件，包括`Activity`，`Service`，`BroadcastReceiver`和`ContentProvider`
+- 在创建Intent对象时，调用setComponent(ComponentName name)方法
+
+{{{class="brush:java"
+Intent intent = new Intent();
+intent.setComponent(new ComponentName("org.example.note", "org.example.note.NoteBook"));
+startActivity(intent);
+}}}
+
+- 通过预安装工具 
+
+{{{class="brush:java"
+Intent apkintent = new Intent(Intent.ACTION_VIEW);                
+final Uri puri = Uri.fromFile(new File(path));    //path is the path of source apk  
+apkintent.setDataAndType(puri, "application/vnd.android.package-archive");  
+startActivity(apkintent); 
+}}}

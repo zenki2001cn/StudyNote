@@ -1,0 +1,106 @@
+= 图片切换器 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.widget.ImageSwitcher;
+import android.widget.ImageView;
+import android.widget.ViewSwitcher;
+}}}
+
+== 基本流程 ==
+- 生成ImageSwitcher类对象，并实现`ViewSwitcher.ViewFactory`接口
+- 定义动画资源，并通过ImageSwitcher.setInAnimation()和ImageSwitcher.setOutAnimation()方法设置切换动画效果
+- 通过ImageSwitcher.setImageResource()方法显示图片
+
+== 示例代码 ==
+
+=== 定义ImageSwitcher资源 ===
+{{{class="brush:xml"
+<ImageSwitcher android:id="@+id/switcher"
+		android:layout_width="fill_parent" android:layout_height="300dp"
+		android:layout_alignParentTop="true" android:layout_alignParentLeft="true" 
+/>
+}}}
+
+=== 定义切换动画资源 ===
+anim/push_left_in.xml
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+	<translate android:fromXDelta="-100%p" 
+	           android:toXDelta="0" 
+	           android:duration="400"/>
+	<alpha android:fromAlpha="0.0" android:toAlpha="1.0" android:duration="400" />
+</set>
+}}}
+
+anim/push_left_out.xml
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+	<translate 
+	     android:fromXDelta="0" 
+	     android:toXDelta="-100%p" 
+	     android:duration="400"/> 
+	<alpha 
+	   android:fromAlpha="1.0" 
+	   android:toAlpha="0.0" 
+	   android:duration="400" />
+</set>
+}}}
+
+anim/push_right_in.xml
+{{{class="brush:xml"
+?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+	<translate android:fromXDelta="100%p" 
+	           android:toXDelta="0" 
+	           android:duration="400"/>
+	<alpha android:fromAlpha="0.0" android:toAlpha="1.0" android:duration="400" />
+</set>
+}}}
+
+anim/push_right_out.xml
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+	<translate android:fromXDelta="0" 
+	           android:toXDelta="100%p" 
+	           android:duration="400"/>
+	<alpha android:fromAlpha="0.0" android:toAlpha="1.0" android:duration="400" />
+</set>
+}}}
+
+=== 创建ImageSwitcher对象 ===
+{{{class="brush:java"
+public class ImageViewer extends Activity implements ViewSwitcher.ViewFactory {
+
+    ......
+
+    ImageSwitcher mSwitcher;
+
+    mSwitcher = (ImageSwitcher) findViewById(R.id.switcher);
+    mSwitcher.setFactory(this);
+    
+    ......
+}
+}}}
+
+=== 实现ViewSwitcher.ViewFactory接口 ===
+{{{class="brush:java"
+public View makeView() {
+    ImageView i = new ImageView(this);
+    i.setBackgroundColor(0xFF000000);
+    i.setScaleType(ImageView.ScaleType.FIT_CENTER);
+    i.setLayoutParams(new ImageSwitcher.LayoutParams(
+            LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+    return i;
+}
+}}}
+
+=== 图片切换显示 ===
+{{{class="brush:java"
+mSwitcher.setInAnimation(AnimationUtils.loadAnimation(this, R.anim.push_left_in));
+mSwitcher.setOutAnimation(AnimationUtils.loadAnimation(this, R.anim.push_right_out));
+mSwitcher.setImageResource(mImageIds[ii]);
+}}}

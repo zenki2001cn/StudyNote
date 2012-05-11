@@ -1,0 +1,37 @@
+= 如何获取网络状态 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+}}}
+
+- 通过Broadreceiver方式实现状态监听
+- 通过`getSystemService(Context.CONNECTIVITY_SERVICE)`返回一个ConnectivityManager对象
+- 通过调用`getAllNetworkInfo`、`getActiveNetworkInfo`和`getNetworkInfo`等方法获取网络状态信息
+- 在manifest中加入过滤选项
+
+== 例程源码(JAVA) ==
+{{{class="brush:java"
+private void showStatus() {
+    int i;
+    ConnectivityManager connectManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+    NetworkInfo[] activeInfo = connectManager.getAllNetworkInfo();
+
+    for (i=0; i<activeInfo.length; i++) {
+        Log.v(TAG, " debug " + activeInfo[i]);
+    }
+
+}
+}}}
+
+== 例程源码(XML) ==
+{{{class="brush:xml"
+<receiver android:name=".ConnectionStatus" >
+    <intent-filter>   
+        <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>   
+    </intent-filter>
+</receiver>
+}}}

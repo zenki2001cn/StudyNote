@@ -1,0 +1,49 @@
+1、需要安装apache2、mod_python模块
+
+2、修改httpd.conf
+
+	× # Virtual hosts																	
+	  Include conf/extra/httpd-vhosts.conf		将这一行注释掉
+			
+	× LoadModule python_module modules/mod_python.so	装载mod_python模块
+
+	× MaxRequestsPerChild 1																														在开发阶段可以不用重启服务器进行测试
+
+3、修改 conf/extra/httpd-vhosts.conf
+	×	NameVirtualHost localhost:80
+			<VirtualHost localhost:80>
+    		<Location "/">
+        SetHandler python-program
+        PythonPath "['/home/zenki/python/django_demo/'] + sys.path"
+        PythonHandler django.core.handlers.modpython
+        SetEnv DJANGO_SETTINGS_MODULE demo.settings
+        #PythonInterpreter demo
+        #PythonInterpreter address
+        PythonAutoReload Off
+        PythonDebug On
+    	</Location>
+		</VirtualHost>
+
+
+4、django项目文件需要改动的地方
+
+	× settings文件中的配置路径要全改为绝对路径
+	
+	× 在一些文件导入相关模块时需要用完整模块路径名
+		如在demo.address.views中导入demo.address.models，需要键入
+		from demo.address.models import *
+
+----------------------------------------------------------------------------------
+/*乱码问题*/
+在/etc/apache2/sites-available/default尾部添加下面内容，就可以解决。
+
+<Directory "/var/www/">
+IndexOptions Charset=utf-8
+Options Indexes FollowSymLinks
+
+AllowOverride All
+
+Order allow,deny
+Allow from all
+</Directory>
+

@@ -1,0 +1,40 @@
+= framework_framework目录结构 =
+
+== 目录结构 ==
+{{{class="brush:text"
+|-- base    （基本内容）
+|   |-- api   （？都是xml文件，定义了java的api？）
+|   |-- awt   （AWT库）
+|   |-- build   （空的）
+|   |-- camera   （摄像头服务程序库）
+|   |-- cmds   （重要命令：am、app_proce等）
+|   |-- core   （核心库）
+|   |-- data   （字体和声音等数据文件）
+|   |-- docs   （文档）
+|   |-- graphics （图形相关）
+|   |-- include   （头文件）
+|   |-- keystore （和数据签名证书相关）
+|   |-- libs   （库）
+|   |-- location （地区库）
+|   |-- media   （媒体相关库）
+|   |-- obex   （蓝牙传输库）
+|   |-- opengl   （2D-3D加速库）
+|   |-- packages （设置、TTS、VPN程序）
+|   |-- sax   （XML解析器）
+|   |-- services （各种服务程序）
+|   |-- telephony （电话通讯管理）
+|   |-- test-runner （测试工具相关）
+|   |-- tests   （各种测试）
+|   |-- tools   （一些叫不上名的工具）
+|   |-- vpn   （VPN）
+|   `-- wifi   （无线网络）
+|-- opt    （可选部分）
+|   |-- com.google.android     （有个framework.jar）
+|   |-- com.google.android.googlelogin   （有个client.jar）
+|   `-- emoji   （standard message elements）
+`-- policies   （Product policies are operating system directions aimed at specific uses）
+    `-- base  
+        |-- mid （MID设备）
+        `-- phone （手机类设备，一般用这个）
+}}}
+

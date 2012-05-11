@@ -1,0 +1,80 @@
+= 关于JAVA引用的介绍 =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
+import java.lang.ref.PhantomReference;
+}}}
+
+== 强引用 ==
+{{{class="brush:text"
+使用最普遍的引用。如果一个对象具有强引用，那就类似于必不可少的生活用品，垃圾回收器绝不会回收它。当内存空间不足，
+Java虚拟机宁愿抛出OutOfMemoryError错误，使程序异常终止，也不会靠随意回收具有强引用的对象来解决内存不足问题。
+}}}
+
+== 软引用（SoftReference） ==
+{{{class="brush:text"
+如果一个对象只具有软引用，那就类似于可有可无的生活用品。如果内存空间足够，垃圾回收器就不会回收它，如果内存空间不足了，
+就会回收这些对象的内存。只要垃圾回收器没有回收它，该对象就可以被程序使用。软引用可用来实现内存敏感的高速缓存。
+
+软引用可以和一个引用队列（ReferenceQueue）联合使用，如果软引用所引用的对象被垃圾回收，Java虚拟机就会把这个软引用加入到与之关联的引用队列中。
+}}}
+
+== 弱引用（WeakReference） ==
+{{{class="brush:text"
+如果一个对象只具有弱引用，那就类似于可有可无的生活用品。弱引用与软引用的区别在于：只具有弱引用的对象拥有更短暂的生命周期。
+在垃圾回收器线程扫描它所管辖的内存区域的过程中，一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。
+不过，由于垃圾回收器是一个优先级很低的线程， 因此不一定会很快发现那些只具有弱引用的对象。
+
+弱引用可以和一个引用队列（ReferenceQueue）联合使用，如果弱引用所引用的对象被垃圾回收，Java虚拟机就会把这个弱引用加入到与之关联的引用队列中。
+}}}
+
+== 虚引用（PhantomReference） ==
+{{{class="brush:text"
+虚引用主要用来跟踪对象被垃圾回收的活动。虚引用与软引用和弱引用的一个区别在于：虚引用必须和引用队列（ReferenceQueue）联合使用。
+当垃 圾回收器准备回收一个对象时，如果发现它还有虚引用，就会在回收对象的内存之前，把这个虚引用加入到与之关联的引用队列中。
+}}}
+
+== 代码示例 ==
+=== 创建弱引用 ===
+{{{class="brush:java"
+//创建一个强引用
+String str = new String("hello");
+
+//创建引用队列, <String>为范型标记，表明队列中存放String对象的引用
+ReferenceQueue<String> rq = new ReferenceQueue<String>();
+
+//创建一个弱引用，它引用"hello"对象，并且与rq引用队列关联
+//<String>为范型标记，表明WeakReference会弱引用 String对象
+WeakReference<String> wf = new WeakReference<String>(str, rq);
+}}}
+
+=== 加入引用队列，垃圾回收前，尝试获取强引用 ===
+{{{class="brush:java"
+String str = new String("hello"); 
+ReferenceQueue<String> rq = new ReferenceQueue<String>();
+WeakReference<String> wf = new WeakReference<String>(str, rq);
+
+str=null;               // 取消"hello"对象的强引用
+String str1=wf.get();   // 假如"hello"对象没有被回收，str1引用"hello"对象
+
+// 假如"hello"对象没有被回收，rq.poll()返回null
+Reference<? extends String> ref = rq.poll();
+}}}
+
+=== 垃圾回收后，尝试获取强引用 ===
+{{{class="brush:java"
+String str = new String("hello"); 
+ReferenceQueue<String> rq = new ReferenceQueue<String>();
+WeakReference<String> wf = new WeakReference<String>(str, rq);
+str=null;
+
+// 两次催促垃圾回收器工作，提高"hello"对象被回收的可能性
+System.gc();
+System.gc();
+String str1=wf.get();   // 假如"hello"对象被回收，str1为null
+Reference<? extends String> ref=rq.poll();
+}}}

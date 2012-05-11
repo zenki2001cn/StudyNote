@@ -1,0 +1,71 @@
+= 渐变尺寸效果 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.view.animation.ScaleAnimation;
+
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.AnimationUtils;
+}}}
+
+== 基本处理流程 ==
+- 定义动画资源的XML
+- 通过AnimationUtils.loadAnimation()方法生成Animation对象
+- 使用一个ViewGroup类对象作为动画的目标容器，并使用startAnimation()方法应用动画效果
+ 
+== 动画插入器列表 ==
+| XML标签                            | 类                               | 描述         |
+|------------------------------------+----------------------------------+--------------|
+| accelerate_decelerate_interpolator | AccelerateDecelerateInterpolator | 加速-减速    |
+| accelerate_interpolator            | AccelerateInterpolator           | 加速         |
+| decelerate_interpolator            | DecelerateInterpolator           | 减速         |
+| anticipate_interpolator            | AnticipateInterpolator           |              |
+| anticipate_overshoot_interpolator  | AnticipateOvershootInterpolator  |              |
+| bounce_interpolator                | BounceInterpolator               |              |
+| cycle_interpolator                 | CycleInterpolator                | 循环播放     |
+| linear_interpolator                | LinearInterpolator               | 变化速率恒定 |
+| overshoot_interpolator             | OvershootInterpolator            |              |
+
+== 示例代码 ==
+=== anim/scale.xml ===
+{{{class="brush:xml"
+?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <scale  
+        android:interpolator="@android:anim/accelerate_decelerate_interpolator" <!!--动画的插入器-->
+        android:fromXScale="0.0"    <!!--动画开始时，X轴伸缩尺寸-->
+        android:toXScale="1.4"      <!!--动画结束时，X轴伸缩尺寸-->
+        android:fromYScale="0.0"    <!!--动画起始时，Y轴伸缩尺寸-->
+        android:toYScale="1.4"      <!!--动画结束时，Y轴伸缩尺寸-->
+        android:pivotX="50%"        <!!--动画相对于物体的X坐标开始位置-->
+        android:pivotY="50%"        <!!--动画相对于物体的Y坐标开始位置-->
+        android:fillAfter="false"   <!!--在动画结束后应用-->
+        android:duration="700"      <!!--持续时间-->
+    />
+</set>
+}}}
+
+=== 在JAVA代码中定义 ===
+{{{class="brush:java"
+//第一个参数fromX为动画起始时 X坐标上的伸缩尺寸   
+//第二个参数toX为动画结束时 X坐标上的伸缩尺寸     
+//第三个参数fromY为动画起始时Y坐标上的伸缩尺寸   
+//第四个参数toY为动画结束时Y坐标上的伸缩尺寸  
+/*说明:
+    以上四种属性值   
+    0.0表示收缩到没有
+    1.0表示正常无伸缩     
+    值小于1.0表示收缩  
+    值大于1.0表示放大
+*/
+//第五个参数pivotXType为动画在X轴相对于物件位置类型  
+//第六个参数pivotXValue为动画相对于物件的X坐标的开始位置
+//第七个参数pivotXType为动画在Y轴相对于物件位置类型   
+//第八个参数pivotYValue为动画相对于物件的Y坐标的开始位置
+myAnimation_Scale =new ScaleAnimation(0.0f, 1.4f, 0.0f, 1.4f, Animation.RELATIVE_TO_SELF, 
+                                      0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+}}}
+

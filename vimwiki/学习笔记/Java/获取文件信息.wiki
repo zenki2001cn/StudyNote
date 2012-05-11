@@ -1,0 +1,31 @@
+= 获取文件信息 =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.io.File;
+import java.text.Format;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.OutputStreamWriter;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+}}}
+
+== 示例代码 ==
+=== 获取最后修改时间 ===
+{{{class="brush:java"
+public String getLastModified() {
+    File file = new File(mFileName);
+
+    Calendar cal = Calendar.getInstance();
+    Format format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    cal.setTimeInMillis(file.lastModified());
+
+    return format.format(cal.getTime());
+}
+}}}

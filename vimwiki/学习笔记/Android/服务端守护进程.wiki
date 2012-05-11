@@ -1,0 +1,278 @@
+= 服务端守护进程 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:text"
+frameworks/base/cmds/servicemanager/binder.h
+frameworks/base/cmds/servicemanager/binder.c
+frameworks/base/cmds/servicemanager/service_manager.c
+}}}
+
+== 要点说明 ==
+[pic/Binder_servicemanager.png]
+
+*servicemanager：是一个守护进程，它用来管理系统级的各种服务。该进程在init.rc中设置，并保证在系统中永远存在。所有其他的，想做为Service运行着的Binder服务，必须在该进程注册。其他的客户端也必须通过该进程查询所需的服务。这是Android中Binder实现的一个十分重要的部分。*
+
+*可执行程序的路径：/system/bin/servicemanager。*
+
+=== 工作流程 ===
+- open()：打开binder驱动。
+- mmap()：映射一个128*1024字节的内存。
+- ioctl(BINDER_SET_CONTEXT_MGR)：设置上下文为mgr。
+- binder_loop(struct binder_state, binder_handler): 接收消息循环。
+- binder_parse(struct binder_state, struct binder_io, uint32_t, uint32_t, binder_handler): 消息解析方法。
+
+== service_manager.c ==
+=== main ===
+{{{class="brush:c++"
+int main(int argc, char **argv)
+{
+    struct binder_state *bs;
+    void *svcmgr = BINDER_SERVICE_MANAGER;
+
+    // 打开Binder
+    bs = binder_open(128*1024);
+
+    // 通知Binder自己是管理者
+    if (binder_become_context_manager(bs)) {
+        LOGE("cannot become context manager (%s)\n", strerror(errno));
+        return -1;
+    }
+
+    svcmgr_handle = svcmgr;
+    // 循环处理Client端的请求
+    binder_loop(bs, svcmgr_handler);
+    
+    return 0;
+}
+}}}
+
+=== svcmgr_handler ===
+{{{class="brush:c++"
+int svcmgr_handler(struct binder_state *bs,
+                   struct binder_txn *txn,
+                   struct binder_io *msg,
+                   struct binder_io *reply)
+{
+    struct svcinfo *si;
+    uint16_t *s;
+    unsigned len;
+    void *ptr;
+
+    if (txn->target != svcmgr_handle)
+        return -1;
+
+    s = bio_get_string16(msg, &len);
+
+    if ((len != (sizeof(svcmgr_id) / 2)) ||
+        memcmp(svcmgr_id, s, sizeof(svcmgr_id))) {
+        fprintf(stderr,"invalid id %s\n", str8(s));
+        return -1;
+    }
+
+    switch(txn->code) {
+    case SVC_MGR_GET_SERVICE:
+    case SVC_MGR_CHECK_SERVICE:
+        s = bio_get_string16(msg, &len);
+        // 查找对应的service
+        ptr = do_find_service(bs, s, len);
+        if (!ptr)
+            break;
+        // 将相应的Binder引用写入reply
+        bio_put_ref(reply, ptr);
+        return 0;
+
+    case SVC_MGR_ADD_SERVICE:
+        s = bio_get_string16(msg, &len);
+        ptr = bio_get_ref(msg);
+        // 加入相应的service
+        if (do_add_service(bs, s, len, ptr, txn->sender_euid))
+            return -1;
+        break;
+
+    case SVC_MGR_LIST_SERVICES: {
+        unsigned n = bio_get_uint32(msg);
+
+        si = svclist;
+        while ((n-- > 0) && si)
+            si = si->next;
+        if (si) {
+            bio_put_string16(reply, si->name);
+            return 0;
+        }
+        return -1;
+    }
+    default:
+        LOGE("unknown code %d\n", txn->code);
+        return -1;
+    }
+
+    bio_put_uint32(reply, 0);
+    return 0;
+}
+}}}
+
+== binder.c ==
+=== struct binder_state ===
+{{{class="brush:c++"
+struct binder_state
+{
+    int fd;                 // 文件描述符
+    void *mapped;           // /dev/binder映射的进程空间地址
+    unsigned mapsize;       // 内存映射的空间大小
+};
+}}}
+
+=== 宏BINDER_SERVICE_MANAGER ===
+{{{class="brush:c++"
+// ServiceManager作为Server的角色时，使用0作为远程接口句柄
+#define BINDER_SERVICE_MANAGER ((void*) 0)
+}}}
+
+=== binder_become_context_manager ===
+- BINDER_SET_CONTEXT_MGR的作用需要查看驱动层的实现(参见[[Binder内核驱动源码分析]])。
+
+{{{class="brush:c++"
+int binder_become_context_manager(struct binder_state *bs)
+{
+    return ioctl(bs->fd, BINDER_SET_CONTEXT_MGR, 0);
+}
+}}}
+
+=== binder_loop ===
+{{{class="brush:c++"
+// 消息处理循环
+void binder_loop(struct binder_state *bs, binder_handler func)
+{
+    int res;
+    struct binder_write_read bwr;
+    unsigned readbuf[32];
+
+    bwr.write_size = 0;
+    bwr.write_consumed = 0;
+    bwr.write_buffer = 0;
+    
+    readbuf[0] = BC_ENTER_LOOPER;
+    binder_write(bs, readbuf, sizeof(unsigned));
+
+    for (;;) {
+        bwr.read_size = sizeof(readbuf);
+        bwr.read_consumed = 0;
+        bwr.read_buffer = (unsigned) readbuf;
+
+        // 通过ioctl控制读取
+        res = ioctl(bs->fd, BINDER_WRITE_READ, &bwr);
+
+        if (res < 0) {
+            LOGE("binder_loop: ioctl failed (%s)\n", strerror(errno));
+            break;
+        }
+
+        // 消息解析
+        res = binder_parse(bs, 0, readbuf, bwr.read_consumed, func);
+        if (res == 0) {
+            LOGE("binder_loop: unexpected reply?!\n");
+            break;
+        }
+        if (res < 0) {
+            LOGE("binder_loop: io error %d %s\n", res, strerror(errno));
+            break;
+        }
+    }
+}
+}}}
+
+=== binder_parse ===
+- 当处理BR_TRANSACTION的时候，调用svcmgr_handler()处理增加服务、检查服务等工作。
+- 各种服务存放在一个链表(svclist)中。其中调用binder_*等开头的函数，又会调用ioctl的各种命令。
+- 处理BR_REPLY的时候，填充binder_io类型的数据结点。
+
+{{{class="brush:c++"
+int binder_parse(struct binder_state *bs, struct binder_io *bio,
+                 uint32_t *ptr, uint32_t size, binder_handler func) 
+{
+    int r = 1;
+    uint32_t *end = ptr + (size / 4);
+
+    while (ptr < end) {
+        uint32_t cmd = *ptr++;
+#if TRACE
+        fprintf(stderr,"%s:\n", cmd_name(cmd));
+#endif
+        switch(cmd) {
+        case BR_NOOP:
+            break;
+        case BR_TRANSACTION_COMPLETE:
+            break;
+        case BR_INCREFS:
+        case BR_ACQUIRE:
+        case BR_RELEASE:
+        case BR_DECREFS:
+#if TRACE
+            fprintf(stderr,"  %08x %08x\n", ptr[0], ptr[1]);
+#endif
+            ptr += 2;
+            break;
+        case BR_TRANSACTION: {
+            struct binder_txn *txn = (void *) ptr;
+            if ((end - ptr) * sizeof(uint32_t) < sizeof(struct binder_txn)) {
+                LOGE("parse: txn too small!\n");
+                return -1;
+            }
+            binder_dump_txn(txn);
+            if (func) {
+                unsigned rdata[256/4];
+                struct binder_io msg;
+                struct binder_io reply;
+                int res;
+
+                bio_init(&reply, rdata, sizeof(rdata), 4);
+                bio_init_from_txn(&msg, txn);
+                
+                // 调用Binder处理对应code的方法，如addService、getService等
+                res = func(bs, txn, &msg, &reply);
+                binder_send_reply(bs, &reply, txn->data, res);
+            }
+            ptr += sizeof(*txn) / sizeof(uint32_t);
+            break;
+        }
+        case BR_REPLY: {
+            struct binder_txn *txn = (void*) ptr;
+            if ((end - ptr) * sizeof(uint32_t) < sizeof(struct binder_txn)) {
+                LOGE("parse: reply too small!\n");
+                return -1;
+            }
+            binder_dump_txn(txn);
+            if (bio) {
+                bio_init_from_txn(bio, txn);
+                bio = 0;
+            } else {
+                    /* todo FREE BUFFER */
+            }
+            ptr += (sizeof(*txn) / sizeof(uint32_t));
+            r = 0;
+            break;
+        }
+        case BR_DEAD_BINDER: {
+            struct binder_death *death = (void*) *ptr++;
+            death->func(bs, death->ptr);
+            break;
+        }
+        case BR_FAILED_REPLY:
+            r = -1;
+            break;
+        case BR_DEAD_REPLY:
+            r = -1;
+            break;
+        default:
+            LOGE("parse: OOPS %d\n", cmd);
+            return -1;
+        }
+    }
+
+    return r;
+}
+}}}
+
+

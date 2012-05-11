@@ -1,0 +1,65 @@
+= 设备编号 =
+
+%toc
+
+== 头文件 ==
+{{{class="brush:c"
+#include <linux/kdev_t.h>
+#include <linux/major.h>
+}}}
+
+== 主次设备编号 ==
+- 主编号标识设备相连的驱动。例如，/dev/null和/dev/zero都由驱动1来管理，而虚拟控制台和串口终端都由驱动4管理;同样，vcs1和vcsa1设备都由驱动7管理。现代Linux内核允许多个驱动共享主编号，但是你看到的大部分设备仍然按照一个主编号一个驱动的原则来组织。
+- 次编号被内核用来决定引用哪个设备。依据你的驱动是如何编写的，你可以从内核得到一个你的设备的直接指针，或者可以自己使用次编号作为本地设备数组的索引。不论哪个方法，内核自己几乎不知道次编号的任何事情，除了它们指向你的驱动实现的设备。
+
+{{{class="brush:bash"
+$ ls -l
+crw-rw-rw- 1 root  root  1,  3  Apr 11   2002    null 
+crw------- 1 root  root  10, 1  Apr 11   2002    psaux 
+crw------- 1 root  root  4,  1  Oct 28   03:04   tty1 
+crw-rw-rw- 1 root  tty   4, 64  Apr 11   2002    ttys0 
+crw-rw---- 1 root  uucp  4, 65  Apr 11   2002    ttyS1 
+crw--w---- 1 vcsa  tty   7,  1  Apr 11   2002    vcs1 
+crw--w---- 1 vcsa  tty   7,129  Apr 11   2002    vcsa1 
+crw-rw-rw- 1 root  root  1,  5  Apr 11   2002    zero  
+}}}
+
+== 设备编号的分配 ==
+- 在内核中，dev_t类型用来描述设备编号，包括主次设备号。dev_t是32位的变量，12位用作主编号，20位用作次编号。
+- 使用<linux/kdev_t.h>中的一套宏定义来获得一个dev_t的主或者次设备编号。
+
+{{{class="brush:c"
+// 从dev_t获取主设备号
+#define MAJOR(dev)	    ((unsigned int) ((dev) >> MINORBITS))
+
+// 从dev_t获取次设备号
+#define MINOR(dev)	    ((unsigned int) ((dev) & MINORMASK))
+
+// 根据主次设备号创建dev_t变量
+#define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
+}}}
+
+== 设备编号集合 ==
+- 在major.h中定义了一组已知的设备编号集合。以下为部分代码：
+
+{{{class="brush:c"
+#define UNNAMED_MAJOR		0
+#define MEM_MAJOR		1
+#define RAMDISK_MAJOR		1
+#define FLOPPY_MAJOR		2
+#define PTY_MASTER_MAJOR	2
+#define IDE0_MAJOR		3
+#define HD_MAJOR		IDE0_MAJOR
+#define PTY_SLAVE_MAJOR		3
+#define TTY_MAJOR		4
+#define TTYAUX_MAJOR		5
+#define LP_MAJOR		6
+#define VCS_MAJOR		7
+#define LOOP_MAJOR		7
+#define SCSI_DISK0_MAJOR	8
+#define SCSI_TAPE_MAJOR		9
+#define MD_MAJOR		9
+#define MISC_MAJOR		10
+#define SCSI_CDROM_MAJOR	11
+......
+}}}

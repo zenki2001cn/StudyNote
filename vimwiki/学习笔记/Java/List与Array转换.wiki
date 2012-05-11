@@ -1,0 +1,22 @@
+= List与Array转换 =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.util.List;
+import java.util.Arrays;
+}}}
+
+== 示例代码 ==
+{{{class="brush:java"
+// 声明数组类型和ArrayList类型对象
+File[] files = new File[10];
+List<File> listFiles = new ArrayList<File>();
+
+// 填充List对象
+if (files != null) {
+    listFiles.addAll(Arrays.asList(files));
+}
+
+// 通过toArray()方法转换成数组
+File[] files2 = listAll.toArray(new File[] {});
+}}}

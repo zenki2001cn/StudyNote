@@ -1,0 +1,185 @@
+= USB Storage =
+
+%toc
+
+== 概述 ==
+{{{class="brush:text"
+    Android的USB存储管理从上到下主要分为StorageManager、MountService、Vold几个模块。
+    framework层的功能主要是由后台服务MountService实现，与其他Service一样，
+启动时会在SystemService中注册该服务。
+    StorageManager是管理类，主要是提供给上层应用程序开发者的调用接口，具体实现会调用
+MountService服务。
+    Vold是系统的守护进程，用来监测内核事件消息和framework层的消息，都是使用socket来进行通讯，
+后面会详细分析Vold的实现。
+}}}
+
+== 结构图 ==
+[[pic/usb_storage.jpg]]
+
+== StorageManager管理类 ==
+- StorageManager是提供给应用层的接口管理类，用来负责USB设备的操作，如挂载外置存储卡，获取存储卡状态：
+- registerListener方法注册的是StorageEventListener接口，该接口用来处理UMS事件。
+- mountObb方法注册的是OnObbStateChangeListener接口，该接口用来处理Obb事件。
+
+=== StorageManager的初始化 ===
+- StorageManager的初始化很简单，获取MountService对象，注册MountServiceBinderListener。
+- 这里要注意几个回调的注册过程：
+    - StorageManager.MountServiceBinderListener类：该类是注册给MountService的回调，由MountService.updatePublicVolumeState方法触发(见[[MountService实现]])。
+    - StorageEventListener：应用层通过StorageManager.registerListener方法注册该回调，该回调在`StorageManager.MountServiceBinderListener`中触发。(可以理解为回调中的回调)
+    - OnObbStateChangeListener回调：obb状态改变时被调用，该回调会直接注册给MountService，由MountService.updatePublicVolumeState方法触发。
+
+=== mListeners ===
+{{{class="brush:java"
+private List<ListenerDelegate> mListeners = new ArrayList<ListenerDelegate>();
+}}}
+
+=== StorageManager ===
+{{{class="brush:java"
+public StorageManager(Looper tgtLooper) throws RemoteException {
+    mMountService = IMountService.Stub.asInterface(ServiceManager.getService("mount"));
+    if (mMountService == null) {
+        return;
+    }
+    mTgtLooper = tgtLooper;
+    mBinderListener = new MountServiceBinderListener();
+    mMountService.registerListener(mBinderListener);
+}
+}}}
+
+=== registerListener ===
+{{{class="brush:java"
+public void registerListener(StorageEventListener listener) {
+    if (listener == null) {
+        return;
+    }
+
+    synchronized (mListeners) {
+        mListeners.add(new ListenerDelegate(listener));
+    }
+}
+}}}
+
+=== mountObb ===
+{{{class="brush:java"
+public boolean mountObb(String filename, String key, OnObbStateChangeListener listener) {
+    ...... 
+    try {
+        final int nonce = mObbActionListener.addListener(listener);
+        mMountService.mountObb(filename, key, mObbActionListener, nonce);
+        return true;
+    } catch (RemoteException e) {
+    }
+
+    return false;
+}
+}}}
+
+=== StorageManager.MountServiceBinderListener ===
+{{{class="brush:java"
+private class MountServiceBinderListener extends IMountServiceListener.Stub {
+    public void onUsbMassStorageConnectionChanged(boolean available) {
+        final int size = mListeners.size();
+        for (int i = 0; i < size; i++) {
+            mListeners.get(i).sendShareAvailabilityChanged(available);
+        }
+    }
+
+    public void onStorageStateChanged(String path, String oldState, String newState) {
+        final int size = mListeners.size();
+        for (int i = 0; i < size; i++) {
+            mListeners.get(i).sendStorageStateChanged(path, oldState, newState);
+        }
+    }
+}
+}}}
+
+== MountService服务 ==
+- MountService是运行在SystemServer中的服务，它为StorageManager提供了接口实现，主要提供以下关于设备操作的功能：
+| 方法名                   | 描述                                     |
+|--------------------------+------------------------------------------|
+| setUsbMassStorageEnabled | 设置U盘模式                              |
+| isUsbMassStorageEnabled  | 检测当前是否是U盘模式                    |
+| mountVolume              | 挂载磁盘                                 |
+| unmountVolume            | 卸载磁盘                                 |
+| formatVolume             | 格式化磁盘                               |
+| getVolumeState           | 获取磁盘状态                             |
+| mountSecureContainer     | 挂载secure分区                           |
+| unmountSecureContainer   | 卸载secure分区                           |
+| isSecureContainerMounted | 检测secure分区状态                       |
+| mountObb                 | 挂载obb分区                              |
+| unmountObb               | 卸载obb分区                              |
+| isObbMounted             | 检测obb分区状态                          |
+| registerListener         | 注册外部回调接口，用来做设备状态变更处理 |
+
+- [[MountService实现]]
+
+== 什么是Vold ==
+- [[什么是Vold]]
+
+== Vold功能实现 ==
+- [[Vold功能实现]]
+
+== Vold与MountService的传输协议 ==
+- MountService使用socket与Vold通讯，以下为socket通讯的协议：
+
+=== volume操作 ===
+- 实现参考CommandListener::VolumeCmd类
+| 协议字符串                     | 用法描述                 | 备注                                |
+|--------------------------------+--------------------------+-------------------------------------|
+| volume list                    | 返回设备列表             |                                     |
+| volume debug <off/on>          | 开启debug模式            |                                     |
+| volume mount <path>            | 挂载对应指定挂载点的设备 | path表示挂载点                      |
+| volume unmount <path> [force]  | 卸载指定挂载点的设备     | path表示挂载点                      |
+| volume format <path>           | 格式化对应挂载点的设备   | path表示挂载点                      |
+| volume share <path> <method>   | 开启ums模式              | path表示挂载点，method可设置为"ums" |
+| volume unshare <path> <method> | 关闭ums模式              | path表示挂载点，method可设置为"ums" |
+
+=== share操作 ===
+- 实现参考CommandListener::ShareCmd类
+| 协议字符串   | 用法描述      | 备注                                                   |
+|--------------+---------------+--------------------------------------------------------|
+| share status | 返回ums的信息 | 返回usb状态，true为usb已连接并开启ums模式，否则为false |
+
+=== storage操作 ===
+- 实现参考CommandListener::StorageCmd类
+| 协议字符串    | 用法描述               | 备注                          |
+|---------------+------------------------+-------------------------------|
+| storage users | 获取设备关联的进程信息 | 读取/proc目录下相关进程的信息 |
+
+=== asec操作 ===
+- 实现参考CommandListener::AsecCmd类
+| 协议字符串                                                     | 用法描述                            | 备注 |
+|----------------------------------------------------------------+-------------------------------------+------|
+| asec list                                                      | 扫描asec目录，返回.asec结尾的文件名 |      |
+| asec create <container-id> <size_mb> <fstype> <key> <ownerUid> | 创建asec目录和文件                  |      |
+| asec finalize <container-id>                                   |                                     |      |
+| asec destroy <container-id> [force]                            | 删除asec目录和文件                  |      |
+| asec mount <namespace-id> <key> <ownerUid>                     | 挂载asec目录                        |      |
+| asec unmount <container-id> [force]                            | 卸载asec目录                        |      |
+| asec rename <old_id> <new_id>                                  | 重命名asec目录                      |      |
+| asec path <container-id>                                       |                                     |      |
+
+=== obb操作 ===
+- 实现参考CommandListener::ObbCmd类
+| 协议字符串                            | 用法描述                           | 备注 |
+|---------------------------------------+------------------------------------+------|
+| obb list                              | 扫描/proc/mounts目录，返回挂载信息 |      |
+| obb mount <filename> <key> <ownerUid> | 挂载obb镜像                        |      |
+| obb unmount <source file> [force]     | 卸载obb镜像                        |      |
+| obb path <source file>                | 返回obb挂载路径                    |      |
+
+=== xwrap操作 ===
+- 实现参考CommandListener::XwrapCmd类
+| 协议字符串    | 用法描述 | 备注 |
+|---------------+----------+------|
+| xwrap enable  |          |      |
+| xwrap disable |          |      |
+| xwrap status  |          |      |
+
+== 调试Vold ==
+- 参见[[Android工具集]]。
+
+== USB Storage框架总结 ==
+- Storage管理从上到下主要涉及三个类：StorageManager、MountService、Vold。我们要了解Storage提供了基本的接口，MountService实现了接口代理。而Vold是真正实现设备操作的守护进程。
+- Vold的实现依赖uevent机制。
+- 从整个框架来看，Storage的管理属于C/S架构，通讯机制使用socket，底层通讯使用netlink。

@@ -1,0 +1,39 @@
+= Paint使用 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Paint;
+}}}
+
+== 基本概念 ==
+- Paint类主要包含了绘画的基本信息，如字体风格，颜色信息等等。
+- Canvas类的一系列draw方法需要用到Paint对象。
+
+== 主要方法列表 ==
+| 返回值 | 方法                                    | 描述           |
+|--------+-----------------------------------------+----------------|
+| void   | setARGB(int a, int r, int g, int b)     | 设置ARGB值     |
+| void   | setColor(int color)                     | 设置颜色       |
+| Shader | setShader(Shader  shader)               | 设置阴影       |
+| void   | setTextSize(float textSize)             | 设置文字大小   |
+| void   | setUnderlineText(boolean underlineText) | 设置文字下划线 |
+
+== 示例代码 ==
+{{{class="brush:java"
+Paint p = new Paint();
+String familyName = "宋体";
+Typeface font = Typeface.create(familyName,Typeface.BOLD);
+
+p.setColor(Color.RED);
+p.setTypeface(font);
+p.setTextSize(22);
+p.setAntiAlias(true);
+p.setDither(false);
+p.setStyle(Paint.Style.STROKE);
+p.setStrokeJoin(Paint.Join.ROUND);
+p.setStrokeCap(Paint.Cap.ROUND);
+p.setStrokeWidth(CANVAS_PAINT_SIZE);
+p.setAntiAlias(true);
+
+canvas.drawText(mstrTitle,0,100,p);
+}}}

@@ -1,0 +1,163 @@
+= ioctl用法 =
+
+%toc
+
+== 相关函数 ==
+{{{class="brush:c"
+#include<unistd.h>
+int ioctl( int fd, int request, .../* void *arg */ ); 
+}}}
+
+== 简介 ==
+{{{class="brush:text"
+    使用ioctl系统调用是用户空间向内核交换数据的常用方法之一，从ioctl这个名称上看，
+本意是针对I/O设备进行的控制操作，但实际并不限制是真正的I/O设备，可以是任何一个内核设备即可。
+}}}
+
+== 基本过程 ==
+{{{class="brush:text"
+    在内核空间中ioctl是很多内核操作结构的一个成员函数，如文件操作结构struct file_operations(include/linux/fs.h)、
+协议操作结构struct proto_ops(include/linux/net.h)等、tty操作结构struct tty_driver(include/linux/tty_driver.h)等，
+而这些操作结构分别对应各种内核设备，只要在用户空间打开这些设备，如I/O设备可用open(2)打开，网络协议可用socket(2)打开等，
+获取一个文件描述符后，就可以在这个描述符上调用ioctl(2)来向内核 交换数据。
+}}}
+
+== ioctl(2)分析 ==
+函数原型 :: int ioctl(int fd, int cmd, void *data)
+
+fd :: 文件描述符
+
+cmd :: 操作命令，一般分为GET、SET以及其他类型命令，GET是用户空间进程从内核读数据，SET是用户空间进程向内核写数据
+
+data :: 数据起始位置指针
+
+=== cmd格式 ===
+cmd为32位整数，分为四部分
+| 方向  | 设备类型 | 序列号 | 数据大小 |
+|-------+----------+--------+----------|
+| 2 bit | 8 bit    | 8 bit  | 8~14 bit |
+
+=== ioctl.h的定义 ===
+{{{class="brush:c"
+// 通常使用宏_IOC来定义，该宏定义在include/asm/ioctl.h中
+#define _IOC(dir,type,nr,size)      \
+	(((dir)  << _IOC_DIRSHIFT) |    \
+	 ((type) << _IOC_TYPESHIFT) |   \
+	 ((nr)   << _IOC_NRSHIFT) |     \
+	 ((size) << _IOC_SIZESHIFT))
+
+#define _IOC_TYPECHECK(t) (sizeof(t))
+
+/* 创建cmd */
+#define _IO(type,nr)		    _IOC(_IOC_NONE,(type),(nr),0)
+#define _IOR(type,nr,size)	    _IOC(_IOC_READ,(type),(nr),(_IOC_TYPECHECK(size)))
+#define _IOW(type,nr,size)	    _IOC(_IOC_WRITE,(type),(nr),(_IOC_TYPECHECK(size)))
+#define _IOWR(type,nr,size)	    _IOC(_IOC_READ|_IOC_WRITE,(type),(nr),(_IOC_TYPECHECK(size)))
+#define _IOR_BAD(type,nr,size)	_IOC(_IOC_READ,(type),(nr),sizeof(size))
+#define _IOW_BAD(type,nr,size)	_IOC(_IOC_WRITE,(type),(nr),sizeof(size))
+#define _IOWR_BAD(type,nr,size)	_IOC(_IOC_READ|_IOC_WRITE,(type),(nr),sizeof(size))
+
+/* 分解cmd */
+#define _IOC_DIR(nr)		(((nr) >> _IOC_DIRSHIFT) & _IOC_DIRMASK)
+#define _IOC_TYPE(nr)		(((nr) >> _IOC_TYPESHIFT) & _IOC_TYPEMASK)
+#define _IOC_NR(nr)		    (((nr) >> _IOC_NRSHIFT) & _IOC_NRMASK)
+#define _IOC_SIZE(nr)		(((nr) >> _IOC_SIZESHIFT) & _IOC_SIZEMASK)
+}}}
+
+== 自定义cmd，并实现ioctl方法 ==
+{{{class="brush:c"
+#define NEWCHAR_IOC_MAGIC   'M'
+#define NEWCHAR_SET         _IO(NEWCHAR_IOC_MAGIC, 0)
+#define NEWCHAR_GET         _IO(NEWCHAR_IOC_MAGIC, 1)
+#define NEWCHAR_IOC_MAXNR   1
+
+static int newchar_ioctl(struct inode *inode, struct file *filep, unsigned int cmd, unsigned long arg)
+{
+    int ret;
+    
+    // 首先检查cmd是否合法
+    if (_IOC_TYPE(cmd) != NEWCHAR_IOC_MAGIC) return -EINVAL;
+    if (_IOC_NR(cmd) > NEWCHAR_IOC_MAXNR) return -EINVAL;
+    
+    // 错误情况下的缺省返回值
+    ret = EINVAL;
+    
+    switch(cmd) {
+    case KNEWCHAR_SET:
+        // 设置操作，将数据从用户空间拷贝到内核空间
+        {
+            struct newchar nc;
+            if(copy_from_user(&nc, (const char*)arg, sizeof(nc)) != 0)
+                return -EFAULT;
+            ret = do_set_newchar(&nc);
+        }
+        break;
+    case KNEWCHAR_GET:
+        // GET操作通常会在数据缓冲区中先传递部分初始值作为数据查找条件，获取全部数据后重新写回缓冲区
+        // 当然也可以根据具体情况什么也不传入直接向内核获取数据
+        {
+            struct newchar nc;
+            if(copy_from_user(&nc, (const char*)arg, sizeof(nc)) != 0)
+                return -EFAULT;
+            ret = do_get_newchar(&nc);
+            if(ret == 0){
+                if(copy_to_user((unsigned char *)arg, &nc, sizeof(nc))!=0)
+                    return -EFAULT;
+            }
+        }
+        break;
+    }
+    
+    return ret;
+}
+}}}
+
+== Android中Binder实现 ==
+{{{class="brush:c"
+#define BINDER_WRITE_READ           _IOWR('b', 1, struct binder_write_read)
+#define BINDER_SET_IDLE_TIMEOUT     _IOW('b', 3, int64_t)
+#define BINDER_SET_MAX_THREADS      _IOW('b', 5, size_t)
+#define BINDER_SET_IDLE_PRIORITY    _IOW('b', 6, int)
+#define BINDER_SET_CONTEXT_MGR      _IOW('b', 7, int)
+#define BINDER_THREAD_EXIT          _IOW('b', 8, int)
+#define BINDER_VERSION              _IOWR('b', 9, struct binder_version)
+
+static const struct file_operations binder_fops = {
+	.owner = THIS_MODULE,
+	.poll = binder_poll,
+	.unlocked_ioctl = binder_ioctl,
+	.mmap = binder_mmap,
+	.open = binder_open,
+	.flush = binder_flush,
+	.release = binder_release,
+};
+
+static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    // ......
+	switch (cmd) {
+	case BINDER_WRITE_READ: {
+		// ......
+		break;
+	}
+	case BINDER_SET_MAX_THREADS:
+		// .....
+		break;
+	case BINDER_SET_CONTEXT_MGR:
+		// .....
+		break;
+	case BINDER_THREAD_EXIT:
+		// .....
+		break;
+	case BINDER_VERSION:
+		// .....
+		break;
+	default:
+		goto err;
+	}
+	ret = 0;
+err:
+	// ......
+	return ret;
+}
+}}}

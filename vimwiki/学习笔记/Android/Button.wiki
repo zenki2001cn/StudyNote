@@ -1,0 +1,34 @@
+= Button使用方法 =
+
+[pic/button.png]
+
+追加按钮点击事件处理的时候
+# 调用按钮的setOnClickListener()方法，并把View.OnClickListener的实例作为参数传入
+# 在View.OnClickListener的onClick()方法里，取得被点击按钮的实例
+
+== 相关类 ==
+{{{class="brush: java"
+import android.widget.Button;
+import android.view.View.OnClickListener;
+}}}
+
+== 例程源码(Java) ==
+{{{class="brush: java"
+Button button = (Button) findViewById(id.button);
+        
+button.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        Button button = (Button) v;
+        Log.v("Test", String.valueOf(button.getText()));
+    }
+});
+}}}
+
+== 例程源码(Resource) ==
+{{{class="brush: xml"
+<Button android:id="@+id/button"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/test" />
+}}}

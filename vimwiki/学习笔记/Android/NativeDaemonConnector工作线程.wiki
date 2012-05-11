@@ -1,0 +1,222 @@
+= NativeDaemonConnector工作线程 =
+
+%toc
+
+== NativeDaemonConnector的作用 ==
+{{{class="brush:text"
+    NativeDaemonConnector是与Vold进程通讯的工作线程，它主要完成两个任务：
+    1.通过socket监听来自Vold的事件信息，如设备挂载、设备移除等。(称之为被动接收)
+    2.为上层提供控制接口，用来执行设备挂载，设备移除、设备扫描的指令。(称之为主动执行)
+}}}
+
+== NativeDaemonConnector初始化 ==
+- NativeDaemonConnector继承自Runnable类，MountService通过其初始化一个Thread，之后还需要通过该类的doCommand方法与Vold通讯。
+- 构造方法主要有以下几点相关操作：
+    - 设置callback，该回调的实现者是MountService，由此可知当事件被通报后，会由MountService做具体处理。
+    - 设置socket名称，Java的socket实现是透过JNI调用完成，该名称将会向下传递。
+    - 创建一个String类型的队列，每当上层发送控制指令给Vold进程后，会将接收自Vold的特定信息加入到该队列中，返回给上层的应答会从该队列中取。
+
+=== NativeDaemonConnector ===
+{{{class="brush:java"
+NativeDaemonConnector(INativeDaemonConnectorCallbacks callbacks,
+                      String socket, int responseQueueSize, String logTag) {
+    mCallbacks = callbacks;
+    mSocket = socket;
+    mResponseQueue = new LinkedBlockingQueue<String>(responseQueueSize);
+}
+}}}
+
+=== INativeDaemonConnectorCallbacks ===
+{{{class="brush:java"
+interface INativeDaemonConnectorCallbacks {
+    void onDaemonConnected();
+    boolean onEvent(int code, String raw, String[] cooked);
+}
+}}}
+
+== 被动接收的实现 ==
+- 被动接收主要是在线程的run方法中实现，它调用listenToSocket方法监听Vold的状态。
+
+=== run ===
+{{{class="brush:java"
+public void run() {
+    while (true) {
+        try {
+            listenToSocket();
+        } catch (Exception e) {
+            SystemClock.sleep(5000);
+        }
+    }
+}
+}}}
+
+- listenToSocket首先会初始化一个LocalSocket，当与Vold进程连接后，会调用回调的onDaemonConnected方法，该回调再通过NativeDaemonConnector对象获取设备状态。
+- 接下来会循环接收来自Vold的socket数据，如果没有数据到来会阻塞在read方法。可以把该方法作为流数据处理的范例来学习。
+- 如果接收到底层传来的有效数据，会根据结果做出不同的动作：
+    - 如果返回码大于ResponseCode.UnsolicitedInformational则调用回调的onEvent方法。(ResponseCode.UnsolicitedInformational值为600)
+    - 如果返回码小于ResponseCode.UnsolicitedInformational则将该事件加入到应答队列。
+
+=== listenToSocket ===
+{{{class="brush:java"
+private void listenToSocket() throws IOException {
+    ......
+    try {
+        // 初始化LocalSocket
+        socket = new LocalSocket();
+        LocalSocketAddress address = new LocalSocketAddress(mSocket,
+                LocalSocketAddress.Namespace.RESERVED);
+        socket.connect(address);
+        
+        // 调用回调的onDaemonConnected方法
+        mCallbacks.onDaemonConnected();
+
+        InputStream inputStream = socket.getInputStream();
+        mOutputStream = socket.getOutputStream();
+        ......
+        while (true) {
+            int count = inputStream.read(buffer, start, BUFFER_SIZE - start);
+            if (count < 0) break;
+            ......
+            for (int i = 0; i < count; i++) {
+                if (buffer[i] == 0) {
+                    ......
+                    try {
+                        ......
+                        // if code >= 600
+                        if (code >= ResponseCode.UnsolicitedInformational) {
+                            try {
+                                // 调用回调的onEvent方法
+                                if (!mCallbacks.onEvent(code, event, tokens)) {
+                                }
+                            } catch (Exception ex) {
+                            }
+                        } else {
+                            try {
+                                // 将结果加入应答队列
+                                mResponseQueue.put(event);
+                            } catch (InterruptedException ex) {
+                            }
+                        }
+                    } catch (NumberFormatException nfe) {
+                    }
+                }
+            }
+            ......
+        }
+    } catch (IOException ex) {
+        ......
+    } finally {
+        ......
+    }
+}
+}}}
+
+- VoldResponseCode类描述了来自Vold的消息代码，大于600的代码表示了设备状态变化，因此上述代码中大于等于600时onEvent才会被调用。
+
+=== MountService.VoldResponseCode ===
+{{{class="brush:java"
+class VoldResponseCode {
+    /*
+     * 100 series - Requestion action was initiated; expect another reply
+     *              before proceeding with a new command.
+     */
+    public static final int VolumeListResult               = 110;
+    public static final int AsecListResult                 = 111;
+    public static final int StorageUsersListResult         = 112;
+
+    /*
+     * 200 series - Requestion action has been successfully completed.
+     */
+    public static final int ShareStatusResult              = 210;
+    public static final int AsecPathResult                 = 211;
+    public static final int ShareEnabledResult             = 212;
+
+    /*
+     * 400 series - Command was accepted, but the requested action
+     *              did not take place.
+     */
+    public static final int OpFailedNoMedia                = 401;
+    public static final int OpFailedMediaBlank             = 402;
+    public static final int OpFailedMediaCorrupt           = 403;
+    public static final int OpFailedVolNotMounted          = 404;
+    public static final int OpFailedStorageBusy            = 405;
+    public static final int OpFailedStorageNotFound        = 406;
+
+    /*
+     * 600 series - Unsolicited broadcasts.
+     */
+    public static final int VolumeStateChange              = 605;
+    public static final int ShareAvailabilityChange        = 620;
+    public static final int VolumeDiskInserted             = 630;
+    public static final int VolumeDiskRemoved              = 631;
+    public static final int VolumeBadRemoval               = 632;
+    // this value indicates it's ok to mount disk
+    public static final int VolumeOKtoMount                = 633;
+}
+}}}
+
+== 主动执行的实现 ==
+- 主动执行是指上层模块通过特定接口向Vold发送指令，执行设备相关的操作，如mount、unmount。
+- NativeDaemonConnector主要提供了两个方法doCommand和doListCommand。
+- doCommand和doListCommand最终会调用sendCommand方法，通过socket向Vold发送指令。有时上层会发送一些查询指令到Vold，因此doCommand会返回一个字符串列表作为应答结果。
+
+=== doCommand ===
+{{{class="brush:java"
+public synchronized ArrayList<String> doCommand(String cmd)
+        throws NativeDaemonConnectorException  {
+    mResponseQueue.clear();
+    // 调用sendCommand发送命令
+    sendCommand(cmd);
+    ArrayList<String> response = new ArrayList<String>();
+    
+    while (!complete) {
+        try {
+            // mResponseQueue是BlockingQueue类型，会阻塞短暂时间，
+            // 在这段时间内接收线程会接收到Vold的反馈，如果返回码
+            // 小于600，会被加入到这个队列中，此时会从队列中取出。
+            String line = mResponseQueue.take();
+            String[] tokens = line.split(" ");
+            try {
+                code = Integer.parseInt(tokens[0]);
+            } catch (NumberFormatException nfe) {
+            }
+
+            if ((code >= 200) && (code < 600)) {
+                complete = true;
+            }
+            // 将解析的返回码加入列表
+            response.add(line);
+        } catch (InterruptedException ex) {
+        }
+    }
+
+    ...... 
+    // 返回应答结果
+    return response;
+}
+}}}
+
+=== sendCommand ===
+{{{class="brush:java"
+private void sendCommand(String command, String argument)
+        throws NativeDaemonConnectorException  {
+
+    synchronized (this) {
+        if (mOutputStream == null) {
+            throw new NativeDaemonConnectorException("No output stream!");
+        } else {
+            StringBuilder builder = new StringBuilder(command);
+            if (argument != null) {
+                builder.append(argument);
+            }
+            builder.append('\0');
+
+            try {
+                // 通过socket发送消息
+                mOutputStream.write(builder.toString().getBytes());
+            } catch (IOException ex) {
+            }
+        }
+    }
+}
+}}}

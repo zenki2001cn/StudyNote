@@ -1,0 +1,86 @@
+= base_services目录结构 =
+
+== 目录结构 ==
+{{{class="brush:text"
+.
+|-- java
+|   |-- Android.mk
+|   `-- com
+|       `-- android
+|           `-- server
+|               |-- AccessibilityManagerService.java
+|               |-- AlarmManagerService.java
+|               |-- am
+|               |   |-- ......
+|               |-- AppWidgetService.java
+|               |-- AttributeCache.java
+|               |-- BackupManagerService.java
+|               |-- BatteryService.java
+|               |-- BootReceiver.java
+|               |-- BrickReceiver.java
+|               |-- ClipboardService.java
+|               |-- connectivity
+|               |   `-- Tethering.java
+|               |-- ConnectivityService.java
+|               |-- DemoDataSet.java
+|               |-- DevicePolicyManagerService.java
+|               |-- DeviceStorageMonitorService.java
+|               |-- DiskStatsService.java
+|               |-- DockObserver.java
+|               |-- DropBoxManagerService.java
+|               |-- EntropyService.java
+|               |-- EventLogTags.logtags
+|               |-- HeadsetObserver.java
+|               |-- INativeDaemonConnectorCallbacks.java
+|               |-- InputDevice.java
+|               |-- InputMethodManagerService.java
+|               |-- Installer.java
+|               |-- IntentResolver.java
+|               |-- KeyInputQueue.java
+|               |-- LightsService.java
+|               |-- LoadAverageService.java
+|               |-- LocationManagerService.java
+|               |-- MasterClearReceiver.java
+|               |-- MountService.java
+|               |-- NativeDaemonConnectorException.java
+|               |-- NativeDaemonConnector.java
+|               |-- NetStatService.java
+|               |-- NetworkManagementService.java
+|               |-- NotificationManagerService.java
+|               |-- NotificationPlayer.java
+|               |-- PackageManagerBackupAgent.java
+|               |-- PackageManagerService.java
+|               |-- PowerManagerService.java
+|               |-- ProcessMap.java
+|               |-- ProcessStats.java
+|               |-- RandomBlock.java
+|               |-- RecognitionManagerService.java
+|               |-- SensorService.java
+|               |-- ShutdownActivity.java
+|               |-- status
+|               |   |-- ......
+|               |-- SystemBackupAgent.java
+|               |-- SystemServer.java
+|               |-- TelephonyRegistry.java
+|               |-- ThrottleService.java
+|               |-- TwilightCalculator.java
+|               |-- UiModeManagerService.java
+|               |-- VibratorService.java
+|               |-- ViewServer.java
+|               |-- WallpaperManagerService.java
+|               |-- Watchdog.java
+|               |-- WifiService.java
+|               |-- WifiWatchdogService.java
+|               `-- WindowManagerService.java
+|-- jni
+|   |-- Android.mk
+|   |-- com_android_server_AlarmManagerService.cpp
+|   |-- com_android_server_BatteryService.cpp
+|   |-- com_android_server_KeyInputQueue.cpp
+|   |-- com_android_server_LightsService.cpp
+|   |-- com_android_server_SensorService.cpp
+|   |-- com_android_server_SystemServer.cpp
+|   |-- com_android_server_VibratorService.cpp
+|   `-- onload.cpp
+`-- tests
+}}}

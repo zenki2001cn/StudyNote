@@ -1,0 +1,115 @@
+= JNI实现方法 =
+
+%toc
+
+== 示例代码解析 ==
+- [[加入JNI图解]]
+- [[Java和C数据类型接口]]
+- [[jni使用范例]]
+
+== 使用和编译 ==
+=== JAVA部分 ===
+- 创建java类，声明C的调用接口，通常是native类型的方法声明
+- 使用javac编译生成.class文件
+- 使用javah生成.h文件
+
+==== 创建JAVA方法入口 ====
+{{{class="brush:java"
+public class Test {
+    static {
+        // 打印库路径
+        System.out.println(System.getProperty("java.library.path"));
+        // 装载共享库文件
+        System.loadLibrary("test");
+    }
+
+    // 本地调用声明为native类型
+    public native static void hello();
+    public native static int hello2(String[] str);
+    public native static void hello3(String[] str, int[] array);
+    public native static void hello4(String[] str, int[] array, int i);
+
+    public static void main (String [] args) {
+
+        Test test = new Test();
+
+        test.hello();
+        test.hello2(null);
+        test.hello3(null, null);
+        test.hello4(null, null, 0);
+    }
+}
+}}}
+
+==== 使用javah生成.h头文件 ====
+{{{class="brush:c"
+#include <jni.h>
+/* Header for class Test */
+
+#ifndef _Included_Test
+#define _Included_Test
+#ifdef __cplusplus
+extern "C" {
+#endif
+/*
+ * Class:     Test
+ * Method:    hello
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_Test_hello
+  (JNIEnv *, jclass);
+
+...
+...
+...
+
+#ifdef __cplusplus
+}
+#endif
+#endif
+}}}
+
+=== C部分 ===
+- 根据javah生成的.h文件，实现其.c文件的代码
+- 编译.c文件生成.so文件
+
+==== 编译386平台的库 ====
+- 编写makefile，将.c文件编译成.o，注意包含jni.h头文件路径
+- 使用gcc -shared -fPIC a.o -o a.so 生成动态库
+- 确认动态库在java.library.path搜索目录中
+
+==== 编译ARM平台的库 ====
+- `在Android下编译时，java类中最好只包含native方法声明，去除冗余代码`
+- 将工程目录拷贝到Android源代码的development目录下，编写Android.mk文件
+- 在源码顶层目录使用`make module-name`编译生成.so文件，文件生成的目录为out/target/product/generic/obj/SHARED_LIBRARIES/中
+- Android.mk中加入`LOCAL_PRELINK_MODULE := false`防止prelink操作导致编译失败
+
+==== 编写Android.mk ====
+{{{class="brush:c"
+LOCAL_PATH:= $(call my-dir)
+include $(CLEAR_VARS)
+
+#禁止Prelink
+LOCAL_PRELINK_MODULE := false
+
+LOCAL_C_INCLUDES += \
+    $(JNI_H_INCLUDE)
+    
+# 源文件目录
+LOCAL_SRC_FILES := \
+    Test.c Test.h
+
+# 模块名
+LOCAL_MODULE := libtest
+
+# 创建共享库
+include $(BUILD_SHARED_LIBRARY)
+}}}
+
+==== 执行Android编译命令 ====
+{{{class="brush:bash"
+make libtest
+
+# 清除命令
+make clean-libtest
+}}}

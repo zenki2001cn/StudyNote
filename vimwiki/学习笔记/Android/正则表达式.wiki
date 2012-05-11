@@ -1,0 +1,65 @@
+= 正则表达式示例 =
+
+== 查询 ==
+{{{class="brush:java"
+String str = "abc efg ABC";
+
+String regEx = "a|f"; //表示a或f
+
+Pattern p = Pattern.compile(regEx);
+
+Matcher m = p.matcher(str);
+
+boolean rs = m.find(); 
+}}}
+*如果想在查找时忽略大小写，则可以写成Pattern p=Pattern.compile(regEx,Pattern.CASE_INSENSITIVE);*
+
+== 提取 ==
+{{{class="brush:java"
+String regEx = "(\\w+\\..+)$";
+
+String str = "c:\\dir1\\dir2\\name.txt";
+
+Pattern p = Pattern.compile(regEx);
+
+Matcher m = p.matcher(str);
+
+boolean rs = m.find();
+
+for(int i=1; i<=m.groupCount(); i++){
+    System.out.println(m.group(i));
+} 
+}}}
+*以上的执行结果为name.txt，提取的字符串储存在m.group(i)中，其中i最大值为m.groupCount();*
+
+== 分割 ==
+{{{class="brush:java"
+String regEx = "::";
+
+Pattern p = Pattern.compile(regEx);
+
+String[] r = p.split("xd::abc::cde");
+
+// 执行后，r就是{"xd","abc","cde"}，其实分割时还有跟简单的方法：
+String str = "xd::abc::cde";
+
+String[] r = str.split("::"); 
+}}}
+
+== 替换(删除) ==
+{{{class="brush:java"
+String regEx = "a+"; // 表示一个或多个a
+
+Pattern p = Pattern.compile(regEx);
+
+Matcher m = p.matcher("aaabbced a ccdeaa");
+
+String s = m.replaceAll("A");
+　　
+// 结果为"Abbced A ccdeA"
+// 如果写成空串，既可达到删除的功能，比如：
+　　
+String s = m.replaceAll("");
+　　
+// 结果为"bbced ccde"
+}}}

@@ -1,0 +1,91 @@
+= 创建TabActivity =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.TabActivity;
+
+import android.widget.TabHost;
+import android.widget.TabHost.OnTabChangeListener;
+import android.widget.TabHost.TabContentFactory;
+
+import android.view.View;
+}}}
+
+== 基本流程 ==
+- 需要使用FrameLayout的布局作为标签的容器，每一个标签可以使用LinearLayout布局。
+- 从TabActivity继承子类，并实现onCreate()方法和OnTabChangeListener接口类。
+- 在onCreate方法中需要创建一个TabHost类的对象，作为Tab的容器，并用该类的addTab()方法添加子tab。
+- 实现OnTabChangeListener接口的onTabChanged方法，响应标签切换的动作。
+- 实现TabContentFactory接口的createTabContent方法，响应创建标签页视图的动作。
+
+== 示例代码 ==
+
+=== XML布局 ===
+{{{class="brush:xml"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent" android:layout_height="fill_parent">
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/tab1"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+        />
+    </LinearLayout>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/tab2"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+        />
+    </LinearLayout>
+</FrameLayout>
+}}}
+
+=== 创建Tab ===
+{{{class="brush:java"
+private TabHost mTabHost;
+
+public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    // 获取TabHost实例
+    mTabHost = this.getTabHost();
+
+    LayoutInflater factory = LayoutInflater.from(this);
+    // 将布局视图与TabHost相关联
+    factory.inflate(R.layout.main, mTabHost.getTabContentView(), true);
+
+    // 添加Tab
+    mTabHost.addTab(mTabHost.newTabSpec("Tab1")
+                    .setIndicator("A", null)
+                    .setContent(R.id.tabhost));
+    mTabHost.addTab(mTabHost.newTabSpec("Tab2")
+                    .setIndicator("B", null)
+                    .setContent(R.id.tab2));
+                    
+    // 设置标签切换监听方法
+    mTabHost.setOnTabChangedListener(this);
+}
+}}}
+
+=== 接口回调 ===
+{{{class="brush:java"
+public void onTabChanged(String tabid) {
+    // 响应标签切换
+}
+
+public View createTabContent(String tag) {
+    // 创建标签视图
+}
+}}}

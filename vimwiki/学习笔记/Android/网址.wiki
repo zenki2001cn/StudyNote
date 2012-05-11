@@ -1,0 +1,13 @@
+= 参考网址 =
+
+http://www.cnblogs.com/duguguiyu/category/112850.html
+
+http://www.5look.net/blog/android-reference
+
+http://www.cnblogs.com/tt_mc/category/235762.html --- tt_mc
+
+http://www.netmite.com/android/mydroid/development/pdk/docs/index.html 很好的开发网站
+
+http://mintelong.javaeye.com/blog/458369 blog
+
+http://stackoverflow.com/questions/1520503/how-do-you-push-android-instrumentation-tests-to-emulator-device howto

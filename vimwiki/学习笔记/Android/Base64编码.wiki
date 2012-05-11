@@ -1,0 +1,26 @@
+= Base64编码示例 =
+
+== 相关类 ==
+{{{class="brush:java"
+import org.apache.commons.codec.binary.Base64;  
+}}}
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class Base64Demo {  
+ 
+    public static void main(String[] args) {  
+        String userName = "eoeAndroid";  
+        String password = "this is password";  
+        String authCombination = userName + ":" + password;  
+       
+        // 编码
+        String authBase64 = new String(Base64.encodeBase64(authCombination.getBytes()));  
+        System.out.println("authCombination = "+authCombination);  
+        System.out.println("authBase64 = "+authBase64);  
+        // 解码
+        String authRecovery = new String(Base64.decodeBase64(authBase64.getBytes()));  
+        System.out.println("authRecovery = "+authRecovery);  
+    }  
+} 
+}}}

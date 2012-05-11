@@ -1,0 +1,54 @@
+= Spinner使用 =
+
+[pic/spinner.png]
+
+- Adapter的设置，调用setAdapter()方法。
+- 追加Item选择时间的处理，调用setOnItemSelectedListener()方法，并把 AdapterView.OnItemSelectedListener实例作为参数传递过去。
+
+== 相关类 ==
+{{{class="brush: java"
+import android.widget.Adapter;
+import android.widget.Spinner;
+}}}
+
+== 例程源码(Java) ==
+{{{class="brush: java"
+ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+    this,
+    android.R.layout.simple_spinner_item);
+ 
+adapter.setDropDownViewResource(
+    android.R.layout.simple_spinner_dropdown_item);
+ 
+adapter.add("red");
+adapter.add("green");
+adapter.add("blue");
+ 
+Spinner spinner = (Spinner) findViewById(id.spinner);
+ 
+spinner.setAdapter(adapter);
+ 
+spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+    @Override
+    public void onItemSelected(
+            AdapterView<?> parent,
+            View view,
+            int position,
+            long id) {
+        Spinner spinner = (Spinner) parent;
+        Log.v("Test", "id = " + id + "("
+                + spinner.getSelectedItem().toString() + ")");
+    }
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+    }
+});
+}}}
+
+== 例程源码(Resource) ==
+{{{class="brush: xml"
+<Spinner android:id="@+id/spinner"
+    android:layout_height="wrap_content"
+    android:layout_width="fill_parent"/>
+}}}
+

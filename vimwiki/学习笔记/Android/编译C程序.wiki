@@ -1,0 +1,46 @@
+= 编译C模块 =
+- [[Android]]
+
+== 使用Android.mk编译 ==
+- 将源码放在Android_src/development目录下，并编写Android.mk
+- 在Android顶层目录执行`make module-name`
+
+Android.mk文件示例
+{{{class="brush:make"
+LOCAL_PATH:= $(call my-dir)
+include $(CLEAR_VARS)
+
+# 源文件目录
+LOCAL_SRC_FILES := \
+    hello.c
+
+# 模块名
+LOCAL_MODULE := helloworld
+# 创建可执行程序
+include $(BUILD_EXECUTABLE)
+
+# 创建共享库
+#include $(BUILD_SHARED_LIBRARY)
+# 引用库
+#LOCAL_LDLIBS := -lz
+}}}
+
+编译命令
+{{{class="brush:bash"
+make helloworld
+
+# 显示详细信息
+make helloworld showcommands
+
+# 清除目标文件
+make clean-helloworld
+}}}
+
+=== 生成目录 ===
+- 目标生成目录为`out/target/product/generic/system/bin/`
+
+== 手动编译 ==
+- 交叉编译工具链的目录prebuilt/linux-x86/toolchain/arm-eabi-4.2.1/bin/arm-eabi-gcc
+- 头文件目录bionic/libc/include
+- 动态库目录out/target/product/generic/obj/lib
+- 链接器选项-Wl,-dynamic-linker,/system/bin/linker

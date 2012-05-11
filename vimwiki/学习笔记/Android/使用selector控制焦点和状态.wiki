@@ -1,0 +1,46 @@
+= 按钮的背景和焦点变化 =
+
+== 通过xml来控制背景和焦点 ==
+- 定义一个显示背景图片的XML
+- 在按钮的属性中加入该XML
+
+例程源码(XML) --- advancebutton.xml
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8" ?>
+    <selector xmlns:android="http://schemas.android.com/apk/res/android" >
+        <!!-- 获得焦点时 -->
+        <item
+            android:state_focused="true"
+            android:state_pressed="false"
+            android:drawable="@drawable/onfocusimage"
+        />
+        
+        <!!-- 获得焦点并按下 -->
+        <item
+        android:state_focused="true"
+        android:state_pressed="true"
+        android:drawable="@drawable/clickimage"
+        />
+        
+        <!!-- 失去焦点时 -->
+        <item
+        android:state_focused="false"
+        android:state_pressed="true"
+        android:drawable="@drawable/clickimage"
+        />
+        
+        <!!-- 默认背景 -->
+        <item android:drawable="@drawable/defaultimage" />
+</selector>
+}}}
+
+例程源码(JAVA) --- 自定义按钮
+{{{class="brush:xml"
+<ImageButton
+    android:id="@+id/image_Button"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    <!!-- 加入advancebutton -->
+    android:background="@drawable/advancedbutton"
+/>
+}}}

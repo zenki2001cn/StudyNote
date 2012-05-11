@@ -1,0 +1,21 @@
+= 判断URL类型 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.webkit.URLUtil;
+}}}
+
+== 常用方法 ==
+| 返回值         | 方法名                            | 描述 |
+|----------------+-----------------------------------+------|
+| static boolean | isAboutUrl(String  url)           |      |
+| static boolean | isAssetUrl(String  url)           |      |
+| static boolean | isContentUrl(String  url)         |      |
+| static boolean | isCookielessProxyUrl(String  url) |      |
+| static boolean | isDataUrl(String  url)            |      |
+| static boolean | isFileUrl(String  url)            |      |
+| static boolean | isHttpUrl(String  url)            |      |
+| static boolean | isHttpsUrl(String  url)           |      |
+| static boolean | isJavaScriptUrl(String  url)      |      |
+| static boolean | isNetworkUrl(String  url)         |      |
+| static boolean | isValidUrl(String  url)           |      |

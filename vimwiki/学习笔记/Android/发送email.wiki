@@ -1,0 +1,33 @@
+= 发送EMail =
+
+{{{class="brush:java"
+// 方法一
+Uri uri = Uri.parse("mailto:xxx@abc.com");
+Intent it = new Intent(Intent.ACTION_SENDTO, uri);
+startActivity(it);
+
+// 添加文本
+Intent it = new Intent(Intent.ACTION_SEND);   
+it.putExtra(Intent.EXTRA_EMAIL, "me@abc.com");   
+it.putExtra(Intent.EXTRA_TEXT, "The email body text");   
+it.setType("text/plain");       // 模拟器使用该方法
+startActivity(Intent.createChooser(it, "Choose Email Client"));
+
+// 添加CC，主题
+Intent it=new Intent(Intent.ACTION_SEND);     
+String[] tos={"me@abc.com"};     
+String[] ccs={"you@abc.com"};     
+it.putExtra(Intent.EXTRA_EMAIL, tos);     
+it.putExtra(Intent.EXTRA_CC, ccs);     
+it.putExtra(Intent.EXTRA_TEXT, "The email body text");     
+it.putExtra(Intent.EXTRA_SUBJECT, "The email subject text");     
+it.setType("message/rfc822");   // 真机使用该方法
+startActivity(Intent.createChooser(it, "Choose Email Client"));
+
+// 添加附件
+Intent it = new Intent(Intent.ACTION_SEND);     
+it.putExtra(Intent.EXTRA_SUBJECT, "The email subject text");     
+it.putExtra(Intent.EXTRA_STREAM, "file:///sdcard/mysong.mp3");     
+sendIntent.setType("audio/mp3");     
+startActivity(Intent.createChooser(it, "Choose Email Client")); 
+}}}

@@ -1,0 +1,258 @@
+= GPS系统 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// 应用层接口
+frameworks/base/location/java/android/location/LocationManager.java
+frameworks/base/location/java/android/location/LocationProvider.java
+frameworks/base/location/java/android/location/Location.java
+frameworks/base/location/java/android/location/GpsStatus.java
+frameworks/base/location/java/android/location/GpsSatellite.java
+frameworks/base/location/java/android/location/Geocoder.java
+frameworks/base/location/java/android/location/Criteria.java
+frameworks/base/location/java/android/location/Address.java
+
+// Service
+frameworks/base/services/java/com/android/server/LocationManagerService.java
+frameworks/base/services/java/com/android/server/location/GpsLocationProvider.java
+frameworks/base/services/java/com/android/server/location/GpsXtraDownloader.java
+
+// JNI
+frameworks/base/services/jni/com_android_server_location_GpsLocationProvider.cpp
+
+// HAL
+hardware/libhardware/include/hardware/gps.h
+}}}
+
+== 架构描述 ==
+- GPS在APP层的实现主要是android.location包，该包主要有以下几个类：
+    - LocationManager：Service的接口类，提供了功能接口。
+    - LocationProvider：获取GPS定位信息的抽象。
+    - Location：定位后的位置抽象，包括时间、速度、经纬度等信息。
+    - GpsStatus：GPS的状态抽象，可获得TTFF、卫星数等信息。
+    - GpsSatellite：卫星抽象，可获取卫星的相关数据。
+    - Geocoder：地址信息和经纬度转换的辅助类。
+    - Criteria：GPS的支持的一组标准，包括定位精度和信号强弱等规格。
+    - Address：符合eXtensible Address Language语法格式的地址信息。
+- GPS在Service层主要是由LocationManagerService实现，并包括几个辅助类:
+    - GpsLocationProvider：获取GPS定位信息的实现类，LocationProviderInterface接口的实现类之一。
+    - GpsXtraDownloader：下载GPS辅助数据的实现类。
+- JNI提供了GPS功能在HAL层的实现接口，会被LocationProviderInterface接口调用(如GpsLocationProvider)。
+- GPS HAL实现标准Android的HAL层模型，为JNI层提供了GPS定位的实现方法。
+
+[[pic/Location_Frame.png]]
+
+== GPS管理类 ==
+- LocationManager为应用层提供操作接口，通过getSystemService(Context.LOCATION_SERVICE)方法获得。
+- 该类的构造方法以ILocationManager接口为参数，因此可通过Binder与LocationManagerService的服务类交互。
+
+==== LocationManager ====
+{{{class="brush:java"
+public LocationManager(ILocationManager service) {
+    mService = service;
+}
+}}}
+
+=== GPS信息的提供者 ===
+- 要使用GPS定位，首先要获取定位信息的提供者，它实际上是具体实现GPS功能的模块的抽象，称之为Provider。
+- Provider在Service中注册，getProvider只是简单的获取对应name的Provider信息，并提供获取这些信息的接口。
+- 其他相关方法还有getProviders、getAllProviders等等。
+
+==== getProvider ====
+{{{class="brush:java"
+public LocationProvider getProvider(String name) {
+    ...... 
+    try {
+        Bundle info = mService.getProviderInfo(name);
+        if (info == null) {
+            return null;
+        }
+        return createProvider(name, info);
+    } catch (RemoteException ex) {
+    }
+    return null;
+}
+}}}
+
+=== 注册定位信息的回调 ===
+- ListenerTransport是一个内部类，它实际上是包装了应用层的LocationListener，并具有Binder通讯的功能。从它的静态变量定义来看，它支持4种类型的事件回调。
+    - TYPE_LOCATION_CHANGED：位置发生变化。
+    - TYPE_STATUS_CHANGED：状态发生变化。
+    - TYPE_PROVIDER_ENABLED：开启Provider。
+    - TYPE_PROVIDER_DISABLED：关闭Provider。
+- LocationManager.requestLocationUpdates向Service发送更新请求时，会创建ListenerTransport对象，并通过ILocationManager.requestLocationUpdates注册该回调，对于应用程序而言即注册`LocationListener`。
+
+==== ListenerTransport ====
+{{{class="brush:java"
+private class ListenerTransport extends ILocationListener.Stub {
+    private static final int TYPE_LOCATION_CHANGED = 1;
+    private static final int TYPE_STATUS_CHANGED = 2;
+    private static final int TYPE_PROVIDER_ENABLED = 3;
+    private static final int TYPE_PROVIDER_DISABLED = 4;
+
+    ......
+    ListenerTransport(LocationListener listener, Looper looper) {
+        mListener = listener;
+        ...... 
+    }
+
+    public void onLocationChanged(Location location) {
+        ......
+    }
+
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        ......
+    }
+
+    public void onProviderEnabled(String provider) {
+        ......
+    }
+
+    public void onProviderDisabled(String provider) {
+        ......
+    }
+}
+}}}
+
+==== _requestLocationUpdates ====
+{{{class="brush:java"
+private void _requestLocationUpdates(String provider, Criteria criteria, 
+                                     long minTime, float minDistance, 
+                                     boolean singleShot, LocationListener listener, 
+                                     Looper looper) {
+    ...... 
+    try {
+        synchronized (mListeners) {
+            ListenerTransport transport = mListeners.get(listener);
+            if (transport == null) {
+                transport = new ListenerTransport(listener, looper);
+            }
+            mListeners.put(listener, transport);
+            mService.requestLocationUpdates(provider, criteria, minTime, minDistance, 
+                                            singleShot, transport);
+        }
+    } catch (RemoteException ex) {
+    }
+}
+}}}
+
+=== 注册状态信息的回调 ===
+- GpsStatusListenerTransport是一个内部类，它除了封装了上层的GpsStatusListener外，同样具有Binder通讯功能。
+- 它在接收到GPS状态改变时将该信息向上层传递，通过addGpsStatusListener方法注册给Service，对于应用程序而言，即GpsStatusListener。
+    - onGpsStarted：开启GPS时调用。
+    - onGpsStopped：关闭GPS时调用。
+    - onFirstFix：TTFF发生时调用。
+    - onSvStatusChanged：卫星状态变化时调用。
+    - onNmeaReceived：收到卫星的原始数据时调用。
+- addGpsStatusListener方法会创建GpsStatusListenerTransport对象并调用ILocationManager的addGpsStatusListener注册给Service，同时保存在自己的HashMap中。
+
+{{{class="brush:java"
+private ILocationManager mService;
+private final HashMap<GpsStatus.Listener, GpsStatusListenerTransport> mGpsStatusListeners =
+        new HashMap<GpsStatus.Listener, GpsStatusListenerTransport>();
+private final HashMap<GpsStatus.NmeaListener, GpsStatusListenerTransport> mNmeaListeners =
+        new HashMap<GpsStatus.NmeaListener, GpsStatusListenerTransport>();
+private final GpsStatus mGpsStatus = new GpsStatus();
+}}}
+
+==== GpsStatusListenerTransport ====
+{{{class="brush:java"
+private class GpsStatusListenerTransport extends IGpsStatusListener.Stub {
+    ......
+    private class Nmea {
+        ...... 
+    }
+    private ArrayList<Nmea> mNmeaBuffer;
+
+    public void onGpsStarted() {
+        ......
+    }
+
+    public void onGpsStopped() {
+        ...... 
+    }
+
+    public void onFirstFix(int ttff) {
+        ...... 
+    }
+
+    public void onSvStatusChanged(int svCount, int[] prns, float[] snrs,
+            float[] elevations, float[] azimuths, int ephemerisMask,
+            int almanacMask, int usedInFixMask) {
+        ...... 
+    }
+
+    public void onNmeaReceived(long timestamp, String nmea) {
+        ...... 
+    }
+}
+}}}
+
+==== addGpsStatusListener ====
+{{{class="brush:java"
+public boolean addGpsStatusListener(GpsStatus.Listener listener) {
+        boolean result;
+
+    ...... 
+    try {
+        GpsStatusListenerTransport transport = new GpsStatusListenerTransport(listener);
+        result = mService.addGpsStatusListener(transport);
+        if (result) {
+            mGpsStatusListeners.put(listener, transport);
+        }
+    } catch (RemoteException e) {
+        result = false;
+    }
+
+    return result;
+}
+}}}
+
+== GPS Service ==
+{{{class="brush:text"
+    GPS Service是ILocationManager接口的服务端实现(使用Binder机制)，LocationManager管理通常会通过
+该Service发送跨进程的请求。
+}}}
+
+- [[GPS服务]]
+
+== GPS信息的内容提供者 ==
+- [[GPS信息的内容提供者]]
+- [[GPS辅助数据下载工具]]
+
+== GPS的JNI层 ==
+- JNI层为GPS信息的内容提供者提供了访问HAL层的接口，主要定义了如下方法：
+
+{{{class="brush:c++"
+static JNINativeMethod sMethods[] = {
+    {"class_init_native", "()V", ......},
+    {"native_is_supported", "()Z", ......},
+    {"native_init", "()Z", ......},
+    {"native_cleanup", "()V", ......},
+    {"native_set_position_mode", "(IIIII)Z", ......},
+    {"native_start", "()Z", ......},
+    {"native_stop", "()Z", ......},
+    {"native_delete_aiding_data", "(I)V", ......},
+    {"native_read_sv_status", "([I[F[F[F[I)I", ......},
+    {"native_read_nmea", "([BI)I", ......},
+    {"native_inject_time", "(JJI)V", ......},
+    {"native_inject_location", "(DDF)V", ......},
+    {"native_supports_xtra", "()Z", ......},
+    {"native_inject_xtra_data", "([BI)V", ......},
+    {"native_agps_data_conn_open", "(Ljava/lang/String;)V", ......},
+    {"native_agps_data_conn_closed", "()V", ......},
+    {"native_agps_data_conn_failed", "()V", ......},
+    {"native_agps_set_id","(ILjava/lang/String;)V", ......},
+    {"native_agps_set_ref_location_cellid","(IIIII)V", ......},
+    {"native_set_agps_server", "(ILjava/lang/String;I)V", ......},
+    {"native_send_ni_response", "(II)V", ......},
+    {"native_agps_ni_message", "([BI)V", ......},
+    {"native_get_internal_state", "()Ljava/lang/String;", ......},
+    {"native_update_network_state", "(ZIZLjava/lang/String;)V", ......},
+};
+}}}
+
+== GPS的HAL层 ==
+- [[GPS的HAL层]]

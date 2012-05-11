@@ -1,0 +1,64 @@
+1、需要安装apache2、mod_python模块
+
+2、修改httpd.conf
+
+	×		# Virtual hosts																	
+			Include conf/extra/httpd-vhosts.conf																				将这一行注释掉
+			
+	×		LoadModule python_module modules/mod_python.so														装载mod_python模块
+
+	×		MaxRequestsPerChild 1																														在开发阶段可以不用重启服务器进行测试
+
+3、修改 conf/extra/httpd-vhosts.conf
+	×去除默认配置，加入以下代码
+	
+==============================================================================		
+
+ 	Listen 192.168.100.73:8888																														此处为Listen
+	<VirtualHost 192.168.100.73:8888>
+	#	DocumentRoot "/home/zenki/python/django_demo"
+
+		ServerName 192.168.100.73:8888																										此处设置服务器名和端口，为了不和其他服务冲突
+
+	#	<Directory "/home/zenki/python/django_demo">
+	#		Options -Indexes FollowSymLinks
+	#		AllowOverride None
+	#		Order allow,deny
+	#		Allow from all
+	#	</Directory>
+
+		<Location "/">
+			SetHandler python-program
+			PythonPath "['/home/zenki/python/django_demo/'] + sys.path"						此处添加项目目录，为最顶层目录，而不是项目名称的目录
+			PythonHandler django.core.handlers.modpython																实用mod_python
+			SetEnv DJANGO_SETTINGS_MODULE demo.settings																	读取项目配置
+			#PythonInterpreter address
+			PythonAutoReload Off
+			PythonDebug On																																				实际运行中更改为off
+
+	#		Options -Indexes FollowSymLinks
+	#		Order allow,deny
+	#		Allow from all
+		</Location>
+
+	#	Alias /media "/usr/lib/python2.4/site-packages/django/contrib/admin/media/"
+	#	<Location "/usr/lib/python2.4/site-packages/django/contrib/admin/media/">
+	#		SetHandler python-program
+	#	</Location>
+	#<LocationMatch "(?i)\.(jpg|gif|png|txt|ico|pdf|css|jpeg)$">
+    #SetHandler None
+	#</LocationMatch>
+</VirtualHost>
+
+=============================================================================================
+
+4、django项目文件需要改动的地方
+
+	× settings文件中的配置路径要全改为绝对路径
+	
+	× 在一些文件导入相关模块时需要用完整模块路径名
+		如在demo.address.views中导入demo.address.models，需要键入
+		from demo.address.models import *
+
+
+

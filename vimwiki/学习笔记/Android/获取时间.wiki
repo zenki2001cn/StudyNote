@@ -1,0 +1,22 @@
+= 获取时间 =
+
+调用java.util.Calendar类。
+- 取值的时候，调用get()方法。
+
+例程源码(Java)
+{{{class="brush:java"
+final Calendar calendar = Calendar.getInstance();
+ 
+final int year = calendar.get(Calendar.YEAR);
+final int month = calendar.get(Calendar.MONTH);
+final int day = calendar.get(Calendar.DAY_OF_MONTH);
+final int hour = calendar.get(Calendar.HOUR_OF_DAY);
+final int minute = calendar.get(Calendar.MINUTE);
+final int second = calendar.get(Calendar.SECOND);
+final int ms = calendar.get(Calendar.MILLISECOND);
+ 
+Log.v("year/month/day hour:minute:second",
+    year + "/" + (month + 1) + "/" + day + "/" + " " +
+    hour + ":" + minute + ":" + second + "." + ms);
+}}}
+

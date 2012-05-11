@@ -1,0 +1,145 @@
+= StatusBarService =
+_该类用来处理其他类投递过来的消息，所有的方法被打包后一次性处理。_
+
+%toc
+
+== 要点分析 ==
+- 该类继承自`IStatusBar.Stub`，主要进行`StatusBarView`视图绘制，实现加载图标，更新图标等一系列方法。
+- `ArrayList<PendingOp> mQueue`是一个包含图标相关信息的对象列表，该对象的行为在消息处理方法中被一次性处理。
+- 通过`Handler`和`Message`机制来处理消息事件，`perform*`系列方法用来实现各种行为。该Handler被`StatusBarPolicy`在UI线程中调用执行。
+
+== 代码片断解析 ==
+{{{class="brush:java"
+......
+
+// 图标操作的类型标识
+private static final int OP_ADD_ICON = 1;
+private static final int OP_UPDATE_ICON = 2;
+private static final int OP_REMOVE_ICON = 3;
+private static final int OP_SET_VISIBLE = 4;
+private static final int OP_EXPAND = 5;
+private static final int OP_TOGGLE = 6;
+private static final int OP_DISABLE = 7;
+
+......
+
+// PendingOp数据结构，该结构是消息处理的对象。
+private class PendingOp {
+    IBinder key;
+    int code;
+    IconData iconData;
+    NotificationData notificationData;
+    boolean visible;
+    int integer;
+}
+
+......
+
+// 构造方法实现初始化
+public StatusBarService(Context context) {
+    mContext = context;
+    mDisplay = ((WindowManager)context.getSystemService(
+            Context.WINDOW_SERVICE)).getDefaultDisplay();
+    // 初始化StatusBarView
+    makeStatusBarView(context);
+    mUninstallReceiver = new UninstallReceiver();
+}
+
+// 初始化图标视图
+private void makeStatusBarView(Context context) {
+    ......
+}
+
+// 初始化通知视图
+View makeNotificationView(StatusBarNotification notification, 
+    ViewGroup parent) {
+    ......
+}
+
+void addNotificationView(StatusBarNotification notification) {
+    ......
+}
+
+// 消息处理类
+private class H extends Handler {
+    public void handleMessage(Message m) {
+        
+        ......
+
+        synchronized (mQueue) {
+            boolean wasExpanded = mExpanded;
+
+            // for each one in the queue, find all of the ones with the same key
+            // and collapse that down into a final op and/or call to setVisibility, etc
+            boolean expand = wasExpanded;
+            boolean doExpand = false;
+            boolean doDisable = false;
+            int disableWhat = 0;
+            int N = mQueue.size();
+            while (N > 0) {
+                PendingOp op = mQueue.get(0);
+                boolean doOp = false;
+                boolean visible = false;
+                boolean doVisibility = false;
+                
+                ......
+                
+                // 处理图标更新消息
+                if (doOp) {
+                    switch (op.code) {
+                        case OP_ADD_ICON:
+                        case OP_UPDATE_ICON:
+                            performAddUpdateIcon(op.key, op.iconData, op.notificationData);
+                            break;
+                        case OP_REMOVE_ICON:
+                            performRemoveIcon(op.key);
+                            break;
+                        case OP_DISABLE:
+                            doDisable = true;
+                            disableWhat = op.integer;
+                            break;
+                    }
+                }
+                if (doVisibility && op.code != OP_REMOVE_ICON) {
+                    performSetIconVisibility(op.key, visible);
+                }
+            }
+
+            ......
+
+            if (doDisable) {
+                performDisableActions(disableWhat);
+            }
+        }
+    }
+}
+
+// 实现添加图标行为
+void performAddUpdateIcon( final IBinder key, final IconData data, NotificationData n) 
+    throws StatusBarException {
+    ......
+}
+
+// 实现图标可见行为
+void performSetIconVisibility(IBinder key, boolean visible) {
+    synchronized (mIconMap) {
+    ......
+}
+
+// 实现移除图标行为
+void performRemoveIcon(IBinder key) {
+    synchronized (this) {
+    ......
+}
+
+// 处理下拉框
+void performExpand() {
+    ......
+}
+
+// 处理收起下拉框
+void performCollapse() {
+    ......
+}
+}}}
+

@@ -1,0 +1,547 @@
+= 虚拟文件系统 =
+
+%toc
+
+== 通用文件模型 ==
+- VFS所隐含的主要思想在于引入一个通用的文件模型，这个模型能够表示所有支持的文件系统。
+- 通用文件模型主要包含以下几个对象：
+    - 超级块对象
+    - 索引节点对象
+    - 文件对象
+    - 目录项对象
+
+[[pic/vfs_model.png]]
+
+== 超级块对象 ==
+{{{class="brush:text"
+    存放已安装文件系统的有关信息。对基于磁盘的文件系统，这类对象通常对应于存放在磁盘上的文
+件系统控制块。
+}}}
+
+=== struct super_block ===
+- 所有超级块对象都以双向循环链表的形式链接在一起。
+- `s_fs_info`字段指向属于具体文件系统的超级块信息。
+- `s_op`字段指向超级块相关操作的super_operations结构，其方法可由具体的文件系统实现。
+- `s_dirt`字段用来标识是否需要将内存中的数据写入磁盘。
+- `s_root`字段指向文件系统根目录的目录项对象。
+- `s_type`字段指向具体文件系统对象的指针。
+
+{{{class="brush:c"
+struct super_block {
+	struct list_head	s_list;		/* Keep this first */
+	dev_t			    s_dev;		/* search index; _not_ kdev_t */
+	unsigned char		s_dirt;
+	unsigned char		s_blocksize_bits;
+	unsigned long		s_blocksize;
+	loff_t			    s_maxbytes;	/* Max file size */
+	struct file_system_type	*s_type;
+	const struct super_operations	*s_op;
+	struct dentry		*s_root;
+	struct rw_semaphore	s_umount;
+	
+    ......
+	struct list_head	s_inodes;	    /* all inodes */
+	struct hlist_head	s_anon;		    /* anonymous dentries for (nfs) exporting */
+	struct list_head	s_files;
+	struct list_head	s_dentry_lru;	/* unused dentry lru */
+	int			        s_nr_dentry_unused;	    /* # of dentry on lru */
+
+	char s_id[32];				        /* Informational name */
+	void 			*s_fs_info;	        /* Filesystem private info */
+	fmode_t			s_mode;
+    ......
+};
+}}}
+
+=== struct super_operations ===
+{{{class="brush:c"
+struct super_operations {
+    // 为索引节点对象分配空间，包括具体文件系统的数据所需要的空间
+   	struct inode *(*alloc_inode)(struct super_block *sb);
+   	// 撤销索引节点对象，包括具体的文件系统数据
+	void (*destroy_inode)(struct inode *);
+
+    // 当索引节点标记为修改时调用
+   	void (*dirty_inode) (struct inode *);
+   	// 更新索引节点对象
+	int (*write_inode) (struct inode *, struct writeback_control *wbc);
+	// 即将撤销索引节点时调用
+	void (*drop_inode) (struct inode *);
+	// 在必须撤销索引节点时调用。删除内存中的索引节点和磁盘上的数据
+	void (*delete_inode) (struct inode *);
+	// 释放超级块对象
+	void (*put_super) (struct super_block *);
+	// 更新超级块对象
+	void (*write_super) (struct super_block *);
+	// 在清除文件系统来更新磁盘上的具体文件系统数据结构时调用
+	int (*sync_fs)(struct super_block *sb, int wait);
+	int (*freeze_fs) (struct super_block *);
+	int (*unfreeze_fs) (struct super_block *);
+	// 返回文件系统的统计信息
+	int (*statfs) (struct dentry *, struct kstatfs *);
+	// 重新安装文件系统
+	int (*remount_fs) (struct super_block *, int *, char *);
+	// 当撤销磁盘索引节点执行具体文件系统操作时调用
+	void (*clear_inode) (struct inode *);
+	// 开始卸载文件系统，并中断相关操作
+	void (*umount_begin) (struct super_block *);
+    ......
+};
+}}}
+
+== 索引节点对象 ==
+{{{class="brush:text"
+    存放关于具体文件的一般信息。对基于磁盘的文件系统，这类对象通常对应于存放在磁盘上的文件
+控制块。每个索引节点对象都有一个索引节点号，这个节点号唯一地标识文件系统中的文件。
+}}}
+
+=== struct inode ===
+- `i_op`字段指向索引节点对象相关操作的inode_operations结构，其功能可由具体文件系统实现。
+- `i_fop`字段指向文件对象操作的file_operations结构，其功能可由具体文件系统实现。
+- `i_mode`字段描述的索引节点的类型，如常规文件、目录、字符设备、块设备、管道或socket套接套字。`get_inode`方法根据该变量区分并初始化inode。
+- `i_rdev`字段描述了设备文件相关的主设备号和次设备号。
+- `i_state`字段表示对应的磁盘节点是否需要更新。
+
+{{{class="brush:c"
+struct inode {
+	struct hlist_node	i_hash;
+	struct list_head	i_list;		/* backing dev IO list */
+	struct list_head	i_sb_list;
+	struct list_head	i_dentry;
+	unsigned long		i_ino;
+	atomic_t		    i_count;
+	unsigned int		i_nlink;
+	uid_t			    i_uid;
+	gid_t			    i_gid;
+	dev_t			    i_rdev;
+	unsigned int		i_blkbits;
+	u64			        i_version;
+	loff_t			    i_size;
+	
+	struct timespec		i_atime;
+	struct timespec		i_mtime;
+	struct timespec		i_ctime;
+	blkcnt_t		    i_blocks;
+	unsigned short      i_bytes;
+	umode_t			    i_mode;
+	spinlock_t		    i_lock;	    /* i_blocks, i_bytes, maybe i_size */
+	struct mutex		i_mutex;
+	struct rw_semaphore	i_alloc_sem;
+	const struct inode_operations	*i_op;
+	const struct file_operations	*i_fop;	/* former ->i_op->default_file_ops */
+	struct super_block	*i_sb;
+	struct file_lock	*i_flock;
+	......
+};
+}}}
+
+=== struct inode_operations ===
+{{{class="brush:c"
+struct inode_operations {
+    // 创建新的磁盘索引节点
+	int (*create) (struct inode *,struct dentry *,int, struct nameidata *);
+	// 为一个目录项对象中的文件名对应的索引节点查找目录
+	struct dentry * (*lookup) (struct inode *,struct dentry *, struct nameidata *);
+	// 创建一个硬链接
+	int (*link) (struct dentry *,struct inode *,struct dentry *);
+	// 删除一个硬链接
+	int (*unlink) (struct inode *,struct dentry *);
+	// 创建一个符号链接的索引节点
+	int (*symlink) (struct inode *,struct dentry *,const char *);
+	// 创建一个目录的索引节点
+	int (*mkdir) (struct inode *,struct dentry *,int);
+	// 删除一个目录的索引节点
+	int (*rmdir) (struct inode *,struct dentry *);
+	// 创建一个特定文件的磁盘索引节点
+	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
+	// 将一个目录项下的索引节点移动到另一个目录项下
+	int (*rename) (struct inode *, struct dentry *, struct inode *, struct dentry *);
+	// 将符号链接对应的路径名拷贝到用户态内存区
+	int (*readlink) (struct dentry *, char __user *,int);
+	// 解析索引节点对象所指定的符号链接
+	void * (*follow_link) (struct dentry *, struct nameidata *);
+	// 释放follow_link方法产生的临时数据结构
+	void (*put_link) (struct dentry *, struct nameidata *, void *);
+	// 修改与索引节点相关的文件长度
+	void (*truncate) (struct inode *);
+	// 检查对索引节点的访问权限
+	int (*permission) (struct inode *, int);
+	......
+};
+}}}
+
+== 文件对象 ==
+{{{class="brush:text"
+    存放打开文件与进程之间进行交互的有关信息。这类信息仅当进程访问文件期间存在于内核中。
+}}}
+
+=== struct file ===
+- `f_pos`字段表示存放在文件对象中的文件指针，该指针用来标识文件当前位置。因为几个进程可能同时访问同一个文件，因此文件指针必须放在文件对象而不是索引节点中。
+- `f_path`数据结构封装了与该文件对象相关的目录项对象和文件系统对象。
+- `f_count`字段用于打开文件的引用计数。
+- `private_data`字段可用于驱动相关的附加信息。
+- `f_op`字段指向文件对象操作相关的file_operations指针，该指针会指向inode节点中对应的地址。
+
+{{{class="brush:c"
+struct file {
+	union {
+		struct list_head	fu_list;
+		struct rcu_head 	fu_rcuhead;
+	} f_u;
+	struct path		f_path;
+#define f_dentry	f_path.dentry
+#define f_vfsmnt	f_path.mnt
+	const struct file_operations	*f_op;
+	spinlock_t		f_lock;  /* f_ep_links, f_flags, no IRQ */
+	atomic_long_t	f_count;
+	unsigned int 	f_flags;
+	fmode_t			f_mode;
+	loff_t			f_pos;
+	struct fown_struct	    f_owner;
+	const struct cred	    *f_cred;
+	struct file_ra_state	f_ra;
+
+	u64			    f_version;
+#ifdef CONFIG_SECURITY
+	void			*f_security;
+#endif
+	/* needed for tty driver, and maybe others */
+	void			*private_data;
+
+#ifdef CONFIG_EPOLL
+	struct list_head	    f_ep_links;
+#endif /* #ifdef CONFIG_EPOLL */
+	struct address_space	*f_mapping;
+#ifdef CONFIG_DEBUG_WRITECOUNT
+	unsigned long f_mnt_write_state;
+#endif
+};
+}}}
+
+=== struct file_operations ===
+{{{class="brush:c"
+struct file_operations {
+	struct module *owner;
+	
+	// 更新文件指针
+	loff_t (*llseek) (struct file *, loff_t, int);
+	// 从文件的偏移位置读取指定字节的数据
+	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+	// 从文件的偏移位置写入指定字节的数据
+	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+	// 返回一个目录的下一个目录项
+	int (*readdir) (struct file *, void *, filldir_t);
+	// 检查是否在一个文件上有操作发生，没有则睡眠
+	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+	// 向基本硬件设备发生命令。只适用于设备文件
+	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+	// 与ioctl类似，但它不使用大内核锁
+	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+	// 64为内核使用该方法执行32位的ioctl
+	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+	// 执行文件的内存映射，并将映射放入进程的地址空间
+	int (*mmap) (struct file *, struct vm_area_struct *);
+	// 创建一个新的文件对象而打开文件，并把它链接到相应的索引节点对象上
+	int (*open) (struct inode *, struct file *);
+	// 当打开的文件被关闭时调用
+	int (*flush) (struct file *, fl_owner_t id);
+	// 当打开文件的最后一个引用被关闭时调用
+	int (*release) (struct inode *, struct file *);
+	// 将缓存的数据写入磁盘
+	int (*fsync) (struct file *, int datasync);
+	// 启动一次异步I/O刷新操作
+	int (*aio_fsync) (struct kiocb *, int datasync);
+	// 通过信号来启用或禁止I/O事件通告
+	int (*fasync) (int, struct file *, int);
+	// 为文件对象申请一个锁
+	int (*lock) (struct file *, int, struct file_lock *);
+	// 将数据从文件发送到页高速缓存的页
+	ssize_t (*sendpage) (struct file *, struct page *, int, size_t, loff_t *, int);
+	// 获取一个未用的地址范围来映射文件
+	unsigned long (*get_unmapped_area)(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+	// 检查文件状态标志
+	int (*check_flags)(int);
+};
+}}}
+
+== 目录项对象 ==
+{{{class="brush:text"
+    存放目录项（文件的特定名称）与对应文件进行链接的有关信息。每个磁盘文件系统都以自己特有
+的方式将该类信息存在磁盘上。该对象将路径名中每个分量与其对应的索引节点相联系。
+}}}
+
+=== 目录项的状态 ===
+- 空闲状态：目录项对象不包括有效信息，且还没有被VFS使用。
+- 未使用状态：目录项对象当前还没被内核使用。该对象的引用计数器为0，但d_inode字段仍然指向关联的索引节点。该目录项包含有效信息，但在必要时会被回收。
+- 正在使用状态：该目录项对象正在被内核使用，引诱计数器为正数，并且不能被内核丢弃。
+- 负状态：与目录项关联的节点不复存在，但该对象仍然保存在目录项高速缓存中。
+
+=== struct dentry ===
+- `d_flags`字段表示目录项高速缓存的标志。
+- `d_inode`字段表示与文件名关联的索引节点。
+- `d_name`字段表示文件名。
+- `d_op`字段表示与目录项相关的操作。
+
+{{{class="brush:c"
+struct dentry {
+	atomic_t        d_count;
+	unsigned int    d_flags;	/* protected by d_lock */
+	spinlock_t      d_lock;		/* per dentry lock */
+	int d_mounted;
+	struct inode *d_inode;		
+	
+	struct hlist_node   d_hash;	/* lookup hash list */
+	struct dentry       *d_parent;	/* parent directory */
+	struct qstr         d_name;
+
+	struct list_head d_lru;		/* LRU list */
+
+	union {
+		struct list_head    d_child;	/* child of parent list */
+	 	struct rcu_head     d_rcu;
+	} d_u;
+	struct list_head    d_subdirs;	/* our children */
+	struct list_head    d_alias;	/* inode alias list */
+	unsigned long       d_time;		/* used by d_revalidate */
+	const struct dentry_operations *d_op;
+	struct super_block  *d_sb;	    /* The root of the dentry tree */
+	void                *d_fsdata;	/* fs-specific data */
+
+	unsigned char d_iname[DNAME_INLINE_LEN_MIN];	/* small names */
+};
+}}}
+
+=== struct dentry_operations ===
+{{{class="brush:c"
+struct dentry_operations {
+    // 把目录项转换成文件名之前，判断该目录项是否有效
+	int (*d_revalidate)(struct dentry *, struct nameidata *);
+	// 生成散列值，用于目录项的散列表
+	int (*d_hash) (struct dentry *, struct qstr *);
+	// 比较两个文件名
+	int (*d_compare) (struct dentry *, struct qstr *, struct qstr *);
+	// 目录项的最后一个引用被删除时被调用
+	int (*d_delete)(struct dentry *);
+	// 当要释放一个目录项对象的时候，调用该方法
+	void (*d_release)(struct dentry *);
+	// 当一个目录项变成负状态时调用该方法
+	void (*d_iput)(struct dentry *, struct inode *);
+	// 返回目录项的路径名
+	char *(*d_dname)(struct dentry *, char *, int);
+};
+}}}
+
+== 与进程相关的文件对象 ==
+- 每个进程有它自己的根目录和工作目录，内核通过fs_struct数据结构来描述进程和文件系统之间的联系。
+- `root`和`pwd`字段表示进程的根目录和当前目录，由path数据结构来封装关于文件系统和目录项的信息。
+
+=== struct fs_struct ===
+{{{class="brush:c"
+struct fs_struct {
+	int users;
+	rwlock_t lock;
+	int umask;
+	int in_exec;
+	struct path root, pwd;
+};
+
+struct path {
+    struct vfsmount *mnt;
+    struct dentry   *dentry;
+};
+}}}
+
+=== struct files_struct ===
+- files_struct表示进程当前打开的文件集合。
+- 通常打开的文件对象通过指针数组的形式存放，而这些数据被抽象成fdtable结构。通常返回给进程的文件描述符是该数组的下标索引。
+
+{{{class="brush:c"
+struct files_struct {
+    atomic_t count;
+	struct fdtable *fdt;
+	struct fdtable fdtab;
+	
+	spinlock_t file_lock ____cacheline_aligned_in_smp;
+	int next_fd;
+	struct embedded_fd_set close_on_exec_init;
+	struct embedded_fd_set open_fds_init;
+	struct file * fd_array[NR_OPEN_DEFAULT];
+};
+
+struct fdtable {
+	unsigned int max_fds;
+	struct file ** fd;      /* current fd array */
+	fd_set *close_on_exec;
+	fd_set *open_fds;
+	struct rcu_head rcu;
+	struct fdtable *next;
+};
+}}}
+
+== 文件系统类型 ==
+- 每个注册的文件系统都有一个类型为file_system_type的对象来表示。当挂载一个文件系统时需要查找该对象，并通过它的`get_sb`方法获取超级块的信息。
+- `register_filesystem`方法用来注册指定的文件系统类型对象。
+- `get_fs_type`根据文件系统类型名称查找相应的file_system_type对象。
+
+=== struct file_system_type ===
+{{{class="brush:c"
+struct file_system_type {
+	const char *name;
+	int fs_flags;
+	int (*get_sb) (struct file_system_type *, int,
+		       const char *, void *, struct vfsmount *);
+	void (*kill_sb) (struct super_block *);
+	struct module *owner;
+	struct file_system_type * next;
+	struct list_head fs_supers;
+
+	struct lock_class_key s_lock_key;
+	struct lock_class_key s_umount_key;
+	struct lock_class_key s_vfs_rename_key;
+
+	struct lock_class_key i_lock_key;
+	struct lock_class_key i_mutex_key;
+	struct lock_class_key i_mutex_dir_key;
+	struct lock_class_key i_alloc_sem_key;
+};
+}}}
+
+== 文件系统安装 ==
+- 通常使用mount命令安装一个文件系统，如：
+- 在同一个安装点上可以叠加安装多个文件系统，内核将已安装的文件系统抽象成`vfsmount`对象，并维护这些文件系统之间的联系。
+
+{{{class="brush:bash"
+$ mount -t ext2 /dev/fd0 /mnt
+}}}
+
+=== struct vfsmount ===
+{{{class="brush:c"
+struct vfsmount {
+	struct list_head    mnt_hash;
+	struct vfsmount     *mnt_parent;	    /* 安装在其上的父文件系统 */
+	struct dentry       *mnt_mountpoint;	/* 指向安装点的目录项对象 */
+	struct dentry       *mnt_root;	        /* 指向该文件系统的根目录的目录项对象 */
+	struct super_block  *mnt_sb;	        /* 指向超级块的指针 */
+	struct list_head    mnt_mounts;	        /* list of children, anchored here */
+	struct list_head    mnt_child;	        /* and going through their mnt_child */
+	int mnt_flags;
+	/* 4 bytes hole on 64bits arches */
+	const char          *mnt_devname;	    /* Name of device e.g. /dev/dsk/hda1 */
+	struct list_head    mnt_list;
+	struct list_head    mnt_expire;	        /* link in fs-specific expiry list */
+	struct list_head    mnt_share;	        /* circular list of shared mounts */
+	struct list_head    mnt_slave_list;     /* list of slave mounts */
+	struct list_head    mnt_slave;	        /* slave list entry */
+	struct vfsmount     *mnt_master;	    /* slave is on master->mnt_slave_list */
+	struct mnt_namespace *mnt_ns;	        /* containing namespace */
+	int mnt_id;			                    /* mount identifier */
+	int mnt_group_id;		                /* peer group identifier */
+	
+	atomic_t mnt_count;
+	int mnt_expiry_mark;		            /* true if marked for expiry */
+	int mnt_pinned;
+	int mnt_ghosts;
+#ifdef CONFIG_SMP
+	int __percpu *mnt_writers;
+#else
+	int mnt_writers;
+#endif
+};
+}}}
+
+== 文件系统挂载 ==
+- 通过系统调用mount挂载安装点。
+
+=== mount系统调用 ===
+{{{class="brush:c"
+int mount(const char *source, const char *target,
+          const char *filesystemtype, unsigned long mountflags,
+          const void *data);
+}}}
+
+- mountflags标志位如下：
+
+| 标志            | 描述                                       | 备注 |
+|-----------------+--------------------------------------------+------|
+| MS_RDONLY       | 文件只能读                                 |      |
+| MS_NOSUID       | 禁止setudi和setgid标志                     |      |
+| MS_NODEV        | 禁止访问设备文件                           |      |
+| MS_NOEXEC       | 不允许程序执行                             |      |
+| MS_SYNCCHRONOUS | 文件和目录上的写操作是即时的               |      |
+| MS_REMOUNT      | 重新安装改变了安装标志的文件系统           |      |
+| MS_MANDLOCK     | 允许强制加锁                               |      |
+| MS_DIRSYNC      | 目录上的写操作是即时的                     |      |
+| MS_NOATIME      | 不更新文件访问时间                         |      |
+| MS_NODIRATIME   | 不更新目录访问时间                         |      |
+| MS_BIND         | 创建一个绑定安装                           |      |
+| MS_MOVE         | 自动把一个已安装文件系统移动到另一个安装点 |      |
+| MS_REC          | 为目录子树递归地创建绑定安装               |      |
+| MS_VERBOSE      | 安装出错时产生内核消息                     |      |
+
+=== mount基本流程 ===
+- mount系统调用首先将挂载路径和标志选项拷贝到内核空间，然后调用`do_mount`方法。
+- do_mount是挂载功能的具体实现，主要分两部分：
+    - 获取挂载点的信息，通过`kern_path`方法获取path对象，该方法又会调用`link_path_walk`方法，关键是获取`dentry`和`vfsmount`对象。
+    - 根据mount调用传递的参数，调用以下几个分支，其中`do_new_mount`实现挂载新的文件系统功能：
+        - do_remount
+        - do_loopback
+        - do_change_type
+        - do_move_mount
+        - do_new_mount
+            - 调用`do_kern_mount`方法，它根据文件系统名称获取`file_system_type`对象，并为`vfsmount`对象分配内存，获取superblock块信息，从而初始化vfsmount对象。
+            - 通过`do_add_mount`方法将新的文件系统加入到当前文件系统的上层。
+- 释放从用户空间拷贝过来的数据缓存。
+
+== 文件打开流程 ==
+- 通过open系统调用打开文件，该方法接收文件名和访问标志作为参数。系统调用成功，就返回一个文件描述符，也就是指向文件对象的指针数组中分配给新文件的索引。否则返回-1。
+
+=== open系统调用 ===
+{{{class="brush:c"
+int open(const char *pathname, int flags, mode_t mode);
+}}}
+
+- flags标志说明
+
+| 标志        | 描述                                      | 备注 |
+|-------------+-------------------------------------------+------|
+| O_RDONLY    | 只读打开                                  |      |
+| O_WRONLY    | 只写打开                                  |      |
+| O_RDWR      | 读写打开                                  |      |
+| O_CREAT     | 如果文件不存在，则创建它                  |      |
+| O_EXCL      | 对于O_CREAT标志，如果文件已经存在，则失败 |      |
+| O_NOCTTY    | 从不把文件看作控制终端                    |      |
+| O_TRUNC     | 截断文件                                  |      |
+| O_APPEND    | 总是在文件末尾写                          |      |
+| O_NONBLOCK  | 没有系统调用在文件上阻塞                  |      |
+| O_NDELAY    | 与O_NONBLOCK相同                          |      |
+| O_SYNC      | 同步写                                    |      |
+| O_FASYNC    | 通过信号发送IO事件                        |      |
+| O_DIRECT    | 直接IO传送                                |      |
+| O_LARGEFILE | 大型文件                                  |      |
+| O_DIRECTORY | 如果文件不是一个目录，则失败              |      |
+| O_NOFOLLOW  | 不解释路径名中尾部的符号链接              |      |
+| O_NOATIME   | 不更新索引节点的上次访问时间              |      |
+
+=== open基本流程 ===
+- open系统调用通过`do_filp_open`来实现具体功能。
+- do_filp_open主要完成以下几个功能：
+    - 分配file结构对象
+    - 通过`path_init`获取文件父目录项相关的信息，以进程的根目录和当前目录解析文件名，并封装成`nameidata`结构对象。
+    - 通过`link_path_walk`查找目标文件的信息，返回`nameidata`对象。
+    - 将nameidata对象转换成file对象，并返回。期间还需要根据文件打开的标志做相应的处理。
+
+== 文件的读写 ==
+- 通过read和write系统调用读写文件。
+
+=== read和write系统调用 ===
+{{{class="brush:c"
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t count);
+}}}
+
+=== 读写基本流程 ===
+- read和write调用过程非常相似，首先通过`fget_light`取得`file`文件对象指针。
+- 调用`file_pos_read`读取文件当前位置。
+- 调用相应的文件系统的读写方法。
+- 调用`file_pos_write`更新文件的当前位置。
+- 通过`fput_light`递减文件对象的引用计数，必要时删除文件对象。

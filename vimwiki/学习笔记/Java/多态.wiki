@@ -1,0 +1,46 @@
+= 多态 =
+
+== 动态绑定 ==
+Java在方法调用时实现的是动态绑定,即在运行时对对象的方法进行识别.当基类实现了一个方法的通用接口,而子类便可以重新定义和实现该接口,
+
+在实际代码中可以只提供一个基类的对象,其他子类通过upcast到基类,实现多态的特征
+{{{class="brush: java"
+public class Shape {
+    public draw() {};
+    public erase() {};
+}
+
+class Circle extends Shape {
+    public draw() {
+        // do something
+    }
+    
+    public erase() {
+        // do something
+    }
+}
+}}}
+
+*private方法默认是final类型的,因此不能被子类所重载,在使用过程中应该注意不要去重载基类private修饰的方法*
+
+== 抽象类 ==
+类中只要有一个方法是抽象的,则该类即为抽象类,使用关键字abstract来修饰,抽象类表示了一个抽象的数据接口
+{{{class="brush: java"
+public class Shape {
+    abstract public draw() {};
+    abstract public erase() {};
+}
+}}}
+
+== 构造函数的调用顺序 ==
+*1.调用基类的构造函数,并不断递归到基类调用,直到继承层次的根,然后向下回退到子类调用,直到最后一层子类*
+
+*2.按声明顺序调用成员类的构造函数*
+
+*3.调用其他构造函数主体*
+
+== 析构函数的调用顺序 ==
+*析构函数的调用与构造函数的顺序相反,总是现执行子类的析构函数,再进入上一层基类*
+
+=== 有益原则 ===
+*编写构造函数的有益原则:尽可能的用简单方法构造函数,调用那些基类的final方法或private方法是安全的*

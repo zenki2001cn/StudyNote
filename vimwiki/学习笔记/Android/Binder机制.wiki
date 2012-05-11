@@ -1,0 +1,58 @@
+= Binder实现机制详解 =
+
+%toc
+
+== Binder框架 ==
+[pic/Binder_framework.png]
+
+- 驱动层
+
+{{{class="brush:text"
+    组织Binder服务节点，调度Binder相关处理线程，完成实际的Binder传输。
+}}}
+
+- 服务端守护进程
+
+{{{class="brush:text"
+    该服务启动为守护进程，并且监听/dev/binder设备，Server端在该进程中注册Binder，Client端从该进程获取相应的
+Binder引用。
+}}}
+
+- 驱动适配层
+
+{{{class="brush:text"
+    主要功能是IPCThreadState.cpp与ProcessState.cpp完成，还包括Parcel.cpp中的一些函数。该层是连接用户进程和
+Binder驱动的通道。
+}}}
+
+- Binder核心框架层
+
+{{{class="brush:text"
+    Binder核心框架主要是IBinder及它的两个子类，即BBinder和BpBinder，分别代表了最基本的服务器端及客户端。
+}}}
+
+- 守护进程的驱动者
+
+{{{class="brush:text"
+    IServiceManager是与守护进程ServiceManager相关联的类。Binder的注册和申请的任务由IServiceManager来实现。
+}}}
+
+- Binder服务和客户端实现层
+
+{{{class="brush:text"
+    Binder服务器端一般继承BnInterface或Native，实现具体的IInterface内定义的函数，并将自身注册到
+ServiceManager.addService()。客户端一般通过ServiceManager.getService()获取服务句柄，再构造BpInterface或Proxy
+以进行远程调用。
+}}}
+
+== Binder设计 ==
+- [[Binder的设计思想]]
+
+== 各层实现 ==
+- [[Binder驱动层]]
+- [[服务端守护进程]]
+- [[驱动适配层]]
+- [[Binder核心框架层_C]]
+- [[Binder核心框架层_Java]]
+- [[守护进程的驱动者]]
+- [[Binder服务和客户端实现层]]

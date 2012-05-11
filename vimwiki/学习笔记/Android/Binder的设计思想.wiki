@@ -1,0 +1,71 @@
+= Binder的设计思想 =
+
+%toc
+
+== Binder与传统IPC的比较 ==
+| IPC                  | 数据拷贝次数 | 安全性 |
+|----------------------+--------------+--------|
+| 共享内存             | 0            | **     |
+| Binder               | 1            | ***    |
+| Socket/管道/消息队列 | 2            | *      |
+
+== Binder的通信模型 ==
+{{{class="brush:text"
+    Binder框架定义了四个角色：Server，Client，ServiceManager（以后简称SMgr）以及Binder驱动。
+其中Server，Client，SMgr运行于用户空间，驱动运行于内核空间。这四个角色的关系和互联网类似：
+    Server是服务器，Client是客户终端，SMgr是域名服务器(DNS)，驱动是路由器。
+}}}
+
+=== Binder驱动 ===
+{{{class="brush:text"
+    和路由器一样，Binder驱动虽然默默无闻，却是通信的核心。尽管名叫‘驱动’，实际上和硬件设备
+没有任何关系，只是实现方式和设备驱动程序是一样的：它工作于内核态，提供open()，mmap()，poll()，
+ioctl()等标准文件操作，以字符驱动设备中的misc设备注册在设备目录/dev下，用户通过/dev/binder访问
+它。驱动负责进程之间Binder通信的建立、Binder在进程之间的传递、Binder引用计数管理、数据包在进程
+之间的传递和交互等一系列底层支持。驱动和应用程序之间定义了一套接口协议，主要功能由ioctl()接口实现，
+不提供read()，write()接口，因为ioctl()灵活方便，且能够一次调用实现先写后读以满足同步交互，而不必
+分别调用write()和read()。
+    Binder驱动的代码位于linux目录的drivers/misc/binder.c中。
+}}}
+
+=== ServiceManager与实名Binder ===
+{{{class="brush:text"
+    和DNS类似，SMgr的作用是将字符形式的Binder名字转化成Client中对该Binder的引用，使得Client
+能够通过Binder名字获得对Server中Binder实体的引用。注册了名字的Binder叫实名Binder，就象每个网站
+除了有IP地址外还有自己的网址。Server创建了Binder实体，为其取一个字符形式，可读易记的名字，将这个
+Binder连同名字以数据包的形式通过Binder驱动发送给 SMgr，通知SMgr注册一个名叫张三的Binder，它位于某个
+Server中。驱动为这个穿过进程边界的Binder创建位于内核中的实体节点以及SMgr对实体的引用，将名字及新建
+的引用打包传递给SMgr。SMgr收数据包后，从中取出名字和引用填入一张查找表中。
+
+    细心的读者可能会发现其中的蹊跷：SMgr是一个进程，Server是另一个进程，Server向SMgr注册Binder必然会
+涉及进程间通信。当前实现的是进程间通信却又要用到进程间通信，这就好象蛋可以孵出鸡前提却是要找只鸡来孵蛋。
+Binder的实现比较巧妙，预先创造一只鸡来孵蛋：SMgr和其它进程同样采用Binder通信，SMgr是Server端，有自己的
+Binder对象（实体），其它进程都是Client，需要通过这个Binder的引用来实现 Binder的注册，查询和获取。SMgr提供
+的Binder比较特殊，它没有名字也不需要注册，当一个进程使用BINDER_SET_CONTEXT_MGR命令将自己注册成SMgr时
+Binder驱动会自动为它创建Binder实体（这就是那只预先造好的鸡）。其次这个Binder的引用在所有Client中都固定
+为0而无须通过其它手段获得。也就是说，一个Server若要向SMgr注册自己Binder就必需通过0这个引用号和SMgr的
+Binder通信。类比网络通信，0号引用就好比域名服务器的地址，你必须预先手工或动态配置好。要注意这里说的
+Client是相对SMgr而言的，一个应用程序可能是个提供服务的Server，但对SMgr来说它仍然是个Client。
+}}}
+
+=== Client获取实名引用 ===
+{{{class="brush:text"
+    Server向SMgr注册了Binder实体及其名字后，Client就可以通过名字获得该Binder的引用了。Client也利用保留
+的0号引用向SMgr请求访问某个Binder：我申请获得名字叫张三的Binder的引用。SMgr收到这个连接请求，从请求数据
+包里获得Binder的名字，在查找表里找到该名字对应的条目，从条目中取出Binder的引用，将该引用作为回复发送给发起
+请求的Client。从面向对象的角度，这个Binder对象现在有了两个引用：一个位于SMgr中，一个位于发起请求的Client中。
+如果接下来有更多的Client请求该Binder，系统中就会有更多的引用指向该Binder，就象java里一个对象存在多个引用一样。
+而且类似的这些指向Binder的引用是强类型，从而确保只要有引用Binder实体就不会被释放掉。通过以上过程可以看出，
+SMgr象个火车票代售点，收集了所有火车的车票，可以通过它购买到乘坐各趟火车的票-得到某个Binder的引用。
+}}}
+
+=== 匿名 Binder ===
+{{{class="brush:text"
+    并不是所有Binder都需要注册给SMgr广而告之的。Server端可以通过已经建立的Binder连接将创建的Binder
+实体传给Client，当然这条已经建立的Binder连接必须是通过实名Binder实现。由于这个Binder没有向SMgr注册名字，
+所以是个匿名Binder。Client将会收到这个匿名Binder的引用，通过这个引用向位于Server中的实体发送请求。
+匿名Binder为通信双方建立一条私密通道，只要Server没有把匿名Binder发给别的进程，别的进程就无法通过穷举或猜测
+等任何方式获得该Binder的引用，向该Binder发送请求。
+}}}
+
+[[pic/binder_model.jpg]]

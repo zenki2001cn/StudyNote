@@ -1,0 +1,129 @@
+= JSON使用和说明 =
+
+== 相关类 ==
+{{{class="brush:java"
+import org.json;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONStringer;
+import org.json.JSONTokener;
+import org.json.JSONException;
+}}}
+
+== 概念 ==
+- 一种数据交换格式
+- JavaScript对象作为字符串编码的一种方式
+- 仅限于文本和数值。二进制值是明确不允许的。JSON 没有CDATA对应模式
+- 在数据可读性费用方面、就数据大小而言比XML更经济
+
+== 类列表 ==
+| 类           | 描述                         |
+|--------------+------------------------------|
+| JSONArray    | JSON数组                     |
+| JSONObject   | JSON的一组Map对象            |
+| JSONStringer | 生成JSON字符串               |
+| JSONTokener  | 将JSON字符串解析到对应的对象 |
+
+== JSONObject ==
+
+=== 常用方法 ===
+| 返回值     | 方法名                              | 描述 |
+|------------+-------------------------------------+------|
+| JSONObject | put(String  name, boolean value)    |      |
+| JSONObject | put(String  name, double value)     |      |
+| JSONObject | put(String  name, Object  value)    |      |
+| JSONObject | put(String  name, int value)        |      |
+| JSONObject | put(String  name, long value)       |      |
+| JSONObject | putOpt(String  name, Object  value) |      |
+| Object     | get(String  name)                   |      |
+| boolean    | getBoolean(String  name)            |      |
+| double     | getDouble(String  name)             |      |
+| int        | getInt(String  name)                |      |
+| long       | getLong(String  name)               |      |
+| String     | getString(String  name)             |      |
+| JSONObject | getJSONObject(String  name)         |      |
+| JSONArray  | getJSONArray(String  name)          |      |
+| boolean    | isNull(String  name)                |      |
+| Iterator   | keys()                              |      |
+| int        | length()                            |      |
+| JSONArray  | names()                             |      |
+
+- `put`系列方法将设置一组key/value的map数据类型
+- `get*`系列方法根据key获取value的值
+- `opt*`系列方法和`get*`系列一样，区别在于如果没有key值则返回一个默认值，而不抛出异常
+
+=== 示例代码 ===
+{{{class="brush:java"
+// JSON格式 {"name1":"zenki1", "name2":"zenki2", "name3":"zenki3"}
+try {
+    JSONObject jsonObject = new JSONObject();
+    
+    jsonObject.put("name1", "zenki1");
+    jsonObject.put("name2", "zenki2");
+    jsonObject.put("name3", "zenki3");
+}
+catch(JSONException e) {
+    throw new RuntimeException(e);
+}
+}}}
+
+== JSONArray ==
+
+=== 常用方法 ===
+| 返回值     | 方法名                         | 描述 |
+|------------+--------------------------------+------|
+| JSONArray  | put(int index, boolean value)  |      |
+| JSONArray  | put(int index, long value)     |      |
+| JSONArray  | put(boolean value)             |      |
+| JSONArray  | put(long value)                |      |
+| JSONArray  | put(int value)                 |      |
+| Object     | get(int index)                 |      |
+| boolean    | getBoolean(int index)          |      |
+| double     | getDouble(int index)           |      |
+| JSONArray  | getJSONArray(int index)        |      |
+| JSONObject | getJSONObject(int index)       |      |
+| boolean    | isNull(int index)              |      |
+| int        | length()                       |      |
+| JSONObject | toJSONObject(JSONArray  names) |      |
+
+- `put`系列方法将值插入JSON数组中或添加到数组末尾
+- `get*`系列方法以索引号为参数获取数组中的值
+- `opt*`系列方法和`get*`系列一样，区别在于如果没有key值则返回一个默认值，而不抛出异常
+
+=== 示例代码 ===
+{{{class="brush:java"
+// JSON格式 [{"name1":"zenki1"}, {"name2":"zenki2"}, {"name3":"zenki3"}]
+try {
+    JSONArray jsonArray = new JSONArray();
+
+    jsonArray.put(new JSONObject().put("name1", "zenki1"));
+    jsonArray.put(new JSONObject().put("name2", "zenki2"));
+    jsonArray.put(new JSONObject().put("name3", "zenki3"));
+}
+catch(JSONException e) {
+    throw new RuntimeException(e);
+}
+}}}
+
+== JSONStringer ==
+
+=== 常用方法 ===
+| 返回值       | 方法名               | 描述 |
+|--------------+----------------------+------|
+| JSONStringer | object()             |      |
+| JSONStringer | endObject()          |      |
+| JSONStringer | array()              |      |
+| JSONStringer | endArray()           |      |
+| JSONStringer | key(String  name)    |      |
+| JSONStringer | value(Object  value) |      |
+| String       | toString()           |      |
+
+- 快速构建一个JSON数据形式的字符串
+
+=== 示例代码 ===
+{{{class="brush:java"
+String myString = new JSONStringer().object()
+                                    .key(“AR”).value(“www.Androidres.com!”)
+                                    .endObject()
+                                    .toString();
+}}}

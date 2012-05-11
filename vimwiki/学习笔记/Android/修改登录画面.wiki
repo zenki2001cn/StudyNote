@@ -1,0 +1,60 @@
+= 修改登录画面 =
+
+%toc
+
+== 修改开机画面 ==
+system\core\init\Init.h中有一宏定义：
+{{{class="brush:c"
+#define INIT_IMAGE_FILE "/initlogo.rle"
+}}}
+
+system\core\init\Init.c中有如下代码段：
+{{{class="brush:c"
+if( load_565rle_image(INIT_IMAGE_FILE) ) {
+    fd = open("/dev/tty0", O_WRONLY);
+    if (fd >= 0) {
+        const char *msg;
+            msg = "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"  // console is 40 cols x 30 lines
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "\n"
+        "             A N D R O I D ";
+        write(fd, msg, strlen(msg));
+        close(fd);
+}}}
+读取/initlogo.rle（一张565 rle 压缩的图片），如果成功则在/dev/graphics/fb0显示Logo,如果失败则将/dev/tty0设为TEXT模式并打开/dev/tty0,输出文本“ANDROID”字样。
+
+{{{class="brush:text"
+修改步骤：
+    1.处理一张rle的图片，使用android编译好的工具rgb2565（out/host/linux-86/bin）,命令：
+    rgb2565 -rle <initlogo.raw> initlogo.rle。
+    
+    2.将这张图片打包到ramdisk.img 的根目录中。个人方法：在code下加入了vender文件夹，将initlogo.rle
+放入此文件夹，在generic.mk中加入：
+    PRODUCT_COPY_FILES := \
+        vendor/initloge.rle:root/initloge.rle
+        
+    3.编译源码即可。
+}}}
+
+== 修改登录画面 ==
+=== 相关代码 ===
+{{{class="brush:text"
+\frameworks\base\cmds\bootanimation\BootAnimation.h
+\frameworks\base\cmds\bootanimation\BootAnimation.cpp
+
+\frameworks\base\core\res\assets\images\android-logo-mask.png
+Android默认的前景图片，文字部分镂空，大小256×64
+\frameworks\base\core\res\assets\images\android-logo-shine.png
+Android默认的背景图片，有动感效果，大小512×64
+}}}

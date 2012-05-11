@@ -1,0 +1,120 @@
+= Zygote =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// 实现init1()方法
+frameworks/base/services/jni/com_android_server_SystemServer.cpp                     
+// zygote fork 的第一个程序，用来加载各种服务
+frameworks/base/services/java/com/android/server/SystemServer.java
+//
+frameworks/base/cmds/system_server/system_main.cpp
+// 实现system_init()方法
+frameworks/base/cmds/system_server/library/system_init.cpp 
+// Zygote启动类
+frameworks/base/core/java/com/android/internal/os/ZygoteInit.java
+}}}
+
+== ZygoteInit类 ==
+[[pic/zygote_systemserver.png]]
+
+=== 方法：main ===
+{{{class="brush:java"
+public static void main(String argv[]) {
+    try {
+        // Start profiling the zygote initialization.
+        SamplingProfilerIntegration.start();
+
+        // 通过哦socket监听其他应用的启动
+        registerZygoteSocket();
+        // 加载所有的class类
+        preloadClasses();
+        // 加载所有资源
+        preloadResources();
+
+        if (SamplingProfilerIntegration.isEnabled()) {
+            SamplingProfiler sp = SamplingProfiler.getInstance();
+            sp.pause();
+            SamplingProfilerIntegration.writeZygoteSnapshot();
+            sp.shutDown();
+        }
+
+        // Do an initial gc to clean up after startup
+        gc();
+
+        // 开启SystemServer
+        if (argv[1].equals("true")) {
+            startSystemServer();
+        } else if (!argv[1].equals("false")) {
+            throw new RuntimeException(argv[0] + USAGE_STRING);
+        }
+
+        Log.i(TAG, "Accepting command socket connections");
+
+        if (ZYGOTE_FORK_MODE) {
+            // 所有android应用都是从fork mode启动
+            runForkMode();
+        } else {
+            runSelectLoopMode();
+        }
+
+        // 关闭监听端口
+        closeServerSocket();
+    }
+    ......
+}
+}}}
+
+== SystemServer类 ==
+- SystemServer.java类为Zygote启动的第一个程序，它用来启动`native services`和`android services`
+- SystemServer.java类的main方法中会调用native层的init1()方法、init1调用system_init.cpp中的`system_init()`方法
+- `system_init()`会启动四个`native services`: `AudioFlinger`、`MediaPlayerService`、`CameraService`、`AudioPolicyService`。之后回调SystemServer.java中的`init2()`方法
+- `init2()`方法调用`ServerThread`线程类，通过`ServicesManager`加入大约30多个services
+
+[[pic/zygote_fork.png]]
+
+=== 类：SystemServer ===
+{{{class="brush:java"
+public class SystemServer
+{
+    private static final String TAG = "SystemServer";
+
+    ......
+    
+    /**
+     * This method is called from Zygote to initialize the system. This will cause the native
+     * services (SurfaceFlinger, AudioFlinger, etc..) to be started. After that it will call back
+     * up into init2() to start the Android services.
+     */
+    native public static void init1(String[] args);
+}
+}}}
+
+=== 方法：main ===
+{{{class="brush:java"
+// 应用的主入口方法
+public static void main(String[] args) {
+    ...... 
+
+    // The system server has to run all of the time, so it needs to be
+    // as efficient as possible with its memory usage.
+    VMRuntime.getRuntime().setTargetHeapUtilization(0.8f);
+    
+    System.loadLibrary("android_servers");
+    // init1为JNI的映射表名称
+    init1(args);
+}
+}}}
+
+=== 方法：init2 ===
+{{{class="brush:java"
+// 加入java层的services服务
+public static final void init2() {
+    Slog.i(TAG, "Entered the Android system server!");
+    Thread thr = new ServerThread();
+    thr.setName("android.server.ServerThread");
+    thr.start();
+}
+}}}
+

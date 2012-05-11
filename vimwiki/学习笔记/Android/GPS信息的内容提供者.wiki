@@ -1,0 +1,472 @@
+= GPS信息的内容提供者 =
+
+%toc
+
+== 概述 ==
+{{{class="brush:text"
+    Provider是提供具体服务功能的抽象，如GPS信息的提供由GpsLocationProvider来完成。通常这是在Java
+层的抽象，具体的实现会通过JNI调用底层C++的代码。在GPS Service中讨论过LocationManagerService在启动
+时会加载所有可用的Provider，而这里我们主要关心的是实际提供GPS定位信息的实现类GpsLocationProvider。
+}}}
+
+== 初始化方法 ==
+- GpsLocationProvider实现了LocationProviderInterface的接口，其初始化主要完成以下几个功能：
+    - 创建GpsNetInitiatedHandler处理类，为底层提供net init的回调处理。
+    - 为接收广播添加了一些过滤条件。
+    - 读取gps.conf的配置文件，并初始化相关参数。
+    - 创建循环线程GpsLocationProviderThread，初始化事件处理的Handler。
+
+=== GpsLocationProvider ===
+{{{class="brush:java"
+public class GpsLocationProvider implements LocationProviderInterface {
+    ......
+    // 配置文件路径
+    private static final String PROPERTIES_FILE = "/system/etc/gps/gps.conf";
+
+    public GpsLocationProvider(Context context, ILocationManager locationManager) {
+        ......
+        // 创建NI处理的Handler
+        mNIHandler = new GpsNetInitiatedHandler(context);
+
+        ......
+        // 添加接收广播的过滤条件
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intents.DATA_SMS_RECEIVED_ACTION);
+        intentFilter.addDataScheme("sms");
+        intentFilter.addDataAuthority("localhost","7275");
+        context.registerReceiver(mBroadcastReciever, intentFilter);
+
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(Intents.WAP_PUSH_RECEIVED_ACTION);
+        try {
+            intentFilter.addDataType("application/vnd.omaloc-supl-init");
+        } catch (IntentFilter.MalformedMimeTypeException e) {
+        }
+        context.registerReceiver(mBroadcastReciever, intentFilter);
+
+        ......
+        // 读取配置文件信息
+        mProperties = new Properties();
+        try {
+            File file = new File(PROPERTIES_FILE);
+            FileInputStream stream = new FileInputStream(file);
+            mProperties.load(stream);
+            stream.close();
+            mNtpServer = mProperties.getProperty("NTP_SERVER", null);
+
+            mSuplServerHost = mProperties.getProperty("SUPL_HOST");
+            String portString = mProperties.getProperty("SUPL_PORT");
+            if (mSuplServerHost != null && portString != null) {
+                try {
+                    mSuplServerPort = Integer.parseInt(portString);
+                } catch (NumberFormatException e) {
+                }
+            }
+
+            mC2KServerHost = mProperties.getProperty("C2K_HOST");
+            portString = mProperties.getProperty("C2K_PORT");
+            if (mC2KServerHost != null && portString != null) {
+                try {
+                    mC2KServerPort = Integer.parseInt(portString);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "unable to parse C2K_PORT: " + portString);
+                }
+            }
+        } catch (IOException e) {
+        }
+
+        // 创建线程
+        mThread = new GpsLocationProviderThread();
+        mThread.start();
+        ...... 
+    }
+}
+}}}
+
+=== GpsLocationProviderThread ===
+{{{class="brush:java"
+private final class GpsLocationProviderThread extends Thread {
+    public GpsLocationProviderThread() {
+        super("GpsLocationProvider");
+    }
+
+    public void run() {
+        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+        initialize();
+        Looper.prepare();
+        mHandler = new ProviderHandler();
+        // signal when we are initialized and ready to go
+        mInitializedLatch.countDown();
+        Looper.loop();
+    }
+}
+}}}
+
+== 配置文件 ==
+- 上面分析了Provider在初始化时会读取一个配置文件，该配置文件通常会被拷贝到一个固定目录，由该类去解析。解析后的配置参数会涉及到时间同步、辅助数据下载、AGPS设定等等。
+- 主要配置以下几个属性：
+
+=== 全局设定 ===
+| 属性             | 默认值                               | 描述                 |
+|------------------+--------------------------------------+----------------------|
+| NTP_SERVER       | xtra1.gpsonextra.net                 | NTP服务器地址        |
+| XTRA_SERVER_1    | http://xtra1.gpsonextra.net/xtra.bin | 辅助数据的下载地址1  |
+| XTRA_SERVER_2    | http://xtra2.gpsonextra.net/xtra.bin | 辅助数据的下载地址2  |
+| XTRA_SERVER_3    | http://xtra3.gpsonextra.net/xtra.bin | 辅助数据的下载地址3  |
+| INTERMEDIATE_POS | 0                                    |                      |
+| ACCURACY_THRES   | 5000                                 |                      |
+| ENABLE_WIPER     | 1                                    | 是否开启支持wifi定位 |
+    
+=== AGPS服务器设定： ===
+| 属性      | 默认值          | 描述           |
+|-----------+-----------------+----------------|
+| SUPL_HOST | supl.google.com | SUPL服务器地址 |
+| SUPL_PORT | 7275            | SUPL服务器端口 |
+| APN_NAME  | 3gwap           | APN名称        |
+| AGPS_TYPE | default,supl    | AGPS的类型     |
+| C2K_HOST  | c2k.pde.com     | C2K服务器地址  |
+| C2K_PORT  | 1234            | C2K服务器端口  |
+
+=== 配置文件示例 ===
+{{{class="brush:bash"
+NTP_SERVER=xtra1.gpsonextra.net
+XTRA_SERVER_1=http://xtra1.gpsonextra.net/xtra.bin
+XTRA_SERVER_2=http://xtra2.gpsonextra.net/xtra.bin
+XTRA_SERVER_3=http://xtra3.gpsonextra.net/xtra.bin
+
+# Intermediate position report, 1=enable, 0=disable
+INTERMEDIATE_POS=0
+
+# Accuracy threshold for intermediate positions 
+# less accurate positions are ignored, 0 for passing all positions
+ACCURACY_THRES=5000
+
+# Wiper (wifi positioning), 1=enable, 0=disable
+ENABLE_WIPER=1
+
+################################
+##### AGPS server settings #####
+################################
+
+# FOR SUPL SUPPORT, set the following
+SUPL_HOST=supl.google.com
+SUPL_PORT=7275
+APN_NAME=3gwap
+AGPS_TYPE=default,supl
+
+# FOR C2K PDE SUPPORT, set the following
+C2K_HOST=c2k.pde.com
+C2K_PORT=1234
+}}}
+
+== 处理定位请求 ==
+- 当Service发送定位请求后，实际会调用到该Provider的startNavigating方法。
+- 当Service发送停止定位的请求后，实际会调用到该Provider的stopNavigating方法。
+- 这里需要注意的是GPS定位的几种类型和处理方式，主要分为GPS和APGS两种。这些设置通常在Settings中设定。
+- 处理定位的功能通常由底层的驱动完成，这里是通过JNI调用实现。
+
+=== GPS类型 ===
+| 类型标识                      | 辅助支持(AGPS) |
+|-------------------------------+----------------|
+| GPS_POSITION_MODE_STANDALONE  | 否             |
+| GPS_POSITION_MODE_MS_ASSISTED | 是             |
+| GPS_POSITION_MODE_MS_BASED    | 是             |
+
+=== startNavigating ===
+{{{class="brush:java"
+private void startNavigating(boolean singleShot) {
+    if (!mStarted) {
+        mStarted = true;
+        mSingleShot = singleShot;
+        // 默认为GPS_POSITION_MODE_STANDALONE，以下是通过Setting动态改变设定
+        mPositionMode = GPS_POSITION_MODE_STANDALONE;
+
+         if (Settings.Secure.getInt(mContext.getContentResolver(),
+                Settings.Secure.ASSISTED_GPS_ENABLED, 1) != 0) {
+            if (singleShot && hasCapability(GPS_CAPABILITY_MSA)) {
+                mPositionMode = GPS_POSITION_MODE_MS_ASSISTED;
+            } else if (hasCapability(GPS_CAPABILITY_MSB)) {
+                mPositionMode = GPS_POSITION_MODE_MS_BASED;
+            }
+        }
+
+        // 设置定位模式
+        int interval = (hasCapability(GPS_CAPABILITY_SCHEDULING) ? mFixInterval : 1000);
+        if (!native_set_position_mode(mPositionMode, GPS_POSITION_RECURRENCE_PERIODIC,
+                interval, 0, 0)) {
+            mStarted = false;
+            return;
+        }
+        // 开始定位
+        if (!native_start()) {
+            mStarted = false;
+            return;
+        }
+        ...... 
+    }
+}
+}}}
+
+=== stopNavigating ===
+{{{class="brush:java"
+private void stopNavigating() {
+    if (mStarted) {
+        ......
+        native_stop();
+        
+        ......
+        // 更新状态
+        updateStatus(LocationProvider.TEMPORARILY_UNAVAILABLE, 0);
+    }
+}
+}}}
+
+== 报告定位信息 ==
+- 定位信息的获取是通过reportLocation方法实现，`它实际上是注册给JNI接口的回调函数`，当底层获取到定位信息后，通过该回调向上层传递。这里需要注意的是不同类型的信息，其处理方式也不一样，主要分为以下几种：
+    - 定位信息：通过Service的reportLocation方法处理。
+    - 状态信息：通过注册的GpsStatusListener处理。
+    - 已接收TTFF：通过广播通知其他进程定位成功。
+
+=== reportLocation ===
+{{{class="brush:java"
+private void reportLocation(int flags, double latitude, double longitude, 
+                            double altitude, float speed, float bearing, 
+                            float accuracy, long timestamp) {
+    synchronized (mLocation) {
+        mLocationFlags = flags;
+        if ((flags & LOCATION_HAS_LAT_LONG) == LOCATION_HAS_LAT_LONG) {
+            mLocation.setLatitude(latitude);
+            mLocation.setLongitude(longitude);
+            mLocation.setTime(timestamp);
+        }
+        if ((flags & LOCATION_HAS_ALTITUDE) == LOCATION_HAS_ALTITUDE) {
+            mLocation.setAltitude(altitude);
+        } else {
+            mLocation.removeAltitude();
+        }
+        if ((flags & LOCATION_HAS_SPEED) == LOCATION_HAS_SPEED) {
+            mLocation.setSpeed(speed);
+        } else {
+            mLocation.removeSpeed();
+        }
+        if ((flags & LOCATION_HAS_BEARING) == LOCATION_HAS_BEARING) {
+            mLocation.setBearing(bearing);
+        } else {
+            mLocation.removeBearing();
+        }
+        if ((flags & LOCATION_HAS_ACCURACY) == LOCATION_HAS_ACCURACY) {
+            mLocation.setAccuracy(accuracy);
+        } else {
+            mLocation.removeAccuracy();
+        }
+
+        try {
+            // 调用Service的reportLocation方法
+            mLocationManager.reportLocation(mLocation, false);
+        } catch (RemoteException e) {
+        }
+    }
+
+    mLastFixTime = System.currentTimeMillis();
+    if (mTTFF == 0 && (flags & LOCATION_HAS_LAT_LONG) == LOCATION_HAS_LAT_LONG) {
+        mTTFF = (int)(mLastFixTime - mFixRequestTime);
+
+        // 通过回调处理TTFF信息
+        synchronized(mListeners) {
+            int size = mListeners.size();
+            for (int i = 0; i < size; i++) {
+                Listener listener = mListeners.get(i);
+                try {
+                    listener.mListener.onFirstFix(mTTFF); 
+                } catch (RemoteException e) {
+                    mListeners.remove(listener);
+                    size--;
+                }
+            }
+        }
+    }
+
+    ...... 
+    // 通过Intent通知已获取TTFF
+    if (mStarted && mStatus != LocationProvider.AVAILABLE) {
+        ......
+        Intent intent = new Intent(LocationManager.GPS_FIX_CHANGE_ACTION);
+        intent.putExtra(LocationManager.EXTRA_GPS_ENABLED, true);
+        mContext.sendBroadcast(intent);
+        updateStatus(LocationProvider.AVAILABLE, mSvCount);
+    }
+    ...... 
+}
+}}}
+
+== 处理Service命令 ==
+- 之前在GPS服务中提到，LocationManagerService可向Provider发送三种类型的命令：
+    - 删除辅助数据：需要设置删除的数据类型，并调用native_delete_aiding_data实现。
+    - 同步时间：通过SntpClient获取时间后，调用native_inject_time实现。
+    - 下载辅助数据：通过GpsXtraDownloader类实现下载功能，获取数据后通过native_inject_xtra_data将数据传给底层。
+
+=== sendExtraCommand ===
+{{{class="brush:java"
+public boolean sendExtraCommand(String command, Bundle extras) {
+    ......
+    if ("delete_aiding_data".equals(command)) {
+        result = deleteAidingData(extras);
+    } else if ("force_time_injection".equals(command)) {
+        sendMessage(INJECT_NTP_TIME, 0, null);
+        result = true;
+    } else if ("force_xtra_injection".equals(command)) {
+        if (mSupportsXtra) {
+            xtraDownloadRequest();
+            result = true;
+        }
+    } else {
+    }
+    ......    
+}
+}}}
+
+=== deleteAidingData ===
+{{{class="brush:java"
+private boolean deleteAidingData(Bundle extras) {
+    int flags;
+
+    if (extras == null) {
+        flags = GPS_DELETE_ALL;
+    } else {
+        flags = 0;
+        if (extras.getBoolean("ephemeris")) flags |= GPS_DELETE_EPHEMERIS;
+        if (extras.getBoolean("almanac")) flags |= GPS_DELETE_ALMANAC;
+        if (extras.getBoolean("position")) flags |= GPS_DELETE_POSITION;
+        if (extras.getBoolean("time")) flags |= GPS_DELETE_TIME;
+        if (extras.getBoolean("iono")) flags |= GPS_DELETE_IONO;
+        if (extras.getBoolean("utc")) flags |= GPS_DELETE_UTC;
+        if (extras.getBoolean("health")) flags |= GPS_DELETE_HEALTH;
+        if (extras.getBoolean("svdir")) flags |= GPS_DELETE_SVDIR;
+        if (extras.getBoolean("svsteer")) flags |= GPS_DELETE_SVSTEER;
+        if (extras.getBoolean("sadata")) flags |= GPS_DELETE_SADATA;
+        if (extras.getBoolean("rti")) flags |= GPS_DELETE_RTI;
+        if (extras.getBoolean("celldb-info")) flags |= GPS_DELETE_CELLDB_INFO;
+        if (extras.getBoolean("all")) flags |= GPS_DELETE_ALL;
+    }
+
+    if (flags != 0) {
+        native_delete_aiding_data(flags);
+        return true;
+    }
+
+    return false;
+}
+}}}
+
+=== handleInjectNtpTime ===
+{{{class="brush:java"
+private void handleInjectNtpTime() {
+    ......
+    SntpClient client = new SntpClient();
+    long delay;
+
+    if (client.requestTime(mNtpServer, 10000)) {
+        long time = client.getNtpTime();
+        long timeReference = client.getNtpTimeReference();
+        int certainty = (int)(client.getRoundTripTime()/2);
+        long now = System.currentTimeMillis();
+
+        native_inject_time(time, timeReference, certainty);
+        delay = NTP_INTERVAL;
+    } else {
+        delay = RETRY_INTERVAL;
+    }
+    ......
+}
+}}}
+
+=== handleDownloadXtraData ===
+{{{class="brush:java"
+private void handleDownloadXtraData() {
+    ......
+    GpsXtraDownloader xtraDownloader = new GpsXtraDownloader(mContext, mProperties);
+    byte[] data = xtraDownloader.downloadXtraData();
+    if (data != null) {
+        native_inject_xtra_data(data, data.length);
+    } else {
+        ......
+    }
+}
+}}}
+
+== 内部消息处理Handler ==
+- ProviderHandler提供了该Provider线程消息的处理机制，通常在提供给上层调用的接口中发送相应的处理消息，并通过系列的`handle*`方法处理。例如上面提到的下载辅助数据的命令便是通过该机制实现。
+
+=== ProviderHandler ===
+{{{class="brush:java"
+private final class ProviderHandler extends Handler {
+    @Override
+    public void handleMessage(Message msg) {
+        int message = msg.what;
+        switch (message) {
+            case ENABLE:
+                if (msg.arg1 == 1) {
+                    handleEnable();
+                } else {
+                    handleDisable();
+                }
+                break;
+            case ENABLE_TRACKING:
+                handleEnableLocationTracking(msg.arg1 == 1);
+                break;
+            case REQUEST_SINGLE_SHOT:
+                handleRequestSingleShot();
+                break;
+            case UPDATE_NETWORK_STATE:
+                handleUpdateNetworkState(msg.arg1, (NetworkInfo)msg.obj);
+                break;
+            case INJECT_NTP_TIME:
+                handleInjectNtpTime();
+                break;
+            case DOWNLOAD_XTRA_DATA:
+                if (mSupportsXtra) {
+                    handleDownloadXtraData();
+                }
+                break;
+            case UPDATE_LOCATION:
+                handleUpdateLocation((Location)msg.obj);
+                break;
+            case ADD_LISTENER:
+                handleAddListener(msg.arg1);
+                break;
+            case REMOVE_LISTENER:
+                handleRemoveListener(msg.arg1);
+                break;
+        }
+        ...... 
+    }
+};
+}}}
+
+== GPS包含哪些信息 ==
+- 使用`delete_aiding_data`功能时需要设置删除的数据类型，从这里我们知道GPS具体包含哪些信息，如下表。
+- 通常用户在使用GPS时，接收到的数据信息是有时效的，因此不同情况下启动GPS便会分为几种方式：`cold start`、`warm start`、`hot start`。
+
+=== 类型信息表 ===
+| 类型标识               | 字符串        | 描述         |
+|------------------------+---------------+--------------|
+| GPS_DELETE_EPHEMERIS   | "ephemeris"   | 删除星历数据 |
+| GPS_DELETE_ALMANAC     | "almanac"     | 删除历书数据 |
+| GPS_DELETE_POSITION    | "position"    | 删除位置数据 |
+| GPS_DELETE_TIME        | "time"        | 删除时间数据 |
+| GPS_DELETE_IONO        | "iono"        |              |
+| GPS_DELETE_UTC         | "utc"         |              |
+| GPS_DELETE_HEALTH      | "health"      |              |
+| GPS_DELETE_SVDIR       | "svdir"       |              |
+| GPS_DELETE_SVSTEER     | "svsteer"     |              |
+| GPS_DELETE_SADATA      | "sadata"      |              |
+| GPS_DELETE_RTI         | "rti"         |              |
+| GPS_DELETE_CELLDB_INFO | "celldb-info" |              |
+| GPS_DELETE_ALL         | "all"         | 删除所有数据 |
+
+=== GPS启动方式 ===
+| 启动方式   | 数据有效性                    | 描述 |
+|------------+-------------------------------+------|
+| cold start | 删除ephemeris、position、time |      |
+| warm start | 删除ephemeris                 |      |
+| hot start  | 不删除任何数据                |      |

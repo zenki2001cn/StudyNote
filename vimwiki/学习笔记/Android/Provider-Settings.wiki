@@ -1,0 +1,39 @@
+= Provider-Settings =
+
+== 流程说明 ==
+- 该类包含系统提供的Activity的Action名称。
+
+== 主要参数说明 ==
+| 类型   | 标识符                                  | 描述                   |
+|--------+-----------------------------------------+------------------------|
+| String | ACTION_ACCESSIBILITY_SETTINGS           | 显示附件模块           |
+| String | ACTION_ADD_ACCOUNT                      | 添加新的账号           |
+| String | ACTION_AIRPLANE_MODE_SETTINGS           | 飞行模式设置           |
+| String | ACTION_APN_SETTINGS                     | APNs设置               |
+| String | ACTION_APPLICATION_DEVELOPMENT_SETTINGS | 应用程序开发相关设置   |
+| String | ACTION_APPLICATION_SETTINGS             | 应用程序相关设置       |
+| String | ACTION_BLUETOOTH_SETTINGS               | 蓝牙设置               |
+| String | ACTION_DATA_ROAMING_SETTINGS            | 2G/3G选择设置          |
+| String | ACTION_DATE_SETTINGS                    | 时间和日期设置         |
+| String | ACTION_DEVICE_INFO_SETTINGS             | 设备信息               |
+| String | ACTION_DISPLAY_SETTINGS                 | 显示设置               |
+| String | ACTION_INPUT_METHOD_SETTINGS            | 输入法设置             |
+| String | ACTION_INTERNAL_STORAGE_SETTINGS        | 内部存储设置           |
+| String | ACTION_LOCALE_SETTINGS                  | 国际化设置             |
+| String | ACTION_LOCATION_SOURCE_SETTINGS         | 本地资源设置           |
+| String | ACTION_MANAGE_APPLICATIONS_SETTINGS     | 管理应用程序           |
+| String | ACTION_MEMORY_CARD_SETTINGS             | 内存卡设置             |
+| String | ACTION_NETWORK_OPERATOR_SETTINGS        | 网络操作设置           |
+| String | ACTION_PRIVACY_SETTINGS                 | 隐私设置               |
+| String | ACTION_QUICK_LAUNCH_SETTINGS            | 快速启动设置           |
+| String | ACTION_SEARCH_SETTINGS                  | 搜索设置               |
+| String | ACTION_SECURITY_SETTINGS                | 安全设置               |
+| String | ACTION_SETTINGS                         | 系统设置               |
+| String | ACTION_SOUND_SETTINGS                   | 声音设置               |
+| String | ACTION_SYNC_SETTINGS                    | 同步设置               |
+| String | ACTION_USER_DICTIONARY_SETTINGS         | 用户文件夹设置         |
+| String | ACTION_WIFI_IP_SETTINGS                 | WIFI IP设置            |
+| String | ACTION_WIFI_SETTINGS                    | WIFI设置               |
+| String | ACTION_WIRELESS_SETTINGS                | WIFI、蓝牙、移动卡设置 |
+| String | AUTHORITY                               | 权限设置               |
+| String | EXTRA_AUTHORITIES                       | 外部存储权限           |

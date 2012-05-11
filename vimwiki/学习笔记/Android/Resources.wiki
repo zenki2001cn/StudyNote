@@ -1,0 +1,40 @@
+= Resource资源类 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
+import android.content.res.AssetManager;
+import android.graphics.Movie;
+import android.content.res.XmlResourceParser
+import java.lang.CharSequence;
+import java.io.InputStream;
+}}}
+
+== 如何获取Resources对象 ==
+{{{class="brush:java"
+// Context或Context派生类通过getResources()方法获取
+Resources resources = Context.getResources();
+}}}
+
+== 主要方法集合 ==
+| 返回值            | 方法名                  | 功能描述                    |
+|-------------------+-------------------------+-----------------------------|
+| XmlResourceParser | getAnimation(int id)    | 获取动画资源                |
+| AssetManager      | getAssets()             | 获取Asset资源管理器         |
+| boolean           | getBoolean(int id)      | 获取boolean类型的值         |
+| int               | getColor                | 获取颜色信息                |
+| float             | getDimension(int id)    | 获取尺寸大小                |
+| Drawable          | getDrawable(int id)     | 获取画图资源                |
+| int[]             | getIntArray(int id)     | 获取int数组类型值           |
+| Movie             | getMovie(int id)        | 获取电影资源                |
+| String            | getString(int id)       | 获取字符串值                |
+| String[]          | getStringArray(int id)  | 获取字符串数组值            |
+| static Resources  | getSystem()             | 获取Resources对象           |
+| CharSequence      | getText(int id)         | 获取CharSequence值          |
+| CharSequence[]    | getTextArray(int id)    | 获取CharSequence数组值      |
+| XmlResourceParser | getXml(int id)          | 获取XmlResourceParser对象值 |
+| InputStream       | openRawResource(int id) | 获取InputStream对象值       |
+
+== 示例代码 ==
+- [[XML资源文件示例]]

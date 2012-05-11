@@ -1,0 +1,44 @@
+= 禁用菜单 =
+
+例程源码(XML)
+{{{class="brush:xml"
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/enabled_item"
+        android:title="Enabled"
+        android:icon="@drawable/stat_happy" />
+
+    <item android:id="@+id/disabled_item"
+        android:title="Disabled"
+        android:enabled="false"
+        android:icon="@drawable/stat_sad" />
+
+    <item android:id="@+id/enabled_item_2"
+        android:title="Enabled"
+        android:icon="@drawable/stat_happy" />
+
+    <item android:id="@+id/disabled_item_2"
+        android:title="Disabled"
+        android:enabled="false"
+        android:icon="@drawable/stat_sad" />
+
+    <item android:id="@+id/enabled_item_3"
+        android:title="Enabled"
+        android:icon="@drawable/stat_happy" />
+
+    <item android:id="@+id/disabled_item_3"
+        android:title="Disabled"
+        android:enabled="false"
+        android:icon="@drawable/stat_sad" />
+
+    <item android:id="@+id/enabled_item_4"
+        android:title="Enabled"
+        android:icon="@drawable/stat_happy" />
+
+    <item android:id="@+id/disabled_item_4"
+        android:title="Disabled"
+        android:enabled="false"
+        android:icon="@drawable/stat_sad" />
+
+</menu>
+}}}

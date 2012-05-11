@@ -1,0 +1,203 @@
+= Build环境变量 =
+_比较重要或常用的环境变量定义_
+
+%toc
+
+== 环境变量相关 ==
+| 变量名           | 值                                                    | 含义                                          | 所属文件          |
+|------------------+-------------------------------------------------------+-----------------------------------------------+-------------------|
+| BUILD_SYSTEM     | $(TOPDIR)build/core                                   | build环境的路径，通常是源码根目录的build/core | main.mk           |   
+| subdirs          | 可定义                                                | subdir_makefiles会遍历所有子目录              | main.mk           |   
+| SHELL            | /bin/bash                                             | 运行的shell环境                               | config.mk         |   
+| INTERNAL_PRODUCT | $(call resolve-short-product-name, $(TARGET_PRODUCT)) | 根据TARGET_PRODUCT返回其makefile路径          | product_config.mk |   
+| TARGET_DEVICE    | $(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_DEVICE)        | 返回对应PRODUCT_DEVICE的路径                  | product_config.mk |
+
+== 平台配置相关 ==
+| 变量名               | 值                                         | 含义                                      | 所属文件    |
+|----------------------+--------------------------------------------+-------------------------------------------+-------------|
+| TARGET_DEVICE_DIR    | $(patsubst %/,%,$(dir $(board_config_mk))) | 所有BoardConfig.mk文件的路径，没有后缀"/" | config.mk   |
+| TARGET_CPU_ABI       |                                            | 编译器                                    | config.mk   |
+| TARGET_CPU_ABI2      |                                            | 编译器                                    | config.mk   |
+| TARGET_PRODUCT       | generic                                    | 产品的标识，通常是generic                 | envsetup.mk |
+| TARGET_BUILD_VARIANT | eng、user、userdebug、tests                | 衍生版本类型                              | envsetup.mk |
+| BUILD_OS             | linux、darwin、windows                     | 主机系统类型                              | envsetup.mk |
+| BUILD_ARCH           | x86、ppc                                   | 主机处理器架构                            | envsetup.mk |
+| TARGET_OS            | linux、darwin、windows                     | 目标机系统类型                            | envsetup.mk |
+| TARGET_ARCH          | arm、linux                                 | 目标机处理器架构                          | envsetup.mk |
+| HOST_BUILD_TYPE      | release、debug                             | 主机编译版本类型                          | envsetup.mk |
+| TARGET_BUILD_TYPE    | release、debug                             | 目标机编译版本类型                        | envsetup.mk |
+
+== product配置相关 ==
+| 变量名                         | 值                                                             | 含义                                                 | 所属文件          |
+|--------------------------------+----------------------------------------------------------------+------------------------------------------------------+-------------------|
+| PRODUCT_NAME                   | PRODUCT_NAME := FOO                                            | 产品名称                                             | product_config.mk |
+| PRODUCT_MODEL                  | PRODUCT_MODEL := FOO                                           | 型号名称                                             | product_config.mk |
+| PRODUCT_DEVICE                 | PRODUCT_DEVICE := FOO                                          | 标识设备名称                                         | 自定义makefile    |
+| PRODUCT_MANUFACTURER           | PRODUCT_MANUFACTURER := FOO                                    | 厂商标识                                             | product_config.mk |
+| PRODUCT_BRAND                  | PRODUCT_BRAND := FOO                                           | 品牌名称                                             | product_config.mk |
+| PRODUCT_LOCALES                | zh_CN、zh_TW、en_US 、mdpi、hdpi                               | 产品的语言标识                                       | product_config.mk |
+| PRODUCT_PACKAGES               | 模块名列表                                                     | 一组需要编译的模块列表                               | 自定义makefile    |
+| PRODUCT_PROPERTY_OVERRIDES     | key = value                                                    | 属性列表                                             | product_config.mk |
+| PRODUCT_CHARACTERISTICS        | default                                                        |                                                      |                   |
+| PRODUCT_COPY_FILES             | <source path>:<destination path>                               | src根目录为build当前目录，dest根目录为$(PRODUCT_OUT) | product_config.mk |
+| PRODUCT_OTA_PUBLIC_KEYS        |                                                                | OTA使用的公钥列表                                    |                   |
+| PRODUCT_PACKAGE_OVERLAYS       | PRODUCT_PACKAGE_OVERLAYS := $(MYPROD)/overlay                  | 产品特定的overlays                                   | product_config.mk |
+| DEVICE_PACKAGE_OVERLAYS        | DEVICE_PACKAGE_OVERLAYS := $(MYPROD)/overlay                   | 设备特定的overlays                                   | product_config.mk |
+| PRODUCT_CONTRIBUTORS_FILE      | $(strip ...PRODUCT_CONTRIBUTORS_FILE))                         | 包含工程属性的HTML文件                               | product_config.mk |
+| PRODUCT_TAGS                   | optional                                                       | 空格分隔的标识                                       |                   |
+| PRODUCT_SDK_ADDON_NAME         | platform_library                                               | add-on名字                                           |                   |
+| PRODUCT_SDK_ADDON_COPY_FILES   | device/sample/sdk_addon/manifest.ini:manifest.ini              | add-on需要拷贝的文件列表                             |                   |
+| PRODUCT_SDK_ADDON_COPY_MODULES | com.example.android.platform_library:libs/platform_library.jar | add-on需要拷贝的包                                   |                   |
+| PRODUCT_SDK_ADDON_DOC_MODULE   | platform_library                                               | add-on的文档名                                       |                   |
+| PRODUCT_DEFAULT_WIFI_CHANNELS  | PRODUCT_DEFAULT_WIFI_CHANNELS := 13                            | WIFI通道号                                           | product_config.mk |
+| TARGET_NO_KERNEL               | TARGET_NO_KERNEL := true                                       | 编译时不编译Kernel                                   | BoardConfig.mk    |
+| TARGET_NO_RECOVERY             | TARGET_NO_RECOVERY := true                                     | 编译时不编译recovery                                 | BoardConfig.mk    |
+
+== device配置相关 ==
+| 变量名        | 值 | 含义 | 所属文件  |
+|---------------+----+------+-----------|
+| DEVICE_NAME   |    |      | device.mk |
+| DEVICE_BOARD  |    |      | device.mk |
+| DEVICE_REGION |    |      | device.mk |
+
+== 目录相关 ==
+| 变量名                                 | 值                                          | 含义                                     | 所属文件    |
+|----------------------------------------+---------------------------------------------+------------------------------------------+-------------|
+| OUT_DIR                                | $(TOPDIR)out                                | 编译输出根目录                           | envsetup.mk |
+| HOST_OUT_ROOT                          | $(HOST_OUT_ROOT_$(HOST_BUILD_TYPE))         | 主机输出的根目录                         | envsetup.mk |
+| TARGET_OUT_ROOT                        | $(TARGET_OUT_ROOT_$(TARGET_BUILD_TYPE))     | 目标机输出的根目录                       | envsetup.mk |
+| BUILD_OUT                              | $(OUT_DIR)/host/$(BUILD_OS)-$(BUILD_ARCH)   | 主机build输出的目录                      | envsetup.mk |
+| PRODUCT_OUT                            | $(TARGET_PRODUCT_OUT_ROOT)/$(TARGET_DEVICE) | TARGET_DEVICE标识的目标产品的输出目录    | envsetup.mk |
+| TARGET_OUT                             | $(PRODUCT_OUT)/system                       | 目标机输出的system目录                   | envsetup.mk |
+| TARGET_OUT_SHARED_LIBRARIES            | $(TARGET_OUT)/lib                           | 目标机共享库目录                         | envsetup.mk |
+| TARGET_OUT_JAVA_LIBRARIES              | $(TARGET_OUT)/framework                     | 目标机framework目录                      | envsetup.mk |
+| TARGET_OUT_APPS                        | $(TARGET_OUT)/app                           | 目标机的app目录                          | envsetup.mk |
+| TARGET_OUT_STATIC_LIBRARIES            | $(TARGET_OUT_INTERMEDIATES)/lib             | 目标机的静态库目录                       | envsetup.mk |
+| TARGET_OUT_DATA                        | $(PRODUCT_OUT)/data                         | 目标机的data目录                         | envsetup.mk |
+| TARGET_OUT_DATA_EXECUTABLES            | $(TARGET_OUT_EXECUTABLES)                   | 目标机可执行程序目录                     | envsetup.mk |
+| TARGET_OUT_DATA_SHARED_LIBRARIES       | $(TARGET_OUT_SHARED_LIBRARIES)              | 目标机共享库目录                         | envsetup.mk |
+| TARGET_OUT_DATA_JAVA_LIBRARIES         | $(TARGET_OUT_JAVA_LIBRARIES)                | 目标机Java库目录                         | envsetup.mk |
+| TARGET_OUT_DATA_APPS                   | $(TARGET_OUT_DATA)/app                      | 目标机data/app目录                       | envsetup.mk |
+| TARGET_OUT_UNSTRIPPED                  | $(PRODUCT_OUT)/symbols                      | 目标机没有去除冗余信息符号目录           | envsetup.mk |
+| TARGET_OUT_EXECUTABLES_UNSTRIPPED      | $(TARGET_OUT_UNSTRIPPED)/system/bin         | 目标机没有去除冗余信息的可执行目录       | envsetup.mk |
+| TARGET_OUT_SHARED_LIBRARIES_UNSTRIPPED | $(TARGET_OUT_UNSTRIPPED)/system/lib         | 目标机没有去除冗余信息的共享库目录       | envsetup.mk |
+| TARGET_ROOT_OUT                        | $(PRODUCT_OUT)/root                         | 目标机root目录                           | envsetup.mk |
+| TARGET_ROOT_OUT_BIN                    | $(TARGET_ROOT_OUT)/bin                      | 目标机root/bin目录                       | envsetup.mk |
+| TARGET_ROOT_OUT_SBIN                   | $(TARGET_ROOT_OUT)/sbin                     | 目标机root/sbin目录                      | envsetup.mk |
+| TARGET_ROOT_OUT_ETC                    | $(TARGET_ROOT_OUT)/etc                      | 目标机root/etc目录                       | envsetup.mk |
+| TARGET_ROOT_OUT_USR                    | $(TARGET_ROOT_OUT)/usr                      | 目标机root/usr目录                       | envsetup.mk |
+| pathmap_INCL                           | 短名:路径                                   | 给路径定义短名，使用include-path-for获取 | pathmap.mk  |
+| FRAMEWORKS_BASE_SUBDIRS                |                                             | Framwork的子目录列表                     | pathmap.mk  |
+| FRAMEWORKS_BASE_JAVA_SRC_DIRS          |                                             | Framwork的子目录完整路径列表             | pathmap.mk  |
+
+== 内置函数相关 ==
+| 变量名                         | 示例                                                    | 含义                                                          | 所属文件       |
+|--------------------------------+---------------------------------------------------------+---------------------------------------------------------------+----------------|
+| resolve-short-product-name     | PATH := $(call resolve-short-product-name, generic)     | 根据"product name"返回makefile路径                            | product.mk     |
+| resolve-short-device-name      | PATH := $(call resolve-short-device-name, sooner)       | 根据"device name"返回makefile路径                             | device.mk      |
+| module-installed-files         | $(call module-installed-files,$(known_custom_modules))  | 返回模块名相关的文件                                          | definitions.mk |
+| inherit-product                | $(call inherit-product, foo.mk)                         | 继承product的makefile的相关变量和属性                         | product.mk     |
+| inherit-product-if-exists      | $(call inherit-product-if-exists, foo.mk)               | 检查makefile是否存在，并继承product的makefile的相关变量和属性 | product.mk     |
+| subdir_makefiles               | include $(subdir_makefiles)                             | 返回所有子目录下的Android.mk，可使用排除选项                  | main.mk        |
+| my-dir                         | LOCAL_PATH := $(call my-dir)                            | 指向当前makefile的目录，用来定位本目录                        | definitions.mk |
+| all-subdir-makefiles           | include $(all-subdir-makefiles)                         | 返回所有子目录中的Android.mk                                  | definitions.mk |
+| all-subdir-java-files          | SRC_FILES := $(call all-java-files-under,src)           | 返回当前子目录下的所有java文件                                | definitions.mk |
+| all-subdir-c-files             | SRC_FILES := $(call all-c-files-under,src)              | 返回当前子目录下的所有c文件                                   | definitions.mk |
+| all-subdir-Iaidl-files         | SRC_FILES := $(call all-subdir-Iaidl-files,src)         | 返回当前子目录下的所有"I*.aidl"文件                           | definitions.mk |
+| all-subdir-html-files          | SRC_FILES := $(call all-subdir-html-files)              | 返回当前子目录下的所有html文件                                | definitions.mk |
+| find-subdir-files              | SRC_FILES := $(call find-subdir-files, <pattern>)       | 返回当前子目录下匹配pattern的文件                             | definitions.mk |
+| add-dependency                 | $(call add-dependency A,B)                              | 添加依赖，如 A : B                                            | definitions.mk |
+| include-path-for               | $(call include-path-for, <短名>)                        | 根据短名查找pathmap_INCL列表中的路径                          | pathmap.mk     |
+| import-nodes                   | $(call import-nodes,PRODUCTS,$(1),$(_product_var_list)) | 生成指定mk文件的相关变量列表                                  | node_fns.mk    |
+| import-products                | $(call import-products, $(get-all-product-makefiles))   | 生成所有product的mk文件的相关变量列表                         | product.mk     |
+| create-empty-package           | $(create-empty-package)                                 | 创建空的package                                               | definitions.mk |
+| add-assets-to-package          | $(add-assets-to-package)                                | 加入assets到package中                                         | definitions.mk |
+| add-jni-shared-libs-to-package | $(add-jni-shared-libs-to-package)                       | 加入jni库到package中                                          | definitions.mk |
+| add-dex-to-package             | $(add-dex-to-package)                                   | 加入dex到package中                                            | definitions.mk |
+| add-java-resources-to-package  |                                                         | 加入资源到package中                                           | definitions.mk |
+| sign-package                   | $(sign-package)                                         | 给package签名                                                 | definitions.mk |
+| align-package                  | $(align-package)                                        | 对签名的包作对齐优化处理                                      | definitions.mk |
+
+== 编译配置相关 ==
+| 变量名                               | 示例                                                             | 含义                              | 所属文件   |
+|--------------------------------------+------------------------------------------------------------------+-----------------------------------+------------|
+| LOCAL_MODULE                         | LOCAL_MODULE := hello-jni                                        | 去掉前缀和后缀的模块名(C/C++模块) |            |
+| LOCAL_PATH                           | LOCAL_PATH := $(call my-dir)                                     | 设置当前路径                      |            |
+| LOCAL_MODULE_PATH                    | LOCAL_MODULE_PATH := $(TARGET_OUT_ETC)/permissions               | 自定义模块安装路径                |            |
+| LOCAL_MODULE_STEM                    |                                                                  | 自定义模块安装路径的分支目录      |            |
+| LOCAL_DONT_CHECK_MODULE              |                                                                  |                                   |            |
+| LOCAL_CHECKED_MODULE                 |                                                                  |                                   |            |
+| LOCAL_BUILT_MODULE                   | $(built_module_path)/$(LOCAL_BUILT_MODULE_STEM)                  | 模块编译的中间文件路径            |            |
+| LOCAL_BUILT_MODULE_STEM              |                                                                  | 模块编译的中间文件路径的分支目录  |            |
+| OVERRIDE_BUILT_MODULE_PATH           |                                                                  |                                   |            |
+| LOCAL_INSTALLED_MODULE               | ../$(LOCAL_MODULE_SUBDIR)$(LOCAL_INSTALLED_MODULE_STEM)          | 模块安装路径                      |            |
+| LOCAL_UNINSTALLABLE_MODULE           |                                                                  |                                   |            |
+| LOCAL_INTERMEDIATE_TARGETS           |                                                                  | 模块的中间文件集合                |            |
+| LOCAL_UNSTRIPPED_PATH                |                                                                  |                                   |            |
+| LOCAL_MODULE_CLASS                   |                                                                  |                                   |            |
+| LOCAL_MODULE_SUFFIX                  | LOCAL_MODULE_SUFFIX := .so                                       | 模块的后缀                        |            |
+| LOCAL_PACKAGE_NAME                   | LOCAL_PACKAGE_NAME := hello                                      | JAVA包的名称                      |            |
+| LOCAL_OVERRIDES_PACKAGES             | LOCAL_OVERRIDES_PACKAGES := Calendar GoogleCalendar              | 本地被替换的app                   |            |
+| LOCAL_EXPORT_PACKAGE_RESOURCES       |                                                                  |                                   |            |
+| LOCAL_MANIFEST_PACKAGE_NAME          |                                                                  |                                   |            |
+| LOCAL_REQUIRED_MODULES               |                                                                  |                                   |            |
+| LOCAL_ACP_UNAVAILABLE                |                                                                  |                                   |            |
+| LOCAL_MODULE_TAGS                    | LOCAL_MODULE_TAGS := user                                        | 模块的tags，与build模式相关       |            |
+| LOCAL_SRC_FILES                      | LOCAL_SRC_FILES := hello-jni.c                                   | 源文件列表                        |            |
+| LOCAL_C_INCLUDES                     | LOCAL_C_INCLUDES := $(KERNEL_HEADERS)                            | 头文件列表                        |            |
+| LOCAL_PREBUILT_OBJ_FILES             |                                                                  |                                   |            |
+| LOCAL_STATIC_JAVA_LIBRARIES          | LOCAL_STATIC_JAVA_LIBRARIES := com.foxconn.lib.reader            | Java库名称                        |            |
+| LOCAL_STATIC_LIBRARIES               | LOCAL_STATIC_LIBRARIES := libacc                                 | 链接的静态库列表                  |            |
+| LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES | LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES := libarity:arity-2.1.2.jar | 预编译的库列表                    |            |
+| LOCAL_WHOLE_STATIC_LIBRARIES         |                                                                  |                                   |            |
+| LOCAL_SHARED_LIBRARIES               | LOCAL_SHARED_LIBRARIES := libdl                                  | 链接的共享库列表                  |            |
+| LOCAL_IS_HOST_MODULE                 | LOCAL_IS_HOST_MODULE := false                                    | 标识当前生成主机模块而不是目标机  |            |
+| LOCAL_CC                             |                                                                  |                                   |            |
+| LOCAL_CXX                            |                                                                  |                                   |            |
+| LOCAL_CPP_EXTENSION                  | LOCAL_CPP_EXTENSION := .cpp                                      | c++文件扩展名                     |            |
+| LOCAL_CFLAGS                         | LOCAL_CFLAGS := -O0 -g                                           | C/C++编译选项                     |            |
+| LOCAL_CERTIFICATE                    | LOCAL_CERTIFICATE := shared                                      | 签名相关的认证                    |            |
+| LOCAL_JNI_SHARED_LIBRARIES           | LOCAL_JNI_SHARED_LIBRARIES := libfmservice                       | 包含jni调用的库                   |            |
+| LOCAL_SDK_VERSION                    | LOCAL_SDK_VERSION := current                                     | 当前SDK版本                       |            |
+| LOCAL_PROGUARD_ENABLED               | LOCAL_PROGUARD_ENABLED := disable                                | 是否开启源码的优化                | package.mk |
+| LOCAL_PROGUARD_FLAGS                 | LOCAL_PROGUARD_FLAGS := -include $(LOCAL_PATH)/proguard.flags    | 加入包含优化选项的文件            | package.mk |
+
+== 编译指令相关 ==
+| 变量名                    | 值                                     | 含义                 | 所属文件  | 备注 |
+|---------------------------+----------------------------------------+----------------------+-----------+------|
+| BUILD_HOST_STATIC_LIBRARY | $(BUILD_SYSTEM)/host_static_library.mk | 编译主机静态库       | config.mk |      |
+| BUILD_HOST_SHARED_LIBRARY | $(BUILD_SYSTEM)/host_shared_library.mk | 编译主机共享库       | config.mk |      |
+| BUILD_STATIC_LIBRARY      | $(BUILD_SYSTEM)/static_library.mk      | 编译目标机静态库     | config.mk |      |
+| BUILD_RAW_STATIC_LIBRARY  | $(BUILD_SYSTEM)/raw_static_library.mk  |                      | config.mk |      |
+| BUILD_SHARED_LIBRARY      | $(BUILD_SYSTEM)/shared_library.mk      | 编译目标机共享库     | config.mk |      |
+| BUILD_EXECUTABLE          | $(BUILD_SYSTEM)/executable.mk          | 编译目标机可执行文件 | config.mk |      |
+| BUILD_RAW_EXECUTABLE      | $(BUILD_SYSTEM)/raw_executable.mk      |                      | config.mk |      |
+| BUILD_HOST_EXECUTABLE     | $(BUILD_SYSTEM)/host_executable.mk     | 编译主机可执行文件   | config.mk |      |
+| BUILD_PACKAGE             | $(BUILD_SYSTEM)/package.mk             | 编译APK              | config.mk |      |
+| BUILD_HOST_PREBUILT       | $(BUILD_SYSTEM)/host_prebuilt.mk       | 主机预编译的mk文件   | config.mk |      |
+| BUILD_PREBUILT            | $(BUILD_SYSTEM)/prebuilt.mk            | 预编译的mk文件       | config.mk |      |
+| BUILD_MULTI_PREBUILT      | $(BUILD_SYSTEM)/multi_prebuilt.mk      | 多个预编译的mk文件   | config.mk |      |
+| BUILD_JAVA_LIBRARY        | $(BUILD_SYSTEM)/java_library.mk        | 编译JAR包            | config.mk |      |
+| BUILD_STATIC_JAVA_LIBRARY | $(BUILD_SYSTEM)/static_java_library.mk |                      | config.mk |      |
+| BUILD_HOST_JAVA_LIBRARY   | $(BUILD_SYSTEM)/host_java_library.mk   | 编译主机使用的JAR包  | config.mk |      |
+| BUILD_DROIDDOC            | $(BUILD_SYSTEM)/droiddoc.mk            | 编译Android文档      | config.mk |      |
+| BUILD_COPY_HEADERS        | $(BUILD_SYSTEM)/copy_headers.mk        | 拷贝头文件           | config.mk |      |
+| BUILD_KEY_CHAR_MAP        | $(BUILD_SYSTEM)/key_char_map.mk        | 编译kcm文件          | config.mk |      |
+| CLEAR_VARS                | $(BUILD_SYSTEM)/clear_vars.mk          | 清空环境变量         | config.mk |      |
+
+== 工具集相关 ==
+| 变量名        | 值                                    | 含义                   | 所属文件  | 备注 |
+|---------------+---------------------------------------+------------------------+-----------+------|
+| AAPT          | $(HOST_OUT_EXECUTABLES)/aapt          | APK打包工具            | config.mk |      |
+| AIDL          | $(HOST_OUT_EXECUTABLES)/aidl          | 生成Binder的框架代码   | config.mk |      |
+| ICUDATA       | $(HOST_OUT_EXECUTABLES)/icudata       |                        | config.mk |      |
+| SIGNAPK_JAR   | $(HOST_OUT_JAVA_LIBRARIES)/signapk    | 签名APK                | config.mk |      |
+| MKBOOTFS      | $(HOST_OUT_EXECUTABLES)/mkbootfs      | 制作bootfs             | config.mk |      |
+| MINIGZIP      | $(HOST_OUT_EXECUTABLES)/minigzip      | 优化zip包工具          | config.mk |      |
+| MKBOOTIMG     | $(HOST_OUT_EXECUTABLES)/mkbootimg     | 制作boot.img           | config.mk |      |
+| MKYAFFS2      | $(HOST_OUT_EXECUTABLES)/mkyaffs2image | 制作yaffs文件系统镜像  | config.mk |      |
+| FS_GET_STATS  | $(HOST_OUT_EXECUTABLES)/fs_get_stats  |                        | config.mk |      |
+| MKEXT2IMG     | $(HOST_OUT_EXECUTABLES)/genext2fs     | 制作ext2文件系统镜像   | config.mk |      |
+| MAKE_EXT4FS   | $(HOST_OUT_EXECUTABLES)/make_ext4fs   | 制作ext4文件系统镜像   | config.mk |      |
+| MKEXTUSERIMG  | $(HOST_OUT_EXECUTABLES)/mkuserimg.sh  | 制作userdata.img       | config.mk |      |
+| MKEXT2BOOTIMG | external/genext2fs/mkbootimg_ext2.sh  | 制作ext2格式的boot.img | config.mk |      |

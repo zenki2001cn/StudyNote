@@ -1,0 +1,10 @@
+= Binder服务和客户端实现层 =
+
+%toc
+
+== Service本质结构 ==
+ [pic/service.png]
+ 
+== Java层的实现 ==
+
+== Native层的实现 ==

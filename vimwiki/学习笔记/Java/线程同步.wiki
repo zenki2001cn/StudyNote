@@ -1,0 +1,128 @@
+= 如何实现线程同步 =
+
+%toc
+
+== synchronized声明 ==
+- 一旦某个线程处于标记为synchronized的方法中，那么在这个线程从该方法返回之前，其他要调用类中任何标记为synchronized方法的线程都会被阻塞
+- 每个类的对象有一个锁，初始计数为0,每次调用synchronized方法会使计数加1,离开此方法即减1
+- 每个类也有一个锁，synchronized static方法可以防止在类的范围内对静态数据的并发访问
+
+{{{class="brush:java"
+// 对象的锁
+synchronized void f(){ /* ... */ }
+synchronized void g(){ /* ... */ }
+
+// 类的锁
+synchronized static h(){ /* ... */ }
+}}}
+
+- 最安全的使用方针
+    # 如果你要对类中的某个方法进行同步控制,最好同步所有方法
+    # 当去除方法的同步控制时,要非常小心
+
+=== 临界区 ===
+- 临界区用来控制对一段代码块进行同步，而不是对整个方法同步
+
+{{{class="brush:java"
+// 花括号内为同步的代码
+synchronized(syncObject) {
+    // do something 
+}
+}}}
+
+== 线程状态 ==
+
+=== 4种状态 ===
+    # new：线程对象已经建立，但没有启动，所以不能运行
+    # Runnable：在任意时刻，等待时间片的分配后运行
+    # Dead：线程终止运行
+    # Blocked：线程处于阻塞状态，不会得到处理器时间
+
+=== 等待与通知 ===
+- wait()、notify()和notifyAll()都是继承自Object的方法，wait用来挂起，并等待触发条件继续执行；notify和notifyAll用来唤醒等待的线程
+
+{{{class="brush:java"
+// 安全的使用wait
+while (conditionIsNotMet) {
+    wait();
+}
+}}}
+    
+== 管道通信 ==
+- 线程间可以通过管道方式进行输入/输出
+
+{{{class="brush:java"
+class Sender extends Thread {
+    private PipedWriter out = new PipedWriter();
+    
+    public PipedWriter getPipedWriter() { 
+        return out; 
+    }
+    
+    public void run() {
+        while(true) {
+           // do something 
+        }
+    }
+}
+
+class Receiver extends Thread {
+    private PipedReader in;
+    
+    public Receiver(Sender sender) throws IOException {
+        in = new PipedReader(sender.getPipedWriter());
+    }
+    
+    public void run() {
+        // do something
+    }
+}
+
+public class PipedIO {
+    public static void main(String[] args) throws Exception {
+        Sender sender = new Sender();
+        Receiver receiver = new Receiver(sender);
+        
+        sender.start();
+        receiver.start();
+    }
+}
+}}}
+
+== 死锁 ==
+- 满足死锁的4个条件
+
+{{{class="brush:text"
+1.互斥条件:线程使用的资源中至少有一个是不能共享的。
+
+2.至少有一个进程持有一个资源,并且它在等待获取一个当前被别的进程持有的资源，也就是说持锁持者第二次请求锁。
+
+3.资源不能被进程抢占。所有的进程必须把资源释放作为普通事件。
+
+4.必须有循环等待,这时,一个进程等待其它进程持有的资源,后者又在等待另一个进程持有的资源, 这样一直下去,直到有一个进程在等待第一个进程持有的资源,使得大家都被锁住。
+}}}
+
+== 正确退出线程 ==
+- 通过设置标志来安全退出线程
+
+{{{class="brush:java"
+class CanStop extends Thread {
+    // 必须是volatile，避免读取本地缓存
+    private volatile boolean stop = false;
+    private int counter = 0;
+    
+    public void run() {
+        while(!stop && counter < 10000) {
+            System.out.println(counter++);
+        }
+    }
+}
+}}}
+
+=== 中断线程 ===
+- 通过Interrupt()方法中断线程的执行，并将线程对象置为null，以便垃圾回收
+
+{{{class="brush:java"
+blockedThread.interrupt();
+blockedThread = null;
+}}}

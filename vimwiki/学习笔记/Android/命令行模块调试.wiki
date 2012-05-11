@@ -1,0 +1,281 @@
+= 命令行模块调试 =
+
+%toc
+
+== 调试按键、Touch、鼠标 ==
+=== getevent ===
+{{{class="brush:bash"
+# getevent监控当前的事件,鼠标事件,按键事件,拖动滑动等
+# 具体的type,code,value的定义可以在源码/frameworks/base/core/java/android/view/KeyEvent.java中找到
+# 
+$ getevent -h
+Usage: getevent [-t] [-n] [-s switchmask] [-S] [-v [mask]] [-p] [-q] [-c count] [-r] [device]
+    -t: show time stamps
+    -n: don't print newlines
+    -s: print switch states for given bits
+    -S: print all switch states
+    -v: verbosity mask (errs=1, dev=2, name=4, info=8, vers=16, pos. events=32)
+    -p: show possible events (errs, dev, name, pos. events)
+    -q: quiet (clear verbosity mask)
+    -c: print given number of events then exit
+    -r: print rate events are received
+    
+# 显示事件相关的设备名称和状态
+#
+$ getevent -il
+add device 1: /dev/input/event2
+  bus:      0018
+  vendor    0eaf
+  product   1020
+  version   0000
+  name:     "mg-capacitive"
+  location: "I2C"
+  id:       ""
+  version:  1.0.1
+  events:
+    KEY (0001): KEY_HOME              KEY_MENU              KEY_BACK              BTN_TOUCH            
+    ABS (0003): ABS_MT_SLOT           : value 0, min 0, max 1, fuzz 0, flat 0, resolution 0
+                ABS_MT_POSITION_X     : value 0, min 0, max 895, fuzz 0, flat 0, resolution 0
+                ABS_MT_POSITION_Y     : value 0, min 0, max 1587, fuzz 0, flat 0, resolution 0
+                ABS_MT_TRACKING_ID    : value 0, min 0, max 65535, fuzz 0, flat 0, resolution 0
+  input props:
+    INPUT_PROP_DIRECT
+
+# 显示Touch事件
+# 
+$ getevent -lr /dev/input/event2
+EV_ABS       ABS_MT_TRACKING_ID   00000043            
+EV_ABS       ABS_MT_POSITION_X    000002d0            
+EV_ABS       ABS_MT_POSITION_Y    0000039b            
+EV_KEY       BTN_TOUCH            DOWN                
+EV_SYN       SYN_REPORT           00000000            
+EV_ABS       ABS_MT_POSITION_X    000002de            
+EV_ABS       ABS_MT_POSITION_Y    000003a7            
+EV_SYN       SYN_REPORT           00000000             rate 7
+}}}
+
+=== sendevent ===
+{{{class="brush:bash"
+$ adb shell sendevent [device] [type] [code] [value]
+
+# 发送时间,格式和上面的一样,需要注意的是在getevent中code显示的是十六进制,而sendevent中需要用十进制,例如
+# 这个命令就是发送数字4的keydown消息,所以在屏幕上就会一直打印出很多个4(因为没有发送keyup)
+$ adb shell sendevent /dev/input/event0 1 5 1   代表按下数字4
+$ adb shell sendevent /dev/input/event0 1 229 1 代表按下按下menu键
+$ adb shell sendevent /dev/input/event0 1 229 0 代表按下松开menu键
+
+# 发送鼠标事件(Touch)：
+# 情况1：在某坐标点上touch
+# 如在屏幕的x坐标为40，y坐标为210的点上touch一下，命令如下
+$ adb shell sendevent /dev/input/event0 3 0 40
+$ adb shell sendevent /dev/input/event0 3 1 210
+　　 
+$ adb shell sendevent /dev/input/event0 1 330 1     //touch
+$ adb shell sendevent /dev/input/event0 0 0 0       //it must have
+　　 
+$ adb shell sendevent /dev/input/event0 1 330 0     //untouch
+$ adb shell sendevent /dev/input/event0 0 0 0       //it must have
+
+# 情况2：模拟滑动轨迹（可下载并采用aPaint软件进行试验）
+# 如下例是在aPaint软件上画出一条开始于（100,200），止于（108,200）的水平直线
+
+$ adb shell sendevent /dev/input/event0 3 0 100     //start from point (100,200)
+$ adb shell sendevent /dev/input/event0 3 1 200
+　　 
+$ adb shell sendevent /dev/input/event0 1 330 1     //touch
+$ adb shell sendevent /dev/input/event0 0 0 0
+　　 
+$ adb shell sendevent /dev/input/event0 3 0 101     //step to point (101,200)
+$ adb shell sendevent /dev/input/event0 0 0 0
+
+……………………                                            //must list each step, here just skip
+$ adb shell sendevent /dev/input/event0 3 0 108     //end point(108,200)
+$ adb shell sendevent /dev/input/event0 0 0 0
+　　 
+$ adb shell sendevent /dev/input/event0 1 330 0     //untouch
+$ adb shell sendevent /dev/input/event0 0 0 0
+}}}
+
+
+== 调试WIFI网络 ==
+=== 1、启动wpa_supplicant ===
+{{{class="brush:bash"
+# 以daemon方式启动wpa_supplicat：
+# 其中的wlan0为系统内的无线网卡的设备名。配置文件是/etc/wpa_supplicant.conf，
+# 其中不包含要连接的无线网络的配置信息。最简单的配置文件只包含一句配置语句即可：
+# ctrl_interface=/var/run/wpa_supplicant
+$ wpa_supplicant -B -i wlan0 -D wext -c /etc/wpa_supplicant.conf
+}}}
+
+=== 2、启动wpa_cli ===
+{{{class="brush:bash"
+# 如果系统内只有一个无线网卡，则-i wlan0参数可省略。程序启动后，
+# 进入交户操作状态，可接受用户的命令输入。下面的命令都是在这个
+# 交互操作模式下输入的。
+$ wpa_cli -i wlan0
+}}}
+
+=== 3、增加网络，并设置网络参数 ===
+{{{class="brush:bash"
+# 可以先用status命令查讯网络连接状态，应该返回
+$ status
+wpa_state=DISCONNECTED
+
+# 显示网络接口
+$ interface
+Available interfaces:
+eth0
+
+# 扫描网络
+$ scan
+
+# 查看扫描结果
+$ scan_results
+bssid   / frequency / signal level / flags / ssid
+3c:e5:a6:8a:fe:50   2462    -50     [WEP]   ChinaNet-soft
+d8:5d:4c:57:bd:4a   2427    -62     [WPS]   otatest
+
+# 添加扫描到的网络，该命令会返回新增加的网络的ID，依次递增
+$ add_network
+
+# 查看网络节点的列表
+$ list_network
+network id / ssid / bssid / flags
+0       ChinaNet-soft   any     [CURRENT]
+1               any     [DISABLED]
+
+# wyk是无线网络名称，需要加引号
+# password代表网络的密码，需要加引号
+$ set_network 1 ssid "otatest"
+$ set_network 1 psk "password"
+}}}
+
+=== 4、启用网络 ===
+{{{class="brush:bash"
+# 命令执行后，wpa_cli会输出连接的过程信息。如果一切正确，则最后后输出：
+# <2>CTRL-EVENT-CONNECTED - Connection to xx:xx:xx:xx:xx:xx completed (reauth) [id=0 id_str=]
+$ enable_network 0
+}}}
+
+=== 5、获取IP地址 ===
+{{{class="brush:bash"
+# 退出wpa_cli
+$ quit
+
+# 命令获取IP地址。
+dhclient wlan0
+}}}
+
+== 调试Alsa音频驱动 ==
+{{{class="brush:bash"
+# 混音调试
+$ alsa_amixer -h
+Usage: amixer <options> [command]
+
+Available options:
+  -h,--help       this help
+  -c,--card N     select the card
+  -D,--device N   select the device, default 'default'
+  -d,--debug      debug mode
+  -n,--nocheck    do not perform range checking
+  -v,--version    print version of this program
+  -q,--quiet      be quiet
+  -i,--inactive   show also inactive controls
+  -a,--abstract L select abstraction level (none or basic)
+  -s,--stdin      Read and execute commands from stdin sequentially
+
+Available commands:
+  scontrols       show all mixer simple controls
+  scontents       show contents of all mixer simple controls (default command)
+  sset sID P      set contents for one mixer simple control
+  sget sID        get contents for one mixer simple control
+  controls        show all controls for given card
+  contents        show contents of all controls for given card
+  cset cID P      set control contents for one control
+  cget cID        get control contents for one control
+
+# 控制接口
+$ alsa_ctl -h
+Usage: alsactl <options> command
+
+Available global options:
+  -h,--help        this help
+  -d,--debug       debug mode
+  -v,--version     print version of this program
+
+Available state options:
+  -f,--file #      configuration file (default /etc/asound.state)
+  -F,--force       try to restore the matching controls as much as possible
+                   (default mode)
+  -g,--ignore      ignore 'No soundcards found' error
+  -P,--pedantic    do not restore mismatching controls (old default)
+  -I,--no-init-fallback
+                   don't initialize even if restore fails
+  -r,--runstate #  save restore and init state to this file (only errors)
+                   default settings is 'no file set'
+  -R,--remove      remove runstate file at first, otherwise append errors
+
+Available init options:
+  -E,--env #=#     set environment variable for init phase (NAME=VALUE)
+  -i,--initfile #  main configuation file for init phase (default /system/usr/share/alsa/init/00main)
+
+
+Available commands:
+  store   <card #> save current driver setup for one or each soundcards
+                   to configuration file
+  restore <card #> load current driver setup for one or each soundcards
+                   from configuration file
+  init    <card #> initialize driver to a default state
+  names   <card #> dump information about all the known present (sub-)devices
+                   into configuration file (DEPRECATED)
+}}}
+
+== 调试蓝牙设备 ==
+=== 1. 打开蓝牙电源 ===
+{{{class="brush:bash"
+$ echo 1 > /sys/class/rfkill/rfkill0/state
+}}}
+
+=== 2. 加载厂商的驱动模块 ===
+{{{class="brush:bash"
+$ brcm_patchram_plus --patchram /system/etc/firmware/BCM4329_BT.hcd /dev/ s3c2410_serial0
+}}}
+
+=== 3. 使用hciattach进行设备绑定 ===
+{{{class="brush:bash"
+$ hciattach -n /dev/s3c2410_serial0 any &
+}}}
+
+=== 4. 启用蓝牙接口 ===
+{{{class="brush:bash"
+$ hciconfig hci0 up
+}}}
+
+=== 5. 扫描蓝牙设备 ===
+{{{class="brush:bash"
+$ hcitool scan
+}}}
+
+== 调试Vold磁盘挂载程序 ==
+- 详细的命令格式参见[[USB Storage]]
+
+{{{class="brush:bash"
+$ adb shell vdc
+Usage: vdc <monitor>|<cmd> [arg1] [arg2...]
+
+# 监控Vold的log信息
+$ vdc monitor
+[Connected to Vold]
+632 Volume removable_sdcard /mnt/sdcard/removable_sdcard bad removal (179:25)
+605 Volume removable_sdcard /mnt/sdcard/removable_sdcard state changed from 4 (Mounted) to 5 (Unmounting)
+
+# 模拟MountService向Vold守护进程发送命令
+$ adb shell vdc volume mount /mnt/sdcard
+}}}
+
+== 调试Netd守护进程 ==
+{{{class="brush:bash"
+$ adb shell ndc
+Usage: ndc <monitor>|<cmd> [arg1] [arg2...]
+}}}
+

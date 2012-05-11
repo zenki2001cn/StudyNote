@@ -1,0 +1,23 @@
+= 发送短信 =
+
+{{{class="brush:java"
+// 发送SMS/MMS短信
+Intent it = new Intent(Intent.ACTION_VIEW);   
+it.putExtra("sms_body", "The SMS text");   
+it.setType("vnd.android-dir/mms-sms");   
+startActivity(it);
+
+// 发送短信
+Uri uri = Uri.parse("smsto:0800000123");     
+Intent it = new Intent(Intent.ACTION_SENDTO, uri);     
+it.putExtra("sms_body", "The SMS text");     
+startActivity(it);
+
+// 发送彩信
+Uri uri = Uri.parse("content://media/external/images/media/23");     
+Intent it = new Intent(Intent.ACTION_SEND);     
+it.putExtra("sms_body", "some text");     
+it.putExtra(Intent.EXTRA_STREAM, uri);     
+it.setType("image/png");     
+startActivity(it); 
+}}}

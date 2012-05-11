@@ -1,0 +1,73 @@
+= AndroidHttpClient接口 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.net.http.AndroidHttpClient;
+}}}
+
+== 基本处理流程 ==
+- 该包是对Apache的HttpClient作的一层封装，同时提高了并发能力
+
+== 示例代码 ==
+{{{class="brush:java"
+try {   
+    // 创建AndroidHttpClient实例
+    AndroidHttpClient client = AndroidHttpClient.newInstance(“your_user_agent”);   
+
+    // 创建HttpGet方法，该方法会自动处理URL地址的重定向   
+    HttpGet httpGet = new HttpGet("http://www.test_test.com/");   
+    
+    // 如果需要设置代理
+    if (isProxySet) {
+        HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+        ConnRouteParams.setDefaultProxy(httpGet.getParams(), proxy);
+    }
+    
+    // 添加头信息
+    httpGet.addHeader("Accept",
+        "*/*, application/vnd.wap.mms-message, application/vnd.wap.sic");
+    httpGet.addHeader("x-wap-profile",
+        "http://www.openmobilealliance.org/tech/profiles/UAPROF/ccppschema-20021212#");
+    
+    // 执行GET方法
+    HttpResponse response = client.execute(httpGet);   
+
+    if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {   
+      // 错误处理   
+    }
+
+    // 读取返回信息
+    HttpEntity entity = response.getEntity();
+    byte[] body = null;
+    if (entity != null) {
+        try {
+            if (entity.getContentLength() > 0) {
+                body = new byte[(int) entity.getContentLength()];
+                DataInputStream dis = new DataInputStream(entity.getContent());
+                try {
+                    dis.readFully(body);
+                } finally {
+                    try {
+                        dis.close();
+                    } catch (IOException e) {
+                        Log.e(TAG, "Unexpected IOException.", e);
+                    }
+                }
+            }
+        } finally {
+            if (entity != null) {
+                entity.consumeContent();
+            }
+        }
+    }
+} catch (Exception ee) {   
+    //   
+} finally {   
+    // 释放连接   
+    client.getConnectionManager().shutdown();    
+    // 关闭连接   
+    client.close();   
+}
+}}}

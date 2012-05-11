@@ -1,0 +1,38 @@
+= 搜索文件夹 =
+
+== 相关类 ==
+{{{class="brush:java"
+import java.io.File;
+}}}
+
+例程源码(JAVA)
+{{{class="brush:java"
+// 创建File对象
+File file = new File("/sdcard");
+
+/*开始搜索文件方法*/
+public void ToSearchFiles(File file) {
+    /*定义一个File文件数组,用来存放/sdcard目录下的文件或文件夹*/
+    File[] the_Files = file.listFiles();
+    /*通过遍历所有文件和文件夹*/
+    for (File tempF : the_Files) {
+        if (tempF.isDirectory()) {
+            /*如果是文件夹的话继续遍历搜索*/
+            ToSearchFiles(tempF);
+        } else {
+            try {
+                /*是文件,进行比较,如果文件名称中包含输入搜索Key,则返回大于-1的值*/
+                if (tempF.getName().indexOf(theKey_formInput) > -1) {
+                    /*获取符合条件文件的路径,进行累加*/
+                    path += "\n" + tempF.getPath();
+                    /*显示结果的TextView显示信息和搜索到的路径*/
+                    show_Result.setText(info + path);
+                }
+            } catch (Exception e) {
+                /*如果路径找不到,提示出错*/
+                Toast. makeText(this getString(R.string. pathError ), this, Toast. LENGTH_SHORT ).show();
+            }
+        }
+    }
+}
+}}}

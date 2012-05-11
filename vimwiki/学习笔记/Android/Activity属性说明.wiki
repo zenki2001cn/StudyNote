@@ -1,0 +1,100 @@
+= Activity属性说明 =
+
+== 关键字描述 ==
+| 标签名                | 标签属性           | 描述                                                                     |
+|-----------------------+--------------------+--------------------------------------------------------------------------|
+| allowTaskReparenting  | true               | 允许更换从属任务                                                         |
+|                       | false              | 不允许更换从属任务                                                       |
+| alwaysRetainTaskState | true               | 保持所有任务堆栈状态，不会被系统自动清除                                 |
+|                       | false              | 不保持任务状态状态，一段时间后系统会自动清除除根任务外的其他任务         |
+| clearTaskOnLaunch     | true               | 不保持任务堆栈状态，当重新点击程序时，清除之前任务堆栈并重新开始         |
+|                       | false              | 不清除之前启动的Activity                                                 |
+| configChanges         | mcc                | 检测到SIM卡时，更新mcc                                                   |
+|                       | mnc                | 检测到SIM卡时，更新mnc                                                   |
+|                       | locale             | 更改语言后，文本变化                                                     |
+|                       | touchscreen        | 触摸屏发生改变                                                           |
+|                       | keyboard           | 键盘类型发生改变，如接入外接键盘                                         |
+|                       | keyboardHidden     | 键盘可见性发生变化，如移除键盘                                           |
+|                       | navigation         | 导航键发生变化                                                           |
+|                       | orientation        | 屏幕坐标发生变化，如旋转屏幕                                             |
+|                       | screenLayout       | 激活不同的屏幕布局                                                       |
+|                       | fontScale          | 字体尺寸发生变化                                                         |
+|                       | uiMode             | UI模式发生变化                                                           |
+| enabled               | true               | 可以被实例化                                                             |
+|                       | false              | 不能被实例化                                                             |
+| excludeFromRecents    | true               | 显示在最近打开列表中                                                     |
+|                       | false              | 不显示在最近打开列表中                                                   |
+| exported              | true               | 可以被其他程序调用                                                       |
+|                       | false              | 不能被其他程序调用                                                       |
+| finishOnTaskLaunch    | true               | 当启动该Activity时，关闭之前已打开的Activity                             |
+|                       | false              | 不关闭之前已打开的Activity                                               |
+| icon                  | drawable resource  | 图标资源                                                                 |
+| label                 | string resource    | 标签名                                                                   |
+| launchMode            | standard           | 标准启动，当需要时，会打开多个实例                                       |
+|                       | singleTop          | 当该Activity在栈顶时，将保持打开一个实例。如果不在栈顶，则会重新打开一个 |
+|                       | singleTask         | 在一个任务栈中，该Activity只能被打开一次                                 |
+|                       | singleInstance     | 该Activity独享一个任务栈                                                 |
+| multiprocess          | true               | 可被多个进程打开                                                         |
+|                       | false              | 不能被其他进程打开                                                       |
+| name                  | string resource    | Activity名                                                               |
+| noHistory             | true               | 该Activity不被压入任务栈中                                               |
+|                       | false              | 该Activity被压入栈中                                                     |
+| permission            | string resource    | 权限设置                                                                 |
+| process               | string resource    | Activity所在的进程名                                                     |
+| screenOrientation     | unspecified        | 默认使用landscape                                                        |
+|                       | landscape          | 风景画模式，长度大于高度                                                 |
+|                       | portrait           | 肖像模式，高度大于长度                                                   |
+|                       | user               | 用户设置                                                                 |
+|                       | behind             |                                                                          |
+|                       | sensor             |                                                                          |
+|                       | nosensor           |                                                                          |
+| stateNotNeeded        | true               | 被销毁或重启时不保持状态                                                 |
+|                       | false              | 被销毁或重启时保持状态                                                   |
+| taskAffinity          | string resource    | 任务的亲属关系，默认为同一任务栈中下一个任务                             |
+| theme                 | resource or theme  | 主题资源                                                                 |
+| windowSoftInputMode   | stateUnspecified   |                                                                          |
+|                       | stateHidden        | 输入法隐藏                                                               |
+|                       | stateUnchanged     | 输入法状态不改变                                                         |
+|                       | stateAlwaysHidden  | 输入法总是隐藏                                                           |
+|                       | stateVisible       | 输入法可见                                                               |
+|                       | stateAlwaysVisible | 输入法总是可见                                                           |
+|                       | adjustUnspecified  |                                                                          |
+|                       | adjustResize       |                                                                          |
+|                       | adjustPan          | 输入法界面不会遮挡其他界面                                               |
+
+== 示例代码 ==
+{{{class="brush:xml"
+<activity 
+    android:allowTaskReparenting=["true" | "false"]
+    android:alwaysRetainTaskState=["true" | "false"]
+    android:clearTaskOnLaunch=["true" | "false"]
+    android:configChanges=[ "mcc", "mnc", "locale",
+                            "touchscreen", "keyboard", "keyboardHidden",
+                            "navigation", "orientation", "screenLayout",
+                            "fontScale", "uiMode"]
+    android:enabled=["true" | "false"]
+    android:excludeFromRecents=["true" | "false"]
+    android:exported=["true" | "false"]
+    android:finishOnTaskLaunch=["true" | "false"]
+    android:icon="drawable resource"
+    android:label="string resource"
+    android:launchMode=["multiple" | "singleTop" |
+                        "singleTask" | "singleInstance"]
+    android:multiprocess=["true" | "false"]
+    android:name="string"
+    android:noHistory=["true" | "false"]  
+    android:permission="string"
+    android:process="string"
+    android:screenOrientation=[ "unspecified" | "user" | "behind" |
+                                "landscape" | "portrait" |
+                                "sensor" | "nosensor"]
+    android:stateNotNeeded=["true" | "false"]
+    android:taskAffinity="string"
+    android:theme="resource or theme"
+    android:windowSoftInputMode=["stateUnspecified",
+                                "stateUnchanged", "stateHidden",
+                                "stateAlwaysHidden", "stateVisible",
+                                "stateAlwaysVisible", "adjustUnspecified",
+                                "adjustResize", "adjustPan"] >   
+    </activity>
+}}}

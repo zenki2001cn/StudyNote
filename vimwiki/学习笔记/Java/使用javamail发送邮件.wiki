@@ -1,0 +1,237 @@
+= 使用javamail发送邮件 =
+
+%toc
+
+== 导入三个jar包 ==
+- [[pic/activation.jar]]
+- [[pic/additionnal.jar]]
+- [[pic/mail.jar]]
+
+== 示例代码 ==
+=== Mailer邮件处理类 ===
+{{{class="brush:java"
+public class Mailer {
+	private Properties mProperties;
+	private String mHost = "";
+	private String mUser = "";
+	private String mPassword = "";
+	private MyAuth mAuth;
+	private String mFrom = "";
+	private ArrayList<String> mTo = null;
+	private String mSubject = "";
+	private String mTextContent = "";
+	private ArrayList<String> mAttachments;
+
+	public Mailer() {
+		mProperties = new Properties();
+	}
+
+    // 设置属性
+	public void setProperties(String host, String port, boolean auth) {
+		mHost = host;
+
+		mProperties.put("mail.smtp.host", host);
+		mProperties.put("mail.smtp.port", port);
+		mProperties.put("mail.smtp.auth", auth ? "true" : "false");
+
+        // 使用SSL加密
+		if (host.equals("smtp.gmail.com")) {
+			mProperties.put("mail.smtp.starttls.enable", "true");
+			mProperties.setProperty("mail.transprot.protocol", "smtps");
+		}
+	}
+
+    // 设置用户名和密码
+	public void setUserPassword(String user, String password) {
+		mUser = user;
+		mPassword = password;
+		mAuth = new MyAuth(user, password);
+	}
+
+	public void setForm(String from) {
+		mFrom = from;
+	}
+
+	public void setTo(ArrayList<String> to) {
+		mTo = to;
+	}
+
+	public void setSubject(String subject) {
+		mSubject = subject;
+	}
+
+	public void setTextContent(String content) {
+		mTextContent = content;
+	}
+
+	public void setAttachments(List<String> attachments) {
+		mAttachments = (ArrayList<String>) attachments;
+	}
+
+    // 创建随机数
+	private String createRandomStr() {
+		char[] randomChar = new char[8];
+		for (int i = 0; i < 8; i++) {
+			randomChar[i] = (char) (Math.random() * 26 + 'a');
+		}
+		String replaceStr = new String(randomChar);
+		return replaceStr;
+	}
+
+    // 发送邮件
+	public boolean sendMail() {
+	    // 通过属性和用户名密码获取一个会话
+		Session sendMailSession = Session
+				.getDefaultInstance(mProperties, mAuth);
+				
+		try {
+		    // 创建一个邮件消息
+			Message mailMessage = new MimeMessage(sendMailSession);
+			// 添加发件人
+			Address from = new InternetAddress(mFrom);
+			mailMessage.setFrom(from);
+
+            // 添加收件人列表
+			if (mTo != null) {
+				Address[] tos = new InternetAddress[mTo.size()];
+
+				for (int i = 0; i < tos.length; i++) {
+					tos[i] = new InternetAddress(mTo.get(i));
+				}
+
+                // 添加收件人
+				mailMessage.setRecipients(Message.RecipientType.TO, tos);
+				// 添加抄送人
+				mailMessage.setRecipients(Message.RecipientType.CC, tos);
+				// 添加密送人
+				mailMessage.setRecipients(Message.RecipientType.BCC, tos);
+			}
+
+            // 添加主题
+			mailMessage.setSubject(mSubject);
+			// 添加发送日期
+			mailMessage.setSentDate(new Date());
+			// 添加纯文本内容
+			// mailMessage.setText(mTextContent);
+
+            // 创建html格式邮件的容器
+			MimeMultipart main = new MimeMultipart();
+			BodyPart bp = new MimeBodyPart();
+			// 添加文本信息
+			String htmlContent = "<meta http-equiv=Content-Type content=text/html; charset=UTF-8>"
+					+ mTextContent + "<br><br>";
+
+			if (mAttachments != null) {
+				ArrayList<String> randomList = new ArrayList<String>();
+				// 将本地附件的图片链接替换为随机数
+				for (int i = 0; i < mAttachments.size(); i++) {
+					String random = createRandomStr();
+					htmlContent += "<img src=" + "cid:" + random + " />";
+					randomList.add(random);
+				}
+
+			    // 添加带图片的正文内容
+				bp.setContent(htmlContent, "text/html;charset=UTF-8");
+				main.addBodyPart(bp);
+
+                // 添加附件
+				for (int i = 0; i < mAttachments.size(); i++) {
+					File file = new File(mAttachments.get(i));
+					BodyPart body = new MimeBodyPart();
+					DataSource data = new FileDataSource(file);
+					body.setDataHandler(new DataHandler(data));
+					body.setFileName(file.getName());
+
+					String contentId = "<" + randomList.get(i) + ">";
+					body.setHeader("Content-ID", contentId);
+					main.addBodyPart(body);
+				}
+			}
+
+            // 将内容加入到邮件消息
+			mailMessage.setContent(main);
+			mailMessage.saveChanges();
+
+            // gmail使用SSL连接
+			if (mHost.equals("smtp.gmail.com")) {
+				Transport transport;
+				transport = sendMailSession.getTransport("smtps");
+				transport.connect(mHost, mUser, mPassword);
+				transport.sendMessage(mailMessage,
+						mailMessage.getAllRecipients());
+				transport.close();
+			} else {
+				Transport.send(mailMessage);
+			}
+
+			return true;
+		} catch (MessagingException ex) {
+			Log.d(TAG, "SendMail" + ex);
+		}
+		return false;
+	}
+}
+}}}
+
+=== MyAuth权限认证类 ===
+{{{class="brush:java"
+public class MyAuth extends Authenticator {
+	String userName = "";
+	String password = "";
+
+	public MyAuth(String username, String password) {
+		this.userName = username;
+		this.password = password;
+	}
+
+	protected PasswordAuthentication getPasswordAuthentication() {
+		return new PasswordAuthentication(userName, password);
+	}
+}
+}}}
+
+=== 使用示例 ===
+{{{class="brush:java"
+Mailer mail = new Mailer();
+mail.setProperties(mMailInfo.strSmtp, String.valueOf(mMailInfo.nSmtpPort), true);
+mail.setUserPassword(mMailInfo.strSendUserName, mMailInfo.strSendPassword);
+mail.setForm(mMailInfo.strSendEmailAddr);
+mail.setSubject(mMailInfo.strSubject);
+mail.setTextContent(mMailInfo.strTextContent);
+mail.setAttachments(mMailInfo.listAttachments);
+mail.setTo(mMailInfo.strRecvEmailAddr);
+boolean rtn = mail.sendMail();
+}}}
+
+== smtp服务器返回值含义 ==
+{{{class="brush:java"
+private void SMTPCodeAdd()
+{
+    ErrCodeHT.Add("500","邮箱地址错误");
+    ErrCodeHT.Add("501","参数格式错误");
+    ErrCodeHT.Add("502","命令不可实现");
+    ErrCodeHT.Add("503","服务器需要SMTP验证");
+    ErrCodeHT.Add("504","命令参数不可实现");
+    ErrCodeHT.Add("421","服务未就绪，关闭传输信道");
+    ErrCodeHT.Add("450","要求的邮件操作未完成，邮箱不可用（例如，邮箱忙）");
+    ErrCodeHT.Add("550","要求的邮件操作未完成，邮箱不可用（例如，邮箱未找到，或不可访问）");
+    ErrCodeHT.Add("451","放弃要求的操作；处理过程中出错");
+    ErrCodeHT.Add("551","用户非本地，请尝试<forward-path>");
+    ErrCodeHT.Add("452","系统存储不足，要求的操作未执行");
+    ErrCodeHT.Add("552","过量的存储分配，要求的操作未执行");
+    ErrCodeHT.Add("553","邮箱名不可用，要求的操作未执行（例如邮箱格式错误）");
+    ErrCodeHT.Add("432","需要一个密码转换");
+    ErrCodeHT.Add("534","认证机制过于简单");
+    ErrCodeHT.Add("538","当前请求的认证机制需要加密");
+    ErrCodeHT.Add("454","临时认证失败");
+    ErrCodeHT.Add("530","需要认证");
+
+    RightCodeHT.Add("220","服务就绪");
+    RightCodeHT.Add("250","要求的邮件操作完成");
+    RightCodeHT.Add("251","用户非本地，将转发向<forward-path>");
+    RightCodeHT.Add("354","开始邮件输入，以<CRLF>.<CRLF>结束");
+    RightCodeHT.Add("221","服务关闭传输信道");
+    RightCodeHT.Add("334","服务器响应验证Base64字符串");
+    RightCodeHT.Add("235","验证成功");
+}
+}}}

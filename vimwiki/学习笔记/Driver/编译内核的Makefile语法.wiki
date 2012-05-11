@@ -1,0 +1,57 @@
+= 编译内核的Makefile语法 =
+
+%toc
+
+== Makefile(内核2.6) ==
+- 注意`Makefile`不能使用小写字母，如"makefile"。
+- 在编译内核代码时实际会调用两次Makefile文件：
+    - 第一次KERNELRELEASE没有定义，会进入else分支，设置KERNELDIR变量。
+    - 第二次当KERNELRELEASE定义后进入if分支，设置obj-m变量。
+- 最终通过`$(MAKE) -C $(KERNELDIR) M=$(PWD) modules`编译模块。
+
+{{{class="brush:bash"
+# KERNELRELEASE定义在顶层的Makefile中
+# If KERNELRELEASE is defined, we've been invoked from the
+# kernel build system and can use its language.
+ifneq ($(KERNELRELEASE),)
+
+obj-m := hello.o 
+ 
+# Otherwise we were called directly from the command
+# line; invoke the kernel build system.
+else
+
+KERNELDIR ?= /lib/modules/$(shell uname -r)/build
+PWD := $(shell pwd) 
+ 
+default:
+    $(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+    
+endif 
+
+clean:
+    rm -rf *.o *.order *.symvers *.ko *.mod.c
+}}}
+
+== 模块示例代码 ==
+{{{class="brush:c"
+#include <linux/init.h>
+#include <linux/module.h>
+
+MODULE_LICENSE("Dual BSD/GPL");
+
+static int hello_init(void)
+{
+    printk(KERN_ALERT "Hello, world\n");
+    return 0;
+}
+
+static void hello_exit(void)
+{
+    printk(KERN_ALERT "Goodbye, cruel world\n");
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+}}}
+

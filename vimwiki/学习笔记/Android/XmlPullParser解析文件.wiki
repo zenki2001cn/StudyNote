@@ -1,0 +1,108 @@
+= XmlPullParser解析 =
+
+== 相关类 == 
+{{{class="brush:java"
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException.html;
+import org.xmlpull.v1.XmlPullParserFactory;
+import android.util.Xml;
+}}}
+
+== 基本处理流程 ==
+- 使用XmlPullParserFactory.newInstance()方法生成`XmlPullParserFactory`对象工厂实例。
+- 通过XmlPullParserFactory对象的newPullParser()方法生成`XmlPullParser`对象，该对象用来处理xml数据。
+- 通过XmlPullParser对象的`setInput()`方法读取数据流，并通过`getEventType()`方法和`next()`方法遍历整个xml模型树。
+
+== EventType类型 ==
+getEventType()和next()方法返回读取到的xml数据类型，用户根据该数据的类型进行相应的处理
+| 类型标识       | 值 | 描述         |
+|----------------+----+--------------|
+| START_DOCUMENT | 0  | 文档起始标识 |
+| END_DOCUMENT   | 1  | 文档结束标识 |
+| START_TAG      | 2  | 标签开始标识 |
+| END_TAG        | 3  | 标签结束标识 |
+| TEXT           | 4  | 文本内容标识 |
+
+== 示例程序 ==
+{{{class="brush:java"
+public static List<Person> ReadXmlByPull (InputStream inputStream) throws Exception {
+    List <Person> personList = null;
+    /**
+     * 通过对象工厂创建XmlPullParser对象
+     */
+    XmlPullParser xmlpull = Xml.newPullParser();
+    XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+    factory.setNamespaceAware(true);
+    XmlPullParser xpp = factory.newPullParser();
+
+    /**
+     * 传入输入流并设定编码方式
+     */
+    xmlpull.setInput(inputStream, "utf-8");
+    
+    /**
+     * pull读到xml后 返回数字
+     * 读取到xml的声明返回START_DOCUMENT 0
+     * 读取到xml的结束返回END_DOCUMENT   1  
+     * 读取到xml的开始标签返回START_TAG  2
+     * 读取到xml的结束标签返回END_TAG    3
+     * 读取到xml的文本返回TEXT           4
+     */
+    int eventCode = xmlpull.getEventType();
+    
+    /**
+     * 只要这个事件返回的不是1 我们就一直读取xml文件
+     */
+    Person person = null;
+    while(eventCode!=XmlPullParser.END_DOCUMENT) {
+        switch (eventCode) {
+            // 开始文档时创建数据列表
+            case XmlPullParser.START_DOCUMENT:
+            {   
+                personList =new  ArrayList<Person>();
+                break;
+            }
+            
+            // 标签开始时创建数据项
+            case XmlPullParser.START_TAG:
+            {
+                if("person".equals(xmlpull.getName())) {
+                    person =  new Person();
+                    person.setId(xmlpull.getAttributeValue(0));
+                }
+                else if (person!=null) {
+                    if(("name".equals(xmlpull.getName()))) {
+                        /**
+                         * 如果当前元素的下一个元素是文本节点 就可以直接用nextText()这个方法来得到文本节点的内容
+                         */
+                        person.setName(xmlpull.nextText());
+                    }
+                    else if ("age".equals(xmlpull.getName())) {
+                        /**
+                         * 如果当前元素的下一个元素是文本节点 就可以直接用nextText()这个方法来得到文本节点的内容
+                         */
+                        person.setAge(xmlpull.nextText());
+                    }
+                }
+                break;
+            }
+                
+            // 标签结束时加入数据项到列表
+            case XmlPullParser.END_TAG:
+            { 
+                if("person".equals(xmlpull.getName())&&person!=null) {
+                    personList.add(person);
+                    person = null;
+                }
+                break;
+            }
+        }
+        
+        //没有结束xml文件就进行下一个解析
+        eventCode = xmlpull.next();
+    }
+    
+    return personList;
+}
+}}}
+

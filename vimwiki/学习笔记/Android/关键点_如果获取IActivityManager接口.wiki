@@ -1,0 +1,118 @@
+= 关键点:如果获取IActivityManager接口 =
+
+%toc
+
+== 流程分析 ==
+- startActivity()经历了两个IPC
+关键点一 :: `getDefault()`调用`ServiceManager.getService("activity")`获取IBinder接口，并通过`asInterface`方法转换成`IActivityManager`，如上面代码所示
+关键点二 :: ServiceManager.getService("activity")调用`ServiceManagerNative.asInterface`生成的`IServiceManager`接口，该接口通过本地代理`ServiceManagerProxy`来获取IActivityManager。(第一个IPC)
+关键点三 :: IActivityManager实际是由ServiceManagerProxy透过Binder机制与后台进程ServiceManager交互，根据参数name获取的IBinder接口对象
+关键点四 :: IBinder对象通过`ActivityManagerNative.asInterface()`转换成IActivityManager。本地代理`ActivityManagerProxy`调用远程`ActivityManagerService`的startActivity()方法，该服务在SystemServer中注册。(第二个IPC)
+
+== 参考代码 ==
+=== ServiceManager类 ===
+{{{class="brush:java"
+public final class ServiceManager {
+    private static IServiceManager sServiceManager;
+}
+}}}
+
+==== 方法：getIServiceManager ====
+{{{class="brush:java"
+// 获取ServiceManager的接口
+private static IServiceManager getIServiceManager() {
+    if (sServiceManager != null) {
+        return sServiceManager;
+    }
+
+    // Find the service manager
+    sServiceManager = ServiceManagerNative.asInterface(BinderInternal.getContextObject());
+    return sServiceManager;
+}
+}}}
+
+==== 方法：getService ====
+{{{class="brush:java"
+// 获取对应参数name的IBinder接口
+public static IBinder getService(String name) {
+    try {
+        IBinder service = sCache.get(name);
+        if (service != null) {
+            return service;
+        } else {
+            // 根据IServiceManager接口查询远程注册的Service接口
+            return getIServiceManager().getService(name);
+        }
+    } catch (RemoteException e) {
+        Log.e(TAG, "error in getService", e);
+    }
+    return null;
+}
+}}}
+
+=== ServiceManagerNative类 ===
+{{{class="brush:java"
+public abstract class ServiceManagerNative extends Binder implements IServiceManager
+}}}
+
+==== 方法：asInterface ====
+{{{class="brush:java"
+static public IServiceManager asInterface(IBinder obj)
+{
+    if (obj == null) {
+        return null;
+    }
+    IServiceManager in =
+        (IServiceManager)obj.queryLocalInterface(descriptor);
+    if (in != null) {
+        return in;
+    }
+    
+    // 返回一个本地代理
+    return new ServiceManagerProxy(obj);
+}
+}}}
+
+=== ActivityManagerNative类 ===
+{{{class="brush:java"
+public abstract class ActivityManagerNative extends Binder implements IActivityManager
+}}}
+
+- `ActivityManagerNative`类继承`Binder`并实现`IActivityManager`接口，它属于一个Stub类
+- `getDefault()`用来返回IActivityManager接口
+- IActivityManager接口的startActivity()方法用来启动一个Activity
+ 
+==== 方法：asInterface ====
+{{{class="brush:java"
+// 转换成接口
+static public IActivityManager asInterface(IBinder obj)
+{
+    if (obj == null) {
+        return null;
+    }
+    IActivityManager in =
+        (IActivityManager)obj.queryLocalInterface(descriptor);
+    if (in != null) {
+        return in;
+    }
+    
+    // 产生一个本地代理类
+    return new ActivityManagerProxy(obj);
+}
+}}}
+
+==== 方法：getDefault ====
+{{{class="brush:java"
+static public IActivityManager getDefault()
+{
+    if (gDefault != null) {
+        return gDefault;
+    }
+    // 获取Activity的Service
+    IBinder b = ServiceManager.getService("activity");
+    // 转换本地代理
+    gDefault = asInterface(b);
+    return gDefault;
+}
+}}}
+

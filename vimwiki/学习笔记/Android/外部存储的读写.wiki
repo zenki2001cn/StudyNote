@@ -1,0 +1,99 @@
+= 外部存储的读写 =
+
+%toc
+
+== 相关类 ==
+{{{class="brush:java"
+import android.os.Environment;
+import android.os.StatFs;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+}}}
+
+- 调用Environment.getExternalStorageDirectory()方法，取得保持着外部存储器路径信息的File实例。
+- 调用Environment.getExternalStorageState()方法，获取外部存储状态。
+- 通过StatFs类获取外部存储的容量大小。
+
+== 示例代码 ==
+=== 读写外部存储 ===
+{{{class="brush:java"
+String sDStateString = android.os.Environment.getExternalStorageState();  
+  
+// 拥有可读可写权限  
+if (sDStateString.equals(android.os.Environment.MEDIA_MOUNTED)) {  
+    try {  
+        // 获取扩展存储设备的文件目录  
+        File SDFile = android.os.Environment.getExternalStorageDirectory();  
+  
+        // 打开文件  
+        File myFile = new File(SDFile.getAbsolutePath() + File.separator + "MyFile.txt");  
+  
+        // 判断是否存在,不存在则创建  
+        if (!myFile.exists()) {  
+            myFile.createNewFile();  
+        }  
+  
+        // 写数据  
+        String szOutText = "Hello, World!";  
+        FileOutputStream outputStream = new FileOutputStream(myFile);  
+        outputStream.write(szOutText.getBytes());  
+        outputStream.close();  
+  
+    } catch (Exception e) {  
+        // TODO: handle exception  
+    }
+  
+}
+// 拥有只读权限  
+else if (sDStateString.endsWith(android.os.Environment.MEDIA_MOUNTED_READ_ONLY)) {  
+  
+    // 获取扩展存储设备的文件目录  
+    File SDFile = android.os.Environment.getExternalStorageDirectory();  
+  
+    // 创建一个文件  
+    File myFile = new File(SDFile.getAbsolutePath() + File.separator + "MyFile.txt");  
+  
+    // 判断文件是否存在  
+    if (myFile.exists()) {  
+        try {  
+            // 读数据  
+            FileInputStream inputStream = new FileInputStream(myFile);  
+            byte[] buffer = new byte[1024];  
+            inputStream.read(buffer);  
+            inputStream.close();  
+  
+        } catch (Exception e) {  
+            // TODO: handle exception  
+        }
+    }
+}
+}}}
+
+=== 获取容量 ===
+{{{class="brush:java"
+if (sDcString.equals(android.os.Environment.MEDIA_MOUNTED)) {  
+    // 取得sdcard文件路径  
+    File pathFile = android.os.Environment.getExternalStorageDirectory();  
+    android.os.StatFs statfs = new android.os.StatFs(pathFile.getPath());  
+  
+    // 获取SDCard上BLOCK总数  
+    long nTotalBlocks = statfs.getBlockCount();  
+  
+    // 获取SDCard上每个block的SIZE  
+    long nBlocSize = statfs.getBlockSize();  
+  
+    // 获取可供程序使用的Block的数量  
+    long nAvailaBlock = statfs.getAvailableBlocks();  
+  
+    // 获取剩下的所有Block的数量(包括预留的一般程序无法使用的块)  
+    long nFreeBlock = statfs.getFreeBlocks();  
+  
+    // 计算SDCard 总容量大小MB  
+    long nSDTotalSize = nTotalBlocks * nBlocSize / 1024 / 1024;  
+  
+    // 计算 SDCard 剩余大小MB  
+    long nSDFreeSize = nAvailaBlock * nBlocSize / 1024 / 1024;  
+}
+}}}

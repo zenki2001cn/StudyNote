@@ -1,0 +1,188 @@
+= 远程Service =
+
+== Binding Service ==
+
+=== client端 ===
+
+- 导入相应的AIDL接口文件，并`import`AIDL接口类的完整包路径,如`import com.example.android.apis.app.IRemoteService`
+- 创建ServiceConnection对象，并实现`onServiceConnected`和`onServiceDisconnected`方法
+- 调用bindService方法绑定Service
+- 在调用远程方法时处理`RemoteException`异常
+- 调用unbindService方法解除绑定
+
+=== 示例代码 ===
+例程源码(JAVA) --- ServiceConnection
+{{{class="brush:java"
+IRemoteService mService = null;
+
+private ServiceConnection mConnection = new ServiceConnection() {
+    public void onServiceConnected(ComponentName className, IBinder service) {
+        // 通过IDL接口获得远程IRemoteService对象
+        mService = IRemoteService.Stub.asInterface(service);
+        
+        // 注意捕获异常
+        try {
+            // do something 
+        }
+        catch (RemoteException e) {
+            // handle exception
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void onServiceDisconnected(ComponentName className) {
+        // This is called when the connection with the service has been
+        // unexpectedly disconnected -- that is, its process crashed.
+        mService = null;
+    }
+};
+}}}
+
+例程源码(JAVA) --- bindService和unbindService
+{{{class="brush:java"
+// 方法一
+bindService(new Intent(IRemoteService.class.getName()),
+            mConnection, Context.BIND_AUTO_CREATE);
+            
+// 方法二
+bindService(new Intent("com.example.android.apis.app.IRemoteService"));
+            
+unbindService(mConnection);
+}}}
+
+例程源码(JAVA) --- 调用service方法
+{{{class="brush:java"
+private boolean func1(){
+    byte val = 0;
+    // 初始化Parcel对象
+    Parcel query = Parcel.obtain();
+    Parcel reply = Parcel.obtain();
+
+    if (serviceIsNull())
+        return false;
+
+    try {
+        // 声明服务
+        query.writeInterfaceToken("com.android.music.IMediaPlaybackService");
+        // 传送方法名称及参数
+        mPlayerService.transact(IBinder.FIRST_CALL_TRANSACTION + PlaybackServiceFunc.INTERFACE_isPlaying.getId(), 
+                                query, reply, 0);
+        // 通过reply获取返回值
+        val = reply.readByte();
+    } catch(RemoteException e) {
+        e.printStackTrace();
+    }
+    
+    // 释放Parcel对象
+    query.recycle();
+    reply.recycle();
+
+    return (val == PLAYING);
+}
+}}}
+
+=== Service端 ===
+- 创建aidl文件，其中定义远程调用的接口，和方法声明
+- 从Service派生对象，并实现`onCreate`，`onDestroy`和`onBind`方法
+- 在派生类中，用户还需要实现一个Stub的内部类，实际上是用接口类代替Binder类
+- 在`onBind`方法中，返回远程调用的接口类
+
+=== 示例代码 ===
+例程源码(java) --- AIDL文件
+{{{class="brush:java"
+package com.example.android.apis.app;
+
+import com.example.android.apis.app.IRemoteServiceCallback;
+
+interface IRemoteService {
+    /**
+     * Often you want to allow a service to call back to its clients.
+     * This shows how to do so, by registering a callback interface with
+     * the service.
+     */
+    void registerCallback(IRemoteServiceCallback cb);
+    
+    /**
+     * Remove a previously registered callback interface.
+     */
+    void unregisterCallback(IRemoteServiceCallback cb);
+}
+}}}
+
+例程源码(JAVA) --- Stub接口
+{{{class="brush:java"
+// IDL定义的接口
+private final IRemoteService.Stub mBinder = new IRemoteService.Stub() {
+    // 自定义方法1
+    public void registerCallback(IRemoteServiceCallback cb) {
+        if (cb != null) mCallbacks.register(cb);
+    }
+    
+    // 自定义方法2
+    public void unregisterCallback(IRemoteServiceCallback cb) {
+        if (cb != null) mCallbacks.unregister(cb);
+    }
+};
+}}}
+
+例程源码(JAVA) --- Service
+{{{class="brush:java"
+@Override
+public void onCreate() {
+    // do some thing
+}
+
+@Override
+public void onDestroy() {
+    // do some thing
+}
+
+@Override
+public IBinder onBind(Intent intent) {
+    // 返回IDL接口对象
+    return mBinder;
+}
+}}}
+
+== Start Service ==
+=== Client端 ===
+
+- startService开启一个Service
+- stopService停止一个Service
+
+{{{class="brush:java"
+// 方法一
+startService(new Intent(
+        "com.example.android.apis.app.IRemoteService"));
+
+// 方法二
+startService(new Intent(IRemoteService.class.getName()));
+
+// 方法一
+stopService(new Intent(
+        "com.example.android.apis.app.IRemoteService"));
+
+// 方法二
+stopService(new Intent(IRemoteService.class.getName()));
+}}}
+
+=== Service端 ===
+
+- 参见Binding Service
+
+== Manifest ==
+- 在xml中添加Service服务
+
+=== 示例代码 ===
+例程源码(XML) --- 服务端
+{{{class="brush:xml"
+<service android:name=".app.RemoteService" android:process=":remote">
+    <intent-filter>
+        <!-- These are the interfaces supported by the service, which you can bind to. -->
+        <action android:name="com.example.android.apis.app.IRemoteService" />
+        <action android:name="com.example.android.apis.app.ISecondary" />
+        <!-- This is an action code you can use to select the service without explicitly supplying the implementation class. -->
+        <action android:name="com.example.android.apis.app.REMOTE_SERVICE" />
+    </intent-filter>
+</service>
+}}}

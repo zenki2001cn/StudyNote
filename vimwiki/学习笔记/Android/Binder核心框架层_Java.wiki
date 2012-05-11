@@ -1,0 +1,304 @@
+= Binder核心框架层(Java) =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// java相关
+frameworks/base/core/java/android/os/Binder.java
+frameworks/base/core/java/android/os/IBinder.java
+// c++相关
+frameworks/base/core/jni/android_util_Biner.cpp
+}}}
+
+== Java层的几个重要类 ==
+- IBinder: 与native层的IBinder对应，作用是将Binder的功能分离出一个接口。
+- Binder: 该类为Binder的服务端，对应于native层的BnBinder，实现了IBinder接口。
+- Proxy: 该类为Binder的代理端，对应于native层的BpBinder，实现了IBinder接口。
+- IInterface: 与native层的IInterface相对应，作用是将service的功能分离出一个接口。
+- Parcel: 与native层的Parcel相对应，作为Binder传输的介质。
+- Stub: 根据aidl文件生成的接口内部类，该类扮演了服务端和客户端两个角色，下面会详细介绍。
+
+== 什么是aidl ==
+{{{class="brush:text"
+    aidl是Android定义的一个接口文件，它描述了一个服务能够提供的功能，用java语言描述就是一个interface。该文件会通过aidl工具生成
+相对应的java文件，编译程序会使用该java文件作为源代码进行编译。
+    以下是aidl文件和编译后的java文件的示例。
+}}}
+
+=== IMyService.aidl ===
+- 定义了接口IMyService，如果用到其他的类，需要import进来，如Student。
+
+{{{class="brush:java"
+package com.aidl.test;
+
+import com.aidl.test.Student;
+
+interface IMyService
+{
+	Student getStudent();
+}
+}}}
+
+=== Student.aidl ===
+- Student类继承于Parcelable，并被IMyService.aidl引用，需要为该类创建单独的aidl。
+
+{{{class="brush:java"
+parcelable Student;
+}}}
+
+=== IMyService.java ===
+- 通过aidl工具生成的java文件，它定义了一个继承于IInterface的接口，并声明了一个内部类Stub。
+
+{{{class="brush:java"
+package com.aidl.test;
+
+public interface IMyService extends android.os.IInterface {
+    // 服务端抽象基类
+	public static abstract class Stub extends android.os.Binder implements
+			com.aidl.test.IMyService {
+		private static final java.lang.String DESCRIPTOR = "com.aidl.test.IMyService";
+
+		public Stub() {
+			this.attachInterface(this, DESCRIPTOR);
+		}
+
+        // 如果是本地调用，返回this
+        // 如果是客户端调用，返回Proxy对象
+		public static com.aidl.test.IMyService asInterface(
+				android.os.IBinder obj) {
+			if ((obj == null)) {
+				return null;
+			}
+			android.os.IInterface iin = (android.os.IInterface) obj
+					.queryLocalInterface(DESCRIPTOR);
+			if (((iin != null) && (iin instanceof com.aidl.test.IMyService))) {
+				return ((com.aidl.test.IMyService) iin);
+			}
+			return new com.aidl.test.IMyService.Stub.Proxy(obj);
+		}
+
+		public android.os.IBinder asBinder() {
+			return this;
+		}
+
+		@Override
+		public boolean onTransact(int code, android.os.Parcel data,
+				android.os.Parcel reply, int flags)
+				throws android.os.RemoteException {
+			// 通过传递的索引号调用相应的方法
+			switch (code) {
+                case INTERFACE_TRANSACTION: {
+                    reply.writeString(DESCRIPTOR);
+                    return true;
+                }
+                case TRANSACTION_getStudent: {
+                    data.enforceInterface(DESCRIPTOR);
+                    Student _result = this.getStudent();
+                    reply.writeNoException();
+                    if ((_result != null)) {
+                        reply.writeInt(1);
+                        _result
+                                .writeToParcel(
+                                        reply,
+                                        android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);
+                    } else {
+                        reply.writeInt(0);
+                    }
+                    return true;
+                }
+			}
+			return super.onTransact(code, data, reply, flags);
+		}
+
+        // Binder代理类
+		private static class Proxy implements com.aidl.test.IMyService {
+			private android.os.IBinder mRemote;
+
+			Proxy(android.os.IBinder remote) {
+				mRemote = remote;
+			}
+
+			public android.os.IBinder asBinder() {
+				return mRemote;
+			}
+
+			public java.lang.String getInterfaceDescriptor() {
+				return DESCRIPTOR;
+			}
+
+			public Student getStudent() throws android.os.RemoteException {
+				android.os.Parcel _data = android.os.Parcel.obtain();
+				android.os.Parcel _reply = android.os.Parcel.obtain();
+				Student _result;
+				try {
+				    // 首先要将该接口的名称通知给服务端
+                    // 这里的名称即"com.aidl.test.IMyService"
+					_data.writeInterfaceToken(DESCRIPTOR);
+					// 将索引号传递给服务端，完成调用的过程
+					// 该索引号对应的是getStudent()方法
+					mRemote.transact(Stub.TRANSACTION_getStudent, _data,
+							_reply, 0);
+					_reply.readException();
+					
+					// 通过Student.CREATOR将传递的数据还原
+					if ((0 != _reply.readInt())) {
+						_result = Student.CREATOR.createFromParcel(_reply);
+					} else {
+						_result = null;
+					}
+				} finally {
+					_reply.recycle();
+					_data.recycle();
+				}
+				return _result;
+			}
+		}
+
+        // 定义了对于方法的索引号
+		static final int TRANSACTION_getMap = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+		static final int TRANSACTION_getStudent = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+	}
+
+	public Student getStudent() throws android.os.RemoteException;
+}
+}}}
+
+== IMyService分析 ==
+- 上面例子中的IMyService.java在编译时由aidl工具自动生成，接下来我们要重点分析这个文件。
+- 该文件定义了一个接口IMyService，它继承于IInterface。我们来看IInterface的定义，它只有一个`asBinder()`方法，用来将接口类型转换为IBinder类型。服务端和客户端都需要实现IInterface接口，但对于该方法的处理却是不同的，服务端直接返回继承子类的对象，而客户端返回的是代理对象(可分别查看Stub内部类和Proxy内部类对asBinder()的实现)。
+- 再回忆C++层的核心框架层实现，我们曾提到过两个宏定义来实现IBinder到IInterface的转换，在Java层则直接在Stub和Proxy中实现，但思想都是一样的，即:如果该方法被服务端调用，则返回一个本地IBinder对象，如果是被客户端调用，则返回新创建的Proxy对象。
+- 由此，我们再来理解`Stub`为什么扮演了服务端和客户端两个角色：
+    - 首先必须具有本地服务端的功能，它是继承了IMyService接口的抽象类，由其子类实现接口方法。`onTransact()`方法则是调用子类接口方法的入口。
+    - 再看Stub如何扮演代理角色。其内部类Proxy是代理端的实现类，Stub扮演服务端还是代理端由`asInterface()`决定。它的工作流程是先调用`queryLocalInterface()`查询本地对象，如果不为空就返回本地对象，否则返回Proxy对象(该流程与C++层的`IMPLEMENT_META_INTERFACE`宏实现一样)。
+    - Stub是一个抽象类，我们需要继承并实现子类中的接口方法，才能实现真正的服务端功能，本例即为IMyService.aidl中定义的方法。
+- 再看整个IMyService.java，它实际上是使用了Java语言内部类的语法来实现双重继承，并通过简单工厂的模式创建了一个Java层Binder框架类。
+
+=== Binder调用的3个要点 ===
+- 首先要构造两个Parcel对象，一个用于发送，一个用于返回。
+- 远程方法调用是先将方法名编号，再使用Parcel对象`传递`对应`编号`来实现。
+- 接收远程的返回值，并将返回的Parcel解析成对应的Student对象。
+
+== JNI调用 ==
+{{{class="brush:text"
+    Java层实现了Binder的框架类，但是与驱动交互和内存相关操作都是透过JNI接口调用C++层的代码来实现(参见Binder类声明)，
+}}}
+
+== Parcel和Parcelable ==
+{{{class="brush:text"
+    在C++层曾经提到过Parcel充当传输介质的作用，Java层也有相对应的类，并且基本上通过JNI接口实现。Java层还需要考虑的
+一个问题是如何传输Java层的对象。Parcelable就是解决这个问题的接口，该接口提供了写入数据的方法writeToParcel()。其内部
+类Creator<T>完成对象的构造。数据的读取是在Parcelable继承子类的构造方法中完成。
+}}}
+
+=== 例子：实现Parcelable的Student类 ===
+{{{class="brush:java"
+public class Student implements Parcelable {
+
+	private String name;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+    // 创建一个静态对象CREATOR
+	public static final Parcelable.Creator<Student> CREATOR = new Creator<Student>() {
+
+		@Override
+		public Student[] newArray(int size) {
+			return new Student[size];
+		}
+
+		@Override
+		public Student createFromParcel(Parcel source) {
+			return new Student(source);
+		}
+	};
+
+	public Student() {
+	}
+
+    // 从Parcel读取数据
+	public Student(Parcel pl) {
+		name = pl.readString();
+	}
+
+	@Override
+	public int describeContents() {
+		return 0;
+	}
+
+    // 写入数据到Parcel
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		dest.writeString(name);
+	}
+}
+}}}
+
+== IInterface.java ==
+=== IInterface ===
+{{{class="brush:java"
+public interface IInterface
+{
+    // 将接口类型转换成IBinder类型
+    // 如果是服务端，返回Stub对象
+    // 如果是客户端，返回Proxy对象
+    public IBinder asBinder();
+}
+}}}
+
+== Binder.java ==
+=== Binder ===
+{{{class="brush:java"
+public class Binder implements IBinder {
+    private static final boolean FIND_POTENTIAL_LEAKS = false;
+
+    private int mObject;
+    private IInterface mOwner;
+    private String mDescriptor;
+    
+    public static final native int getCallingPid();
+    public static final native int getCallingUid();
+    public static final native long clearCallingIdentity();
+    public static final native void restoreCallingIdentity(long token);
+    public static final native void setThreadStrictModePolicy(int policyMask);
+    public static final native int getThreadStrictModePolicy();
+    public static final native void flushPendingCommands();
+    public static final native void joinThreadPool();
+    ......
+} 
+}}}
+
+=== queryLocalInterface ===
+{{{class="brush:java"
+public IInterface queryLocalInterface(String descriptor) {
+    if (mDescriptor.equals(descriptor)) {
+        return mOwner;
+    }
+    return null;
+}
+}}}
+
+== Parcelable.java ==
+=== Parcelable ===
+{{{class="brush:java"
+public interface Parcelable {
+    
+    public static final int PARCELABLE_WRITE_RETURN_VALUE = 0x0001;
+    public static final int CONTENTS_FILE_DESCRIPTOR = 0x0001;
+    
+    public int describeContents();
+    
+    public void writeToParcel(Parcel dest, int flags);
+
+    public interface Creator<T> {
+        public T createFromParcel(Parcel source);
+        public T[] newArray(int size);
+    }
+}
+}}}

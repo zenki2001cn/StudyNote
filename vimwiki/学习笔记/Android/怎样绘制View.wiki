@@ -1,0 +1,19 @@
+= 怎样绘制View =
+
+== 关系图 ==
+[pic/surface.png]
+
+== 相关方法和变量 ==
+_void draw (Canvas  canvas)_ :: 更新视图的方法,调用onDraw
+
+_void onDraw (Canvas  canvas)_ :: 更新视图的方法
+
+_final void measure (int widthMeasureSpec, int heightMeasureSpec)_ :: 计算画布大小,调用onMeasure
+
+_void onMeasure (int widthMeasureSpec, int heightMeasureSpec)_ :: 计算画布大小
+
+_final void layout (int l, int t, int r, int b)_ :: 放置视图,调用onLayout
+
+_void onLayout (boolean changed, int left, int top, int right, int bottom)_ :: 设置布局(更新子视图时调用)
+
+_void onSizeChanged (int w, int h, int oldw, int oldh)_ :: 该方法中获取视图的大小

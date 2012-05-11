@@ -1,0 +1,12 @@
+= 模拟时钟 =
+
+[pic/analogclock.png]
+
+例程源码(Resource)
+{{{class="brush: xml"
+<AnalogClock
+    android:id="@+id/AnalogClock"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"/>
+}}}
+

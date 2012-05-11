@@ -1,0 +1,38 @@
+= 对话框集合 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+
+import android.content.DialogInterface;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+
+import android.widget.Button;
+}}}
+
+- 为需要显示的dialog对话框指定ID,通过showDialog(int id)方法来显示
+- 通过重写onCreateDialog管理自定义ID的对话框样式
+
+- [[YES_NO对话框]]
+- [[YES_NO对话框+长信息]]
+- [[列表对话框]]
+- [[进度条对话框]]
+- [[单选对话框]]
+- [[多选对话框]]
+- [[文本对话框]]
+
+- [[进度对话框]]
+- [[AlertDialog]]
+- [[日期对话框]]
+- [[时刻选择对话框]]
+

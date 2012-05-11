@@ -1,0 +1,184 @@
+= 类和对象 =
+
+%toc
+
+== 包的定义 ==
+- 一个包是一个其中带有特殊文件__init__.py的目录。 __init__.py 文件定义了包的属性和方法。其实它可以什么也不定义；可以只是一个空文件，但是必须要存在。如果 __init__.py 不存在，这个目录就仅仅是一个目录，而不是一个包，它就不能被导入或者包含其它的模块和嵌套包。
+
+{{{class="brush:text"
+# 包结构的示例
+Python21/               Python安装根目录(可执行文件的所在地)
+|
++--lib/                 库目录(标准库模块的所在地)
+    |
+    +-- xml/            xml包(实际上目录中还有其它东西)
+        |
+        +--sax/         xml.sax包(也只是一个目录)
+        |
+        +--dom/         xml.dom包(包含 minidom.py)
+        |
+        +--parsers/     xml.parsers包(内部使用)
+}}}
+
+- __init__.py中还可以包含变量 __all__，该变量指定了`from package import *`语法所导入进来的模块名。
+
+{{{class="brush:python"
+# __init__.py
+__all__ = ['Module1', 'Module2', 'Package2']
+}}}
+
+== 类的定义 ==
+{{{class="brush:python"
+class UserDict:
+    pass
+}}}
+
+== 类成员和对象成员 ==
+- 在Java中，静态变量(在Python中叫类成员)和实例变量(在Python中叫对象成员)两者都是紧跟在类定义之后定义的(一个有static关键字，一个没有)。在Python 中，只有类成员可以定义在这里，对象成员定义在__init__方法中。
+
+{{{class="brush:python"
+class MP3FileInfo(FileInfo):
+    ''' tagDataMap是类成员 '''
+    tagDataMap = {"title"   : (  3,  33, stripnulls),
+                    "artist"  : ( 33,  63, stripnulls),
+                    "album"   : ( 63,  93, stripnulls),
+                    "year"    : ( 93,  97, stripnulls),
+                    "comment" : ( 97, 126, stripnulls),
+                    "genre"   : (127, 128, ord)}
+                    
+    def __init__(self):
+        ''' filename是对象成员 '''
+        self.filename = ""
+}}}
+
+== 私有成员和公有成员 ==
+- 与大多数语言一样，Python 也有私有的概念：
+    * 私有函数不可以从它们的模块外面被调用
+    * 私有类方法不能够从它们的类外面被调用
+    * 私有属性不能够从它们的类外面被访问
+
+{{{class="brush:text"
+    如果一个Python函数，类方法，或属性的名字以两个下划线开始(但不是结束)，它是私有的；其它所有的都是公有的。
+Python没有类方法保护的概念(只能用于它们自已的类和子类中)。类方法或者是私有(只能在它们自已的类中使用)或者是
+公有(任何地方都可使用)。
+}}}
+
+== 类的继承 ==
+{{{class="brush:python"
+class FileInfo(UserDict):
+    pass
+}}}
+
+== 类的初始化 ==
+- _init_方法是可选的，但是如果定义了该方法，就必须调用基类的_init_。
+- 类成员方法的第一个参数必须为self，包括_init_方法。
+
+{{{class="brush:python"
+class FileInfo(UserDict):
+    "store file metadata"
+    def __init__(self, filename=None): 
+        # 调用基类的构造方法
+        UserDict.__init__(self)
+        self["name"] = filename
+}}}
+
+== 类的实例化 ==
+{{{class="brush:python"
+>>> import fileinfo
+# 实例化FileInfo类
+>>> f = fileinfo.FileInfo("/music/_singles/kairo.mp3")
+# 查看class信息
+>>> f.__class__                                       
+<class fileinfo.FileInfo at 010EC204>
+# 查看doc信息
+>>> f.__doc__
+'store file metadata'
+>>> f
+{'name': '/music/_singles/kairo.mp3'}
+}}}
+
+== 获取和设置成员数据 ==
+=== ___getitem___ ===
+{{{class="brush:python"
+"""
+def __getitem__(self, key): return self.data[key]
+"""
+
+# 实现了__getitem__方法后，可以通过[]下标形式访问类成员
+>>> f = fileinfo.FileInfo("/music/_singles/kairo.mp3")
+>>> f
+{'name':'/music/_singles/kairo.mp3'}
+>>> f.__getitem__("name")
+'/music/_singles/kairo.mp3'
+>>> f["name"]
+'/music/_singles/kairo.mp3'
+}}}
+
+=== ___setitem___ ===
+{{{class="brush:python"
+"""
+def __setitem__(self, key, item): self.data[key] = item
+"""
+# 实现了__setitem__方法后，可以通过[]下标形式访问类成员
+>>> f
+{'name':'/music/_singles/kairo.mp3'}
+>>> f.__setitem__("genre", 31)
+>>> f
+{'name':'/music/_singles/kairo.mp3', 'genre':31}
+>>> f["genre"] = 32
+>>> f
+{'name':'/music/_singles/kairo.mp3', 'genre':32}
+}}}
+
+== 返回字符串值 ==
+=== ___repr___ ===
+- __repr__ 是一个专用的方法，在当调用repr(instance)时被调用。repr函数是一个内置函数，它返回一个对象的字符串表示。它可以用在任何对象上，不仅仅是类的实例。
+
+{{{class="brush:python"
+def __repr__(self): 
+    return repr(self.data) 
+}}}
+
+== 对象比较 ==
+=== ___cmp___ ===
+- __cmp__ 在比较类实例时被调用。通常，你可以通过使用“==”比较任意两个Python对象，不只是类实例。
+
+{{{class="brush:python"
+def __cmp__(self, dict):
+    if isinstance(dict, UserDict):            
+        return cmp(self.data, dict.data)
+}}}
+
+== 返回对象长度 ==
+=== ___len___ ===
+- __len__ 在调用len(instance)时被调用。len是一个内置函数，可以返回一个对象的长度。它可以用于任何被认为理应有长度的对象。对于类实例，定义__len__ 方法，接着自已编写长度的计算，然后调用len(instance)，Python将替你调用你的__len__专用方法。
+
+{{{class="brush:python"
+def __len__(self): 
+    return len(self.data)
+}}}
+
+== 删除成员数据 ==
+=== ___delitem___ ===
+- 当你在类实例中使用del时，Python替你调用__delitem__专用方法。
+
+{{{class="brush:python"
+def __delitem__(self, key): 
+    del self.data[key]
+}}}
+
+== 模块名称 ==
+=== ___module___ ===
+- 每个Python类都拥有一个内置的类属性__module__，它定义了这个类的模块的名字。
+- 将它与sys.modules字典复合使用，你可以得到定义了某个类的模块的引用。
+
+{{{class="brush:python"
+# 从类的__module__方法中得到该类从属的模块
+>>> from fileinfo import MP3FileInfo
+>>> MP3FileInfo.__module__
+'fileinfo'
+
+# 配合sys.modules得到该模块的引用
+>>> sys.modules[MP3FileInfo.__module__]
+<module 'fileinfo' from 'fileinfo.pyc'>
+}}}

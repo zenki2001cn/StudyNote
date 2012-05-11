@@ -1,0 +1,69 @@
+= vsftp配置 =
+
+== 安装步骤 ==
+=== 安装vsftp ===
+{{{class="brush:bash"
+#安装vsftp
+$sudo apt-get install vsftp
+}}}
+
+=== 添加组和用户 ===
+{{{class="brush:bash"
+#添加组
+$sudo groupadd ftpgroup
+#添加用户
+$sudo useradd -g ftpgroup -d /dir/to -M username
+#设置用户密码
+$sudo passwd username
+}}}
+
+=== 编辑配置文件 ===
+{{{class="brush:bash"
+#编辑全局配置文件
+$sudo vim /etc/vsftpd.conf
+
+#添加本地用户列表的配置文件
+$sudo vim /etc/vsftpd_user_conf/username
+#输入以下内容
+    write_enable=YES
+    anon_world_readable_only=NO 
+    anon_upload_enable=YES 
+    anon_mkdir_write_enable=YES 
+    anon_other_write_enable=YES
+    local_root=/home/vsftpd/sqa
+}}}
+
+== 配置文件注释 ==
+| 参数                                                             | 说明                                                                                                                                                                                                                                                                                                              |
+|------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| listen_address=ip address                                        | 指定侦听IP                                                                                                                                                                                                                                                                                                        |
+| listen_port=port_value                                           | 指定侦听端口，默认21                                                                                                                                                                                                                                                                                              |
+| anonymous_enable=YES                                             | 是否允许使用匿名帐户                                                                                                                                                                                                                                                                                              |
+| local_enable=YES                                                 | 是否允许本地用户登录                                                                                                                                                                                                                                                                                              |
+| nopriv_user=ftp                                                  | 指定vsftpd服务的运行帐户，不指定时使用ftp                                                                                                                                                                                                                                                                         |
+| write_enable=YES                                                 | 是否允许写入                                                                                                                                                                                                                                                                                                      |
+| anon_upload_enable=YES                                           | 匿名用户是否可上传文件                                                                                                                                                                                                                                                                                            |
+| anon_mkdir_write_enable=YES                                      | 匿名用户是否建立目录                                                                                                                                                                                                                                                                                              |
+| dirmessage_enable=YES                                            | 进入每个目录是显示欢迎信息，在每个目录下建立.message文件在里面写欢迎信息                                                                                                                                                                                                                                          |
+| xferlog_enable=YES                                               | 上传/下载文件时记录日志                                                                                                                                                                                                                                                                                           |
+| connect_from_port_20=YES                                         | 是否使用20端口传输数据(是否使用主动模式)                                                                                                                                                                                                                                                                          |
+| chown_uploads=YES、chown_username=whoever                        | 修改匿名用户上传文件的拥有者                                                                                                                                                                                                                                                                                      |
+| xferlog_file=/var/log/vsftpd.log                                 | 日志文件                                                                                                                                                                                                                                                                                                          |
+| xferlog_std_format=YES                                           | 使用标准文件日志                                                                                                                                                                                                                                                                                                  |
+| idle_session_timeout=600                                         | 会话超时，客户端连接到ftp但未操作                                                                                                                                                                                                                                                                                 |
+| data_connection_timeout=120                                      | 数据传输超时                                                                                                                                                                                                                                                                                                      |
+| async_abor_enable=YES                                            | 是否允许客户端使用sync等命令                                                                                                                                                                                                                                                                                      |
+| ascii_upload_enable=YES、ascii_download_enable=YES               | 是否允许上传/下载二进制文件                                                                                                                                                                                                                                                                                       |
+| chroot_local_user=YES                                            | 限制所有的本地用户在自家目录                                                                                                                                                                                                                                                                                      |
+| chroot_list_enable=YES、chroot_list_file=/etc/vsftpd/chroot_list | 指定不能离开家目录的用户，将用户名一个一行写在/etc/vsftpd/chroot_list文件里，使用此方法时必须chroot_local_user=NO                                                                                                                                                                                                 |
+| ls_recurse_enable=YES                                            | 是否允许使用ls -R等命令                                                                                                                                                                                                                                                                                           |
+| listen=YES                                                       | 开启ipv4监听                                                                                                                                                                                                                                                                                                      |
+| listen_ipv6=YES                                                  | 开启ipv6监听                                                                                                                                                                                                                                                                                                      |
+| pam_service_name=vsftpd                                          | 使用pam模块控制，vsftpd文件在/etc/pam.d目录下                                                                                                                                                                                                                                                                     |
+| userlist_enable=YES                                              | 此选项被激活后，vsftpd将读取userlist_file参数所指定的文件中的用户列表。当列表中的用户登录FTP服务器时，该用户在提示输入密码之前就被禁止了。即该用户名输入后，vsftpd查到该用户名在列表中，vsftpd就直接禁止掉该用户，不会再进行询问密码等后续步聚                                                                   |
+| userlist_deny=YES                                                | 决定禁止还是只允许由userlist_file指定文件中的用户登录FTP服务器。此选项在userlist_enable 选项启动后才生效。YES，默认值，禁止文件中的用户登录，同时也不向这些用户发出输入密码的提示。NO，只允许在文件中的用户登录FTP服务器 |
+| tcp_wrappers=YES                                                 | 是否允许tcp_wrappers管理                                                                                                                                                                                                                                                                                          |
+| local_root=/home/ftp                                             | 所有用户的根目录，对匿名用户无效                                                                                                                                                                                                                                                                                  |
+| anon_max_rate                                                    | 匿名用户的最大传输速度，单位是Byts/s                                                                                                                                                                                                                                                                              |
+| local_max_rate                                                   | 本地用户的最大传输速度，单位是Byts/s                                                                                                                                                                                                                                                                              |
+| download_enable= YES                                             | 是否允许下载                                                                                                                                                                                                                                                                                                      |

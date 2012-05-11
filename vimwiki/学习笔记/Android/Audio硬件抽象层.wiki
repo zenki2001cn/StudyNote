@@ -1,0 +1,123 @@
+= Audio硬件抽象层 =
+
+%toc
+
+== 概述 ==
+{{{class="brush:text"
+    Audio硬件抽象层是沟通AudioFlinger和硬件驱动的桥梁。它的头文件定义是AudioHardwareInterface.h，
+这里主要定义了AudioHardwareInterface、AudioStreamOut、AudioStreamIn三个类。其中AudioHardwareInterface
+表示硬件接口的抽象，AudioStreamIn表示输入流的抽象，AudioStreamOut表示输出流的抽象。
+}}}
+
+== 模块定义 ==
+- 静态方法create用来创建抽象层的接口对象，openOutputStream和openInputStream分别用来初始化输出流和输入流对象。用户只要实现这些接口以供AudioFlinger调用。 
+ 
+=== AudioHardwareInterface ===
+{{{class="brush:c++"
+class AudioHardwareInterface
+{
+public:
+    virtual ~AudioHardwareInterface() {}
+    
+    ......
+    // 打开输出流对象
+    virtual AudioStreamOut* openOutputStream( uint32_t devices, int *format=0,
+                                uint32_t *channels=0, uint32_t *sampleRate=0,
+                                status_t *status=0) = 0;
+    virtual    void        closeOutputStream(AudioStreamOut* out) = 0;
+    
+    // 打开输入流对象
+    virtual AudioStreamIn* openInputStream( uint32_t devices, int *format,
+                                uint32_t *channels, uint32_t *sampleRate, status_t *status,
+                                AudioSystem::audio_in_acoustics acoustics) = 0;
+    virtual    void        closeInputStream(AudioStreamIn* in) = 0;
+
+    // 静态方法创建对象
+    static AudioHardwareInterface* create();
+
+    ......
+};
+}}}
+
+=== AudioStreamIn ===
+{{{class="brush:c++"
+class AudioStreamIn {
+public:
+    ......
+
+    // 从驱动层读取数据
+    virtual ssize_t read(void* buffer, ssize_t bytes) = 0;
+    ......
+};
+}}}
+
+=== AudioStreamOut ===
+{{{class="brush:c++"
+class AudioStreamOut {
+public:
+    ......
+
+    // 向驱动层写入数据
+    virtual ssize_t write(const void* buffer, size_t bytes) = 0;
+    
+    ......
+};
+}}}
+
+== 在AudioFlinger中初始化 ==
+=== AudioHardwareInterface初始化 ===
+{{{class="brush:c++"
+AudioFlinger::AudioFlinger() : BnAudioFlinger(),
+        mAudioHardware(0), mMasterVolume(1.0f), 
+        mMasterMute(false), mNextUniqueId(1)
+{
+    mHardwareStatus = AUDIO_HW_IDLE;
+    mAudioHardware = AudioHardwareInterface::create();
+    mHardwareStatus = AUDIO_HW_INIT;
+    
+    if (mAudioHardware->initCheck() == NO_ERROR) {
+        ...... 
+    } else {
+    }
+}
+}}}
+
+=== AudioStreamOut初始化 ===
+{{{class="brush:c++"
+int AudioFlinger::openOutput(uint32_t *pDevices,
+                                uint32_t *pSamplingRate,
+                                uint32_t *pFormat,
+                                uint32_t *pChannels,
+                                uint32_t *pLatencyMs,
+                                uint32_t flags)
+{
+    ......
+    Mutex::Autolock _l(mLock);
+    AudioStreamOut *output = mAudioHardware->openOutputStream(*pDevices, (int *)&format,
+                                                             &channels, &samplingRate, &status);
+    ......
+    return 0;
+}
+}}}
+
+=== AudioStreamIn初始化 ===
+{{{class="brush:c++"
+int AudioFlinger::openInput(uint32_t *pDevices, uint32_t *pSamplingRate,
+                                uint32_t *pFormat, uint32_t *pChannels, uint32_t acoustics)
+{
+    ...... 
+    Mutex::Autolock _l(mLock);
+    AudioStreamIn *input = mAudioHardware->openInputStream(*pDevices, (int *)&format,
+                                                             &channels, &samplingRate,
+                                                             &status,
+                                                             (AudioSystem::audio_in_acoustics)acoustics);
+    ...... 
+    return 0;
+}
+}}}
+
+== Android默认实现 ==
+- Android有对Audio硬件抽象层的默认实现，主要是AudioHardwareGeneric、AudioDumpInterface和AudioHardwareStub。
+    - AudioHardwareGeneric实现了音频通用驱动，主要是基于/dev/eac设备。
+    - AudioDumpInterface实现了将音频数据输出到文件。
+    - AudioHardwareStub是一个空实现，没有实际的功能，它的每个方法都返回一个默认值。

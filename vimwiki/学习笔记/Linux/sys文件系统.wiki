@@ -1,0 +1,491 @@
+= sysfs文件系统 =
+
+%toc
+
+== sysfs简介 ==
+{{{class="brush:text"
+    sysfs是Linux内核中设计较新的一种虚拟的基于内存的文件系统，它的作用与proc有些类似，
+但除了与proc相同的具有查看和设定内核参数功能之外，还有为Linux统一设备模型作为管理之用。
+相比于proc文件系统，使用sysfs导出内核数据的方式更为统一，并且组织的方式更好，它的设计从
+proc中吸取了很多教训。本文就sysfs的挂载点/sys目录结构、其与Linux统一设备模型的关系、常见
+属性文件的用法等方面对sysfs作入门介绍，并且就内核编程方面，以具体的例子来展示如何添加
+sysfs支持。
+}}}
+
+== sysfs文件系统 ==
+{{{class="brush:text"
+    /sys下的目录结构是经过精心设计的：
+    在/sys/devices下是所有设备的真实对象，包括如视频卡和以太网卡等真实的设备，也包括ACPI等
+不那么显而易见的真实设备、还有tty, bonding等纯粹虚拟的设备；在其它目录如class, bus等中则在
+分类的目录中含有大量对devices中真实对象引用的符号链接文件。
+}}}
+
+=== /sys目录结构 ===
+{{{class="brush:bash"
+$ ls -F /sys
+block/  bus/  class/  dev/  devices/  firmware/  fs/  kernel/  module/  power/
+}}}
+
+=== /sys目录解析 ===
+- *devices*
+
+{{{class="brush:text"
+    这是内核对系统中所有设备的分层次表达模型，也是/sys文件系统管理设备的最重要的目录结构，
+下文会对它的内部结构作进一步分析；
+}}}
+
+- *dev*
+
+{{{class="brush:text"
+    这个目录下维护一个按字符设备和块设备的主次号码(major:minor)链接到真实的设备(/sys/devices下)
+的符号链接文件，它是在内核 2.6.26 首次引入；
+}}}
+
+- *bus*
+
+{{{class="brush:text"
+    这是内核设备按总线类型分层放置的目录结构，devices中的所有设备都是连接于某种总线之下，在这里的
+每一种具体总线之下可以找到每一个具体设备的符号链接，它也是构成Linux统一设备模型的一部分；
+}}}
+
+- *class*
+
+{{{class="brush:text"
+    这是按照设备功能分类的设备模型，如：系统所有输入设备都会出现在/sys/class/input之下，而不论它们
+是以何种总线连接到系统。它也是构成Linux统一设备模型的一部分；
+}}}
+
+- *block*
+
+{{{class="brush:text"
+    这里是系统中当前所有的块设备所在，按照功能来说放置在/sys/class之下会更合适，但只是由于历史遗留
+因素而一直存在于/sys/block, 但从2.6.22开始就已标记为过时，只有在打开了CONFIG_SYSFS_DEPRECATED配置下
+编译才会有这个目录的存在，并且在2.6.26内核中已正式移到/sys/class/block,旧的接口/sys/block为了向后兼
+容保留存在，但其中的内容已经变为指向它们在/sys/devices/中真实设备的符号链接文件；
+}}}
+
+- *firmware*
+
+{{{class="brush:text"
+    这里是系统加载固件机制的对用户空间的接口，关于固件有专用于固件加载的一套API，在附录LDD3一书中有
+关于内核支持固件加载机制的更详细的介绍；
+}}}
+
+- *fs*
+
+{{{class="brush:text"
+    这里按照设计是用于描述系统中所有文件系统，包括文件系统本身和按文件系统分类存放的已挂载点，
+但目前只有fuse，gfs2等少数文件系统支持sysfs接口，一些传统的虚拟文件系统(VFS)层次控制参数仍然
+在sysctl(/proc/sys/fs)接口中；
+}}}
+
+- *kernel*
+
+{{{class="brush:text"
+    这里是内核所有可调整参数的位置，目前只有uevent_helper, kexec_loaded, mm, 和新式的slab分配器等
+几项较新的设计在使用它，其它内核可调整参数仍然位于sysctl(/proc/sys/kernel)接口中；
+}}}
+
+- *module*
+
+{{{class="brush:text"
+    这里有系统中所有模块的信息，不论这些模块是以内联(inlined)方式编译到内核映像文件(vmlinuz)中
+还是编译为外部模块(ko文件)，都可能会出现在/sys/module 中：
+    * 编译为外部模块(ko文件)在加载后会出现对应的/sys/module/<module_name>/, 并且在这个目录下会
+出现一些属性文件和属性目录来表示此外部模块的一些信息，如版本号、加载状态、所提供的驱动程序等；
+    * 编译为内联方式的模块则只在当它有非0属性的模块参数时会出现对应的/sys/module/<module_name>, 
+这些模块的可用参数会出现在/sys/modules/<modname>/parameters/<param_name>中，
+        ** 如/sys/module/printk/parameters/time这个可读写参数控制着内联模块printk在打印内核消息时
+是否加上时间前缀；
+        ** 所有内联模块的参数也可以由"<module_name>.<param_name>=<value>"的形式写在内核启动参数上，
+如启动内核时加上参数"printk.time=1"与向"/sys/module/printk/parameters/time"写入1的效果相同；
+    * 没有非0属性参数的内联模块不会出现于此。
+}}}
+
+- *power*
+
+{{{class="brush:text"
+    这里是系统中电源选项，这个目录下有几个属性文件可以用于控制整个机器的电源状态，
+如可以向其中写入控制命令让机器关机、重启等。
+}}}
+
+== /sys/devices目录示例 ==
+- 查看/sys/devices/的目录结构
+
+{{{class="brush:bash"
+$ ls -F /sys/devices/
+isa/  LNXSYSTM:00/  pci0000:00/  platform/  pnp0/  pnp1/  system/  virtual/
+}}}
+
+- 查看/sys/devices/pci0000:00/的目录结构
+
+{{{class="brush:bash"
+$ ls -F /sys/devices/pci0000:00/
+0000:00:00.0/  0000:00:02.5/  0000:00:03.1/  0000:00:0e.0/   power/
+0000:00:01.0/  0000:00:02.7/  0000:00:03.2/  firmware_node@  uevent
+0000:00:02.0/  0000:00:03.0/  0000:00:03.3/  pci_bus/
+}}}
+
+- 查看/sys/devices/pci0000:00/的目录结构
+- 其中有一个目录0000:01:00.0/, 其它都是属性文件和属性组。
+
+{{{class="brush:bash"
+$ ls -F /sys/devices/pci0000:00/0000:00:01.0/
+0000:01:00.0/         device         local_cpus  power/            subsystem_vendor
+broken_parity_status  enable         modalias    resource          uevent
+class                 irq            msi_bus     subsystem@        vendor
+config                local_cpulist  pci_bus/    subsystem_device
+}}}
+
+[[pic/sysfs.png]]
+
+== Linux统一设备模型 ==
+{{{class="brush:text"
+    在Linux 2.5内核的开发过程中，人们设计了一套新的设备模型，目的是为了对计算机上的所有设备
+进行统一地表示和操作，包括设备本身和设备之间的连接关系。这个模型是在分析了PCI和USB的总线驱动
+过程中得到的，这两个总线类型能代表当前系统中的大多数设备类型，它们都有完善的热挺拔机制和电源
+管理的支持，也都有级连机制的支持，以桥接的PCI/USB总线控制器的方式可以支持更多的PCI/USB设备。
+为了给所有设备添加统一的电源管理的支持，而不是让每个设备中去独立实现电源管理的支持，人们考虑的
+是如何尽可能地重用代码；而且在有层次模型的PCI/USB总线中，必须以合理形式展示出这个层次关系，
+这也是电源管理等所要求的必须有层次结构。
+
+    如在一个典型的PC系统中，中央处理器(CPU)能直接控制的是PCI总线设备，而USB总线设备是以一个PCI
+设备(PCI-USB桥)的形式接入在PCI总线设备上，外部USB设备再接入在USB总线设备上；当计算机执行挂起
+(suspend)操作时，Linux内核应该以“外部USB设备->USB总线设备->PCI总线设备”的顺序通知每一个设备将电
+源挂起；执行恢复(resume)时则以相反的顺序通知；反之如果不按此顺序则将有设备得不到正确的电源状态
+变迁的通知，将无法正常工作。
+
+    sysfs是在这个Linux统一设备模型的开发过程中的一项副产品。为了将这些有层次结构的设备以用户程序可见
+的方式表达出来，人们很自然想到了利用文件系统的目录树结构（这是以UNIX方式思考问题的基础，一切都是
+文件！）在这个模型中，有几种基本类型，它们的对应关系见下表：
+}}}
+
+| 类型                     | 描述                                                                                                       | 内核数据结构         | /sys目录项              |
+|--------------------------+------------------------------------------------------------------------------------------------------------+----------------------+-------------------------|
+| 设备(Devices)            | 设备是此模型中最基本的类型，以设备本身的连接按层次组织                                                     | struct device        | /sys/devices            |
+| 设备驱动(Device Drivers) | 在一个系统中安装多个相同设备，只需要一份驱动程序的支持                                                     | struct device_driver | /sys/bus/pci/drivers/*/ |
+| 总线类型(Bus Types)      | 在整个总线级别对此总线上连接的所有设备进行管理                                                             | struct bus_type      | /sys/bus/*/             |
+| 设备类别(Device Classes) | 这是按照功能进行分类组织的设备层次树；如USB接口和PS/2接口的鼠标都是输入设备，都会出现在/sys/class/input/下 | struct class         | /sys/class/*/           |
+
+== 内核对象 ==
+=== kobject ===
+- 在Linux设备模型中最基本的对象，它的功能是提供引用计数和维持父子(parent)结构、平级(sibling)目录关系，上面的device，device_driver等各对象都是以kobject 基础功能之上实现的；
+- 其中struct kref内含一个atomic_t类型用于引用计数，parent是单个指向父节点的指针，entry用于父kset以链表头结构将kobject结构维护成双向链表；
+
+{{{class="brush:c"
+struct kobject {
+    const char              *name;
+    struct list_head        entry;
+    struct kobject          *parent;
+    struct kset             *kset;
+    struct kobj_type        *ktype;
+    struct sysfs_dirent     *sd;
+    struct kref             kref;
+    unsigned int state_initialized:1;
+    unsigned int state_in_sysfs:1;
+    unsigned int state_add_uevent_sent:1;
+    unsigned int state_remove_uevent_sent:1;
+}; 
+}}}
+
+=== kset ===
+- 它用来对同类型对象提供一个包装集合，在内核数据结构上它也是由内嵌一个kobject实现，因而它同时也是一个kobject(面向对象OOP概念中的继承关系)，具有kobject 的全部功能；
+- 其中的struct list_head list用于将集合中的kobject按struct list_head entry维护成双向链表；
+
+{{{class="brush:c"
+struct kset {
+    struct list_head list;
+    spinlock_t list_lock;
+    struct kobject kobj;
+    struct kset_uevent_ops *uevent_ops;
+}; 
+}}}
+
+=== sysfs_dirent ===
+- 涉及到文件系统实现来说，sysfs是一种基于ramfs实现的内存文件系统，与其它同样以ramfs实现的内存文件系统(configfs,debugfs,tmpfs,...)类似。
+- sysfs也是直接以VFS中的struct inode和struct dentry等VFS层次的结构体直接实现文件系统中的各种对象；同时在每个文件系统的私有数据(如dentry->d_fsdata 等位置)上，使用了称为struct sysfs_dirent的结构用于表示/sys中的每一个目录项。
+- 在上面的`kobject`对象中可以看到有向sysfs_dirent的指针，因此在sysfs中是用同一种struct sysfs_dirent来统一设备模型中的kset/kobject/attr/attr_group。
+- 具体在数据结构成员上，sysfs_dirent上有一个union共用体包含四种不同的结构，分别是目录、符号链接文件、属性文件、二进制属性文件；其中目录类型可以对应 kobject，在相应的s_dir中也有对kobject的指针，因此在内核数据结构，`kobject与sysfs_dirent是互相引用的`；
+
+{{{class="brush:c"
+struct sysfs_dirent {
+    atomic_t                s_count;
+    atomic_t                s_active;
+    struct sysfs_dirent     *s_parent;
+    struct sysfs_dirent     *s_sibling;
+    const char              *s_name;
+
+    union {
+        struct sysfs_elem_dir       s_dir;
+        struct sysfs_elem_symlink   s_symlink;
+        struct sysfs_elem_attr      s_attr;
+        struct sysfs_elem_bin_attr  s_bin_attr;
+    };
+
+    unsigned int    s_flags;
+    ino_t           s_ino;
+    umode_t         s_mode;
+    struct iattr    *s_iattr;
+};
+}}}
+
+=== 与sysfs的对应关系 ===
+- 有了这些概念，再来回头看/sys目录结构就是非常清晰明了:
+    * 在/sys根目录之下的都是kset，它们组织了/sys的顶层目录视图；
+    * 在部分kset下有二级或更深层次的kset；
+    * 每个kset目录下再包含着一个或多个kobject，这表示一个集合所包含的kobject结构体；
+    * 在kobject下有属性(attrs)文件和属性组(attr_group)，属性组就是组织属性的一个目录，它们一起向用户层提供了表示和操作这个kobject的属性特征的接口；
+    * 在kobject下还有一些符号链接文件，指向其它的kobject，这些符号链接文件用于组织上面所说的device、driver、bus_type、class、module之间的关系；
+    * 不同类型：如设备类型的、设备驱动类型的kobject都有不同的属性，不同驱动程序支持的sysfs接口也有不同的属性文件；而相同类型的设备上有很多相同的属性文件；
+
+= sysfs源码分析 =
+
+== 为什么使用sysfs ==
+- 如果你正在开发的设备驱动程序中需要与用户层的接口，一般可选的方法有：
+   - 注册虚拟的字符设备文件，以这个虚拟设备上的read/write/ioctl等接口与用户交互；但read/write一般只能做一件事情，ioctl可以根据cmd 参数做多个功能，但其缺点是很明显的：ioctl接口无法直接在Shell脚本中使用，为了使用ioctl的功能，还必须编写配套的C语言的虚拟设备操作程序，ioctl 的二进制数据接口也是造成大小端问题(big endian与little endian)、32位/64位不可移植问题的根源；
+   - 注册proc接口，接受用户的read/write/ioctl操作；同样的，一个proc项通常使用其read/write/ioctl接口，它所存在的问题与上面的虚拟字符设备的的问题相似；
+   - 注册sysfs属性，并且Linux 2.6内核通过udev工具集的用户态程序，扫描/sys/class子目录来寻找dev文件。对每个这样的文件，udev程序会在/dev目录下创建相应的设备文件。
+
+== 宏定义 ==
+
+=== attribute和attribute_group ===
+- 定义了sysfs所具有的基本属性，其中attribute_group会包含一组attribute。
+
+{{{class="brush:c"
+// 头文件include/linux/sysfs.h
+
+// attribute
+/* FIXME
+ * The *owner field is no longer used.
+ * x86 tree has been cleaned up. The owner
+ * attribute is still left for other arches.
+ */
+struct attribute {
+	const char		*name;
+	struct module	*owner;
+	mode_t			mode;
+};
+
+// attribute_group
+struct attribute_group {
+	const char		    *name;
+	mode_t			    (*is_visible)(struct kobject *,
+					      struct attribute *, int);
+	struct attribute	**attrs;
+};
+}}}
+
+=== __ATTR ===
+- 在内核中，sysfs属性一般是由`__ATTR`系列的宏来声明的：
+    - _name:名称
+    - _mode：权位
+    - _show：读函数
+    - _store：写函数
+
+{{{class="brush:c"
+// 头文件include/linux/sysfs.h
+// __ATTR
+#define __ATTR(_name,_mode,_show,_store) { \
+	.attr = {.name = __stringify(_name), .mode = _mode },	\
+	.show	= _show,					\
+	.store	= _store,					\
+}
+
+// __ATTR_RO
+#define __ATTR_RO(_name) { \
+	.attr	= { .name = __stringify(_name), .mode = 0444 },	\
+	.show	= _name##_show,					\
+}
+
+#define __ATTR_NULL { .attr = { .name = NULL } }
+}}}
+
+== 宏说明 ==
+- 总线(BUS)和类别(CLASS)属性一般用于新设计的总线和新设计的类别，这两者一般是不用的；因为你的设备一般是以PCI等成熟的常规方式连接到主机，而不会去新发明一种类型；使用驱动属性和设备属性的区别就在于：看你的sysfs属性设计是针对整个驱动有效的还是针对这份驱动所可能支持的每个设备分别有效。
+- 从头文件中还可以找到show/store函数的原型，注意到它和虚拟字符设备或proc项的read/write的作用很类似，但有一点不同是show/store函数上的buf/count参数是在sysfs层已作了用户区/内核区的内存复制，虚拟字符设备上常见的__user属性在这里并不需要，因而也不需要多一次copy_from_user/copy_to_user, 在show/store函数参数上的buf/count参数已经是内核区的地址，可以直接操作。
+
+== 设备驱动程序模型 ==
+- Linux的设备驱动程序模型抽象出4种类型的组件，分别是`设备`、`驱动程序`、`总线`、`类`。
+- 4种高级的宏，分别表示对应于不同类型的组件：
+    - DEVICE_ATTR：表示设备
+    - BUS_ATTR：表示总线
+    - DRIVER_ATTR：表示驱动
+    - CLASS_ATTR：表示类别 
+- 对应4种宏的结构*_attribute，都包含了attribute和读写方法，实际上sysfs会通过这些*_attribute向用户层提供操作接口。
+
+=== 设备(device) ===
+- 每个设备由一个device对象来描述，该子系统对应的目录为/sys/devices。
+
+{{{class="brush:c"
+struct device {
+    ......
+	struct device		*parent;
+
+	struct kobject kobj;
+	struct device_type	*type;
+
+    ......
+	struct bus_type	*bus;		    /* type of bus device is on */
+	struct device_driver *driver;	/* which driver has allocated this device */
+};
+}}}
+
+- 设备的类型由device_type来描述。
+
+{{{class="brush:c"
+struct device_type {
+	const char *name;
+	struct attribute_group **groups;
+	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
+	void (*release)(struct device *dev);
+
+	int (*suspend)(struct device *dev, pm_message_t state);
+	int (*resume)(struct device *dev);
+
+	struct dev_pm_ops *pm;
+};
+}}}
+
+- 与device相关的宏定义
+
+{{{class="brush:c"
+// DEVICE_ATTR
+struct device_attribute {
+	struct attribute	attr;
+	ssize_t (*show)(struct device *dev, struct device_attribute *attr,
+			char *buf);
+	ssize_t (*store)(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count);
+};
+
+#define DEVICE_ATTR(_name, _mode, _show, _store) \
+struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 驱动程序(device_driver) ===
+- 每个驱动程序由device_driver对象来描述，该对象的方法用来处理热拔插，即插即用和电源管理。
+
+{{{class="brush:c"
+struct device_driver {
+	const char		*name;
+	struct bus_type		*bus;
+
+	struct module		*owner;
+	const char		*mod_name;	/* used for built-in modules */
+
+	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
+
+	int (*probe) (struct device *dev);
+	int (*remove) (struct device *dev);
+	void (*shutdown) (struct device *dev);
+	int (*suspend) (struct device *dev, pm_message_t state);
+	int (*resume) (struct device *dev);
+	const struct attribute_group **groups;
+
+	const struct dev_pm_ops *pm;
+
+	struct driver_private *p;
+};
+}}}
+
+- 与device_driver相关的宏定义
+
+{{{class="brush:c"
+// DRIVER_ATTR
+struct driver_attribute {
+	struct attribute attr;
+	ssize_t (*show)(struct device_driver *driver, char *buf);
+	ssize_t (*store)(struct device_driver *driver, const char *buf,
+			 size_t count);
+};
+
+#define DRIVER_ATTR(_name, _mode, _show, _store)	\
+struct driver_attribute driver_attr_##_name =		\
+	__ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 总线(bus_type) ===
+- 每种总线类型由一个bus_type对象描述，该子系统对应的目录为/sys/bus。
+
+{{{class="brush:c"
+struct bus_type {
+	const char		*name;
+	struct bus_attribute	*bus_attrs;
+	struct device_attribute	*dev_attrs;
+	struct driver_attribute	*drv_attrs;
+
+	int (*match)(struct device *dev, struct device_driver *drv);
+	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
+	int (*probe)(struct device *dev);
+	int (*remove)(struct device *dev);
+	void (*shutdown)(struct device *dev);
+
+	int (*suspend)(struct device *dev, pm_message_t state);
+	int (*resume)(struct device *dev);
+
+	const struct dev_pm_ops *pm;
+
+	struct bus_type_private *p;
+};
+}}}
+
+- 与bus_type相关的宏定义
+
+{{{class="brush:c"
+// BUS_ATTR
+struct bus_attribute {
+	struct attribute	attr;
+	ssize_t (*show)(struct bus_type *bus, char *buf);
+	ssize_t (*store)(struct bus_type *bus, const char *buf, size_t count);
+};
+
+#define BUS_ATTR(_name, _mode, _show, _store)	\
+struct bus_attribute bus_attr_##_name = __ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 类(class) ===
+- 每个类由class对象描述，该子系统对应的目录为/sys/class。
+
+{{{class="brush:c"
+struct class {
+	const char		*name;
+	struct module	*owner;
+
+	struct class_attribute		*class_attrs;
+	struct device_attribute		*dev_attrs;
+	struct kobject			    *dev_kobj;
+
+	int (*dev_uevent)(struct device *dev, struct kobj_uevent_env *env);
+	char *(*devnode)(struct device *dev, mode_t *mode);
+
+	void (*class_release)(struct class *class);
+	void (*dev_release)(struct device *dev);
+
+	int (*suspend)(struct device *dev, pm_message_t state);
+	int (*resume)(struct device *dev);
+
+	const struct kobj_ns_type_operations *ns_type;
+	const void *(*namespace)(struct device *dev);
+
+	const struct dev_pm_ops *pm;
+
+	struct class_private *p;
+};
+}}}
+
+- 与class相关的宏定义
+
+{{{class="brush:c"
+// CLASS_ATTR
+struct class_attribute {
+	struct attribute attr;
+	ssize_t (*show)(struct class *class, char *buf);
+	ssize_t (*store)(struct class *class, const char *buf, size_t count);
+};
+
+#define CLASS_ATTR(_name, _mode, _show, _store)			\
+struct class_attribute class_attr_##_name = __ATTR(_name, _mode, _show, _store)
+}}}
+
+= mmc驱动示例 =
+- [[mmc驱动示例]]

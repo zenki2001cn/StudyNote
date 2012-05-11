@@ -1,0 +1,88 @@
+= Condition同步 =
+
+%toc
+
+== 什么时候mutex不够，还需要condition? == 
+- 什么时候mutex不够，还需要condition variable?假设有共享的资源sum，与之相关联的mutex是lock_s。假设每个线程对sum的操作很简单的，与sum的状态无关比如只是sum++。那么只用mutex足够了。程序员只要确保每个线程操作前，取得lock，然后sum++，再unlock即可。
+- 线程的处理代码如下：
+
+=== add()版本一 ===
+{{{class="brush:c"
+// 线程t0,t1,t2
+void add()
+{
+    pthread_mutex_lock(lock_s);
+    sum++;
+    pthread_mutex_unlock(lock_s);
+}
+}}}
+
+- 如果操作比较复杂，假设线程t0，t1，t2的操作是sum++，而线程t3则是在sum到达100的时候，打印出一条信息，并对sum清零。这种情况下， 如果只用mutex， 则t3需要一个循环，每个循环里先取得lock_s，然后检查sum的状态，如果sum>=100，则打印并清零，然后unlock。如果sum<100，则unlock，并sleep()本线程合适的一段时间。
+- 这种办法有两个问题：
+    - sum在大多数情况下不会到达100，那么对t3的代码来说，大多数情况下，走的是else分支，只是lock和unlock，然后sleep()。这浪费了CPU处理时间。
+    - 为了节省CPU处理时间，t3会在探测到sum没到达100的时候sleep()一段时间。这样却又带来另外一个问题，亦即t3响应速度下降。可能在sum到达200的时候，t3才会醒过来。
+    - 这样，程序员在设置sleep()时间的时候陷入两难境地，设置得太短了节省不了资源，太长了又降低响应速度。真是难办啊!
+
+=== print()版本一 ===
+{{{class="brush:c"
+// 线程t3
+void print()
+{
+    while (1) {
+        pthread_mutex_lock(lock_s);
+        
+        if(sum > 100) {
+            printf(“sum reach 100!”);
+            pthread_mutex_unlock(lock_s);
+        } else {
+            pthread_mutex_unlock(lock_s);
+            my_thread_sleep(100);
+            return OK;
+        }
+    }
+}
+}}}
+
+== 解决办法 ==
+- 首先定义一个condition variable。t0，t1，t2的代码只要后面加等待条件变量的方法。
+- 这里需要注意两点:
+    - 在thread_cond_wait()之前，必须先lock相关联的mutex， 因为假如目标条件未满足，pthread_cond_wait()实际上会`先unlock该mutex`， `然后block`，在`目标条件满足后`再`重新lock该mutex`， 然后返回。
+    - 为什么是while(sum<100)，而不是if(sum<100) ?这是因为在pthread_cond_signal()和pthread_cond_wait()返回之间，有时间差，假设在这个时间差内，还有另外一个线程t4又把sum减少到100以下了，那么t3在pthread_cond_wait()返回之后，显然应该再检查一遍sum的大小。这就是用while的用意。
+
+=== PTHREAD_COND_INITIALIZER ===
+{{{class="brush:c"
+pthread_cond_t cond_sum_ready = PTHREAD_COND_INITIALIZER;
+}}}
+
+=== add()版本二 ===
+{{{class="brush:c"
+// 线程t0,t1,t2
+void add()
+{
+    pthread_mutex_lock(lock_s);
+    sum++;
+    pthread_mutex_unlock(lock_s);
+    
+    if(sum >= 100) {
+        pthread_cond_signal(&cond_sum_ready);   // 通知条件变量
+    }
+}
+}}}
+
+=== print()版本二 ===
+{{{class="brush:c"
+// 线程t3
+void print()
+{
+    pthread_mutex_lock(lock_s);
+    while(sum < 100) {
+        pthread_cond_wait(&cond_sum_ready, &lock_s); // 条件变量被唤醒
+    }
+    
+    printf(“sum is over 100!”);
+    sum=0;
+    pthread_mutex_unlock(lock_s);
+    return OK;
+}
+}}}
+

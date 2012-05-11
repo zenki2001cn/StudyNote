@@ -1,0 +1,39 @@
+= 状态栏 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+// 状态栏相关目录
+frameworks/base/services/java/com/android/server/status/
+
+// 定义icon的资源目录
+frameworks/base/core/res/res/drawable/
+
+// 定义icon的排列XML
+frameworks/base/core/res/res/values/arrays.xml
+
+// 状态栏加载图标的策略，包含在启动时加载的初始图标
+frameworks/base/services/java/com/android/server/status/StatusBarPolicy.java
+
+// 实现了IStatusBar.Stub接口，该接口通过HandleMessage来处理所有其他class发送来的消息，并调用perform*系列方法来实现对应的处理
+frameworks/base/services/java/com/android/server/status/StatusBarService.java
+
+// 状态栏视图类，可以处理一些触摸事件
+frameworks/base/services/java/com/android/server/status/StatusBarView.java
+
+}}}
+
+== 相关类分析 ==
+=== 管理状态栏图标 ===
+
+- [[StatusBarPolicy]]
+
+=== 管理状态栏和消息处理 ===
+
+- [[StatusBarService]]
+
+=== 状态栏布局界面 ===
+
+- [[StatusBarView]]
+

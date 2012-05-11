@@ -1,0 +1,539 @@
+= IBinder接口 =
+
+%toc
+
+== Binder通信的基类 ==
+{{{class="brush:text"
+IBinder定义了代理端、服务端通信的接口方法，实现该接口的子类都可称之为“Binder”。
+定义了Binder通信的接口。
+定义了内部类DeathRecipient用来处理远端连接断掉后的处理回调。
+定义了获取自定义功能sp<IInterface>对象的方法，由子类实现。
+定义了获取BBinder对象的方法，由子类实现。
+定义了获取BpBinder对象的方法，由子类实现。
+}}}
+
+== 如何定义服务的接口 ==
+{{{class="brush:text"
+    任何一种服务，都需要提供接口供客户端调用才有意义，Android为这些接口提供了基类IInterface。该类包含返回一个
+IBinder的强引用指针的方法。因此需要进行Binder通信时就可以通过它的asBinder()方法获取IBinder的对象。
+    此外，IInterface还提供了将IBinder转换成IInterface接口的宏，当我们从Binder驱动获取到某个服务的Binder内存数据后，
+就可以动态的将该内存数据转换成对应服务的代理类对象，它的形式通常是Bpxxxx。
+}}}
+
+== 谁做服务端 ==
+{{{class="brush:text"
+    服务端通过BBinder实现，它继承IBinder接口，有一个重要的onTransact()方法。该方法主要是服务器端对应于代理端所做出
+的各种请求的具体实现;而与驱动通信的功能由服务器进程建立循环线程来实现，onTransact()会在该线程处理请求时被调用。
+    BBinder已经实现了IBinder接口，IInterface的继承类实现了服务端的功能接口，真正的Binder对象是这两者的组合，由此而
+诞生了BnInterface。它双重继承于IInterface和BBinder，因此它既具有Binder的通信功能又能够实现服务端提供的接口。该类是
+最终提供给各种服务继承的基类，用户要先声明自定义的IInterface接口，再实现BnInterface的子类。
+}}}
+
+== 谁做代理端 ==
+{{{class="brush:text"
+    代理端通过BpBinder实现，它同样继承IBinder接口。从BpBinder的构造函数我们可以得知，Binder在代理端的形态是一个handle，
+代理端通过这个handle与驱动进行通信，通信功能由BpBinder自身实现(使用IPCThreadState)。
+    它还有一个内部类ObjectManager，用来管理一组BpBinder对象的列表，该列表与Java层的BpBinder相关联。
+    上面提到服务端最终被用户使用的基类是BnInterface，代理端同样有与之相对应的类BpInterface。它双重继承于BpRefBase和
+IInterface，这里有一个疑问，为什么代理端没有继承BpBinder，而是继承了BpRefBase类？我们去看BpRefBase的构造函数可以知道，
+它需要一个sp<IBinder>作为参数，而这个IBinder就是BpBinder。BpRefBase的作用是维护BpBinder的引用计数。和服务端不同，
+服务端的Binder实体只有一个，而代理端获取的是Binder引用，因此每个代理端得到Binder引用后都需要将自身引用加1，当释放的时候减1。
+}}}
+
+== 再探接口IInterface ==
+{{{class="brush:text"
+    以上内容描述了接口、服务端、代理端的概念。我们回过头来再看IInterface.cpp和IInterface.h的定义和实现。首先它是
+B*Interface的抽象基类，其次它提供了IBinder和B*Interface之间相互转换的方法。
+    asBinder(): 实现从Interface转换成IBinder。该方法会调用子类的onAsBinder()。而子类BnInterface和BpInterface
+的实现是不一样的，服务端直接返回this，即BBinder;而代理端返回remote()，即BpBinder。
+    asInterface(): 实现从IBinder转换成Interface。该方法由DECLARE_META_INTERFACE和IMPLEMENT_META_INTERFACE宏实现，
+服务端对象调用该方法，会直接返回BnInterface的子类对象，客户端对象调用该方法则返回BpInterface的子类对象。
+}}}
+
+== 要点总结 ==
+- 结合前面的内容可以知道，无论是客户端还是服务端，都是通过IServiceManager的接口注册和获取Binder。服务端比较容易理解，只要创建一个继承于BnInterface的子类对象，并通过addService()方法加入到ServiceManager中就可以了。
+- 代理端的实现相对比较复杂，首先还是通过IServiceManager的接口方法getService()获取到相应IBinder对象。该IBinder对象其实是由Binder句柄生成的BpBinder对象，我们再看BpBinder的获取过程：查看BpServiceManager::checkService()方法得知其返回值为reply.readStrongBinder()，reply读取IBinder对象时会根据其句柄生成一个BpBinder对象。(参见[[Parcel传输介质]])
+- 之前分析过代理端最终以BpInterface的形式暴露出来，在代码中表现为其子类sp<IXXINTERFACE>，那么我们获取来的IBinder如何转换成这种形式呢？Android为我们提供了两个宏：`DECLARE_META_INTERFACE`和`IMPLEMENT_META_INTERFACE`，下面我们来分析这两个宏的作用：
+    - DECLARE_META_INTERFACE宏声明了两个方法，asInterface()和getInterfaceDescriptor()。该宏以接口类`IXXX`的名字去掉字母`I`的字符串作为参数，并在宏实现中再转换成IXXX的形式。
+    - IMPLEMENT_META_INTERFACE宏接收两个参数，第一个参数和声明宏一样为接口类名去掉I，第二个参数为该接口的字符串描述。"实现宏"自然要实现"声明宏"的方法，上面提到的getInterfaceDescriptor()会直接返回接口的字符串描述。asInterface()首先调用IBinder对象的`queryLocalInterface()`方法获取sp<IInterface>，查看IBinder的头文件，发现这是一个虚函数，只有BnInterface返回真正的对象指针，其他继承类都会返回NULL，因此如果IBinder是本地对象，便调用它的基类RefBase的get()方法获取本地Binder对象实例，这样做是因为如果服务端和客户端在同一进程，就不需要再通过代理跨进程通信，提高了效率。如果IBinder不是本地对象，则new一个`BpXXX`的对象，该对象即是上面提到的BpInterface的继承类。由此实现了IBinder到BpInterface的转换。
+- 服务端和代理端如何与驱动通信？答案是[[驱动适配层]]。ProcessState和IPCThreadState类的作用是打开驱动设备并与之通信。代理端通过BpBinder.transact()调用IPCThreadState::transact()来实现。服务端会在初始化时打开驱动设备，开启线程并监听该设备等待客户端的请求，根据请求命令不同做出相应的处理。(参见[[驱动适配层]]的Binder消息处理阶段一节)
+
+== IBinder.h ==
+=== IBinder ===
+{{{class="brush:c++"
+class IBinder : public virtual RefBase
+{
+public:
+    enum {
+        FIRST_CALL_TRANSACTION  = 0x00000001,
+        LAST_CALL_TRANSACTION   = 0x00ffffff,
+
+        PING_TRANSACTION        = B_PACK_CHARS('_','P','N','G'),
+        DUMP_TRANSACTION        = B_PACK_CHARS('_','D','M','P'),
+        INTERFACE_TRANSACTION   = B_PACK_CHARS('_', 'N', 'T', 'F'),
+
+        // Corresponds to tfOneWay -- an asynchronous call.
+        FLAG_ONEWAY             = 0x00000001
+    };
+
+                            IBinder();
+
+    // 本地服务接口查询方法
+    virtual sp<IInterface>  queryLocalInterface(const String16& descriptor);
+
+    virtual const String16& getInterfaceDescriptor() const = 0;
+
+    // 代理端Binder是否存在
+    virtual bool            isBinderAlive() const = 0;
+    // 向服务端发送PING_TRANSACTION命令，并返回状态
+    virtual status_t        pingBinder() = 0;
+    virtual status_t        dump(int fd, const Vector<String16>& args) = 0;
+
+    // 发送命令请求
+    virtual status_t        transact(   uint32_t code,
+                                        const Parcel& data,
+                                        Parcel* reply,
+                                        uint32_t flags = 0) = 0;
+
+    // 服务端异常或被杀死后的回调处理
+    class DeathRecipient : public virtual RefBase
+    {
+    public:
+        virtual void binderDied(const wp<IBinder>& who) = 0;
+    };
+
+    // 代理端要求Binder驱动当服务端死掉后，发送死亡通知给代理端，如果代理端设置了
+    // DeathRecipient，便会调用它的binderDied回调。
+    virtual status_t        linkToDeath(const sp<DeathRecipient>& recipient,
+                                        void* cookie = NULL,
+                                        uint32_t flags = 0) = 0;
+
+    // 取消之前注册的死亡通知机制
+    virtual status_t        unlinkToDeath(  const wp<DeathRecipient>& recipient,
+                                            void* cookie = NULL,
+                                            uint32_t flags = 0,
+                                            wp<DeathRecipient>* outRecipient = NULL) = 0;
+
+    virtual bool            checkSubclass(const void* subclassID) const;
+
+    typedef void (*object_cleanup_func)(const void* id, void* obj, void* cleanupCookie);
+
+    virtual void            attachObject(   const void* objectID,
+                                            void* object,
+                                            void* cleanupCookie,
+                                            object_cleanup_func func) = 0;
+    virtual void*           findObject(const void* objectID) const = 0;
+    virtual void            detachObject(const void* objectID) = 0;
+
+    // BBinder返回this
+    virtual BBinder*        localBinder();
+    // BpBinder返回this
+    virtual BpBinder*       remoteBinder();
+
+protected:
+    virtual          ~IBinder();
+
+private:
+};
+}}}
+
+== IInterface.h ==
+=== IInterface ===
+{{{class="brush:c++"
+class IInterface : public virtual RefBase
+{
+public:
+            IInterface();
+            sp<IBinder>         asBinder();
+            sp<const IBinder>   asBinder() const;
+            
+protected:
+    virtual                     ~IInterface();
+    virtual IBinder*            onAsBinder() = 0;
+};
+}}}
+
+=== BnInterface ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+class BnInterface : public INTERFACE, public BBinder
+{
+public:
+    virtual sp<IInterface>      queryLocalInterface(const String16& _descriptor);
+    virtual const String16&     getInterfaceDescriptor() const;
+
+protected:
+    virtual IBinder*            onAsBinder();
+};
+}}}
+
+=== BnInterface::queryLocalInterface ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+inline sp<IInterface> BnInterface<INTERFACE>::queryLocalInterface(
+        const String16& _descriptor)
+{
+    if (_descriptor == INTERFACE::descriptor) return this;
+    return NULL;
+}
+}}}
+
+=== BnInterface::getInterfaceDescriptor ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+inline const String16& BnInterface<INTERFACE>::getInterfaceDescriptor() const
+{
+    return INTERFACE::getInterfaceDescriptor();
+}
+}}}
+
+=== BnInterface::onAsBinder ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+IBinder* BnInterface<INTERFACE>::onAsBinder()
+{
+    return this;
+}
+}}}
+
+=== BpInterface ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+class BpInterface : public INTERFACE, public BpRefBase
+{
+public:
+                                BpInterface(const sp<IBinder>& remote);
+protected:
+    virtual IBinder*            onAsBinder();
+};
+}}}
+
+=== BpInterface::BpInterface ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+inline BpInterface<INTERFACE>::BpInterface(const sp<IBinder>& remote)
+    : BpRefBase(remote)
+{
+}
+}}}
+
+=== BpInterface::onAsBinder ===
+{{{class="brush:c++"
+template<typename INTERFACE>
+inline IBinder* BpInterface<INTERFACE>::onAsBinder()
+{
+    return remote();
+}
+}}}
+
+== INTERFACE宏 ==
+=== DECLARE_META_INTERFACE ===
+{{{class="brush:c++"
+#define DECLARE_META_INTERFACE(INTERFACE)                               \
+    static const String16 descriptor;                                   \
+    // IBinder转换成服务接口类                                         \
+    static sp<I##INTERFACE> asInterface(const sp<IBinder>& obj);        \
+    virtual const String16& getInterfaceDescriptor() const;             \
+    I##INTERFACE();                                                     \
+    virtual ~I##INTERFACE();                                            \
+}}}
+
+=== IMPLEMENT_META_INTERFACE ===
+{{{class="brush:c++"
+#define IMPLEMENT_META_INTERFACE(INTERFACE, NAME)                       \
+    const String16 I##INTERFACE::descriptor(NAME);                      \
+    const String16& I##INTERFACE::getInterfaceDescriptor() const {      \
+        return I##INTERFACE::descriptor;                                \
+    }                                                                   \
+    sp<I##INTERFACE> I##INTERFACE::asInterface(const sp<IBinder>& obj)  \
+    {                                                                   \
+        sp<I##INTERFACE> intr;                                          \
+        if (obj != NULL) {                                              \
+            // 首先查询是否是本地Binder                         \
+            intr = static_cast<I##INTERFACE*>(                          \
+                obj->queryLocalInterface(                               \
+                        I##INTERFACE::descriptor).get());               \
+            // 如果没有，则创建一个Bpxxxx的对象作为代理                 \
+            if (intr == NULL) {                                         \
+                intr = new Bp##INTERFACE(obj);                          \
+            }                                                           \
+        }                                                               \
+        return intr;                                                    \
+    }                                                                   \
+    I##INTERFACE::I##INTERFACE() { }                                    \
+    I##INTERFACE::~I##INTERFACE() { }                                   \
+}}}
+
+== IInterface.cpp ==
+=== IInterface::asBinder ===
+{{{class="brush:c++"
+sp<IBinder> IInterface::asBinder()
+{
+    return this ? onAsBinder() : NULL;
+}
+}}}
+
+=== IInterface::asBinder() ===
+{{{class="brush:c++"
+sp<const IBinder> IInterface::asBinder() const
+{
+    return this ? const_cast<IInterface*>(this)->onAsBinder() : NULL;
+}
+}}}
+
+== Binder.h ==
+=== BBinder ===
+{{{class="brush:c++"
+class BBinder : public IBinder
+{
+public:
+                        BBinder();
+
+    virtual const String16& getInterfaceDescriptor() const;
+    virtual bool        isBinderAlive() const;
+    virtual status_t    pingBinder();
+    virtual status_t    dump(int fd, const Vector<String16>& args);
+
+    // 传输Binder数据
+    virtual status_t    transact(   uint32_t code,
+                                    const Parcel& data,
+                                    Parcel* reply,
+                                    uint32_t flags = 0);
+
+    virtual status_t    linkToDeath(const sp<DeathRecipient>& recipient,
+                                    void* cookie = NULL,
+                                    uint32_t flags = 0);
+
+    virtual status_t    unlinkToDeath(  const wp<DeathRecipient>& recipient,
+                                        void* cookie = NULL,
+                                        uint32_t flags = 0,
+                                        wp<DeathRecipient>* outRecipient = NULL);
+
+    virtual void        attachObject(   const void* objectID,
+                                        void* object,
+                                        void* cleanupCookie,
+                                        object_cleanup_func func);
+    virtual void*       findObject(const void* objectID) const;
+    virtual void        detachObject(const void* objectID);
+
+    virtual BBinder*    localBinder();
+
+protected:
+    virtual             ~BBinder();
+
+    // 服务端实现代理端的请求
+    virtual status_t    onTransact( uint32_t code,
+                                    const Parcel& data,
+                                    Parcel* reply,
+                                    uint32_t flags = 0);
+
+private:
+                        BBinder(const BBinder& o);
+            BBinder&    operator=(const BBinder& o);
+
+    class Extras;
+
+            Extras*     mExtras;
+            void*       mReserved0;
+    static  String16    sEmptyDescriptor;
+};
+}}}
+
+=== BpRefBase ===
+{{{class="brush:c++"
+class BpRefBase : public virtual RefBase
+{
+protected:
+                            BpRefBase(const sp<IBinder>& o);
+    virtual                 ~BpRefBase();
+    virtual void            onFirstRef();
+    virtual void            onLastStrongRef(const void* id);
+    virtual bool            onIncStrongAttempted(uint32_t flags, const void* id);
+
+    inline  IBinder*        remote()                { return mRemote; }
+    inline  IBinder*        remote() const          { return mRemote; }
+
+private:
+                            BpRefBase(const BpRefBase& o);
+    BpRefBase&              operator=(const BpRefBase& o);
+
+    IBinder* const          mRemote;
+    RefBase::weakref_type*  mRefs;
+    volatile int32_t        mState;
+};
+}}}
+
+== BpBinder.h ==
+=== BpBinder ===
+{{{class="brush:c++"
+class BpBinder : public IBinder
+{
+public:
+                        BpBinder(int32_t handle);
+
+    inline  int32_t     handle() const { return mHandle; }
+
+    virtual const String16&    getInterfaceDescriptor() const;
+    virtual bool        isBinderAlive() const;
+    virtual status_t    pingBinder();
+    virtual status_t    dump(int fd, const Vector<String16>& args);
+
+    virtual status_t    transact(   uint32_t code,
+                                    const Parcel& data,
+                                    Parcel* reply,
+                                    uint32_t flags = 0);
+
+    virtual status_t    linkToDeath(const sp<DeathRecipient>& recipient,
+                                    void* cookie = NULL,
+                                    uint32_t flags = 0);
+    virtual status_t    unlinkToDeath(  const wp<DeathRecipient>& recipient,
+                                        void* cookie = NULL,
+                                        uint32_t flags = 0,
+                                        wp<DeathRecipient>* outRecipient = NULL);
+
+    virtual void        attachObject(   const void* objectID,
+                                        void* object,
+                                        void* cleanupCookie,
+                                        object_cleanup_func func);
+    virtual void*       findObject(const void* objectID) const;
+    virtual void        detachObject(const void* objectID);
+
+    virtual BpBinder*   remoteBinder();
+
+            status_t    setConstantData(const void* data, size_t size);
+            void        sendObituary();
+
+    // 管理Java层的BpBinder对象
+    class ObjectManager
+    {
+    public:
+                    ObjectManager();
+                    ~ObjectManager();
+
+        void        attach( const void* objectID,
+                            void* object,
+                            void* cleanupCookie,
+                            IBinder::object_cleanup_func func);
+        void*       find(const void* objectID) const;
+        void        detach(const void* objectID);
+
+        void        kill();
+
+    private:
+                    ObjectManager(const ObjectManager&);
+        ObjectManager& operator=(const ObjectManager&);
+
+        struct entry_t
+        {
+            void* object;
+            void* cleanupCookie;
+            IBinder::object_cleanup_func func;
+        };
+
+        KeyedVector<const void*, entry_t> mObjects;
+    };
+
+protected:
+    virtual             ~BpBinder();
+    virtual void        onFirstRef();
+    virtual void        onLastStrongRef(const void* id);
+    virtual bool        onIncStrongAttempted(uint32_t flags, const void* id);
+
+private:
+    // 代理端的Binder以句柄形式存在
+    const   int32_t             mHandle;
+
+    // 关于死亡通知的结构
+    struct Obituary {
+        wp<DeathRecipient> recipient;
+        void* cookie;
+        uint32_t flags;
+    };
+
+            void                reportOneDeath(const Obituary& obit);
+            bool                isDescriptorCached() const;
+
+    mutable Mutex               mLock;
+            volatile int32_t    mAlive;
+            volatile int32_t    mObitsSent;
+            // 保存死亡通知对象的容器
+            Vector<Obituary>*   mObituaries;
+            // 管理BpBinder对象的列表
+            ObjectManager       mObjects;
+            Parcel*             mConstantData;
+    mutable String16            mDescriptorCache;
+};
+}}}
+
+== BpBinder.cpp ==
+=== BpBinder::BpBinder ===
+{{{class="brush:c++"
+BpBinder::BpBinder(int32_t handle)
+    : mHandle(handle)
+    , mAlive(1)
+    , mObitsSent(0)
+    , mObituaries(NULL)
+{
+    extendObjectLifetime(OBJECT_LIFETIME_WEAK);
+    // 通知Binder驱动增加该引用计数
+    IPCThreadState::self()->incWeakHandle(handle);
+}
+}}}
+
+=== BpBinder::transact ===
+{{{class="brush:c++"
+status_t BpBinder::transact(
+    uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
+{
+    // 如果服务端挂掉，mAlive被置为0，代理端将再也不能连接到服务端
+    // 这时需要向Biner驱动注册死亡通知的应答
+    if (mAlive) {
+        status_t status = IPCThreadState::self()->transact(
+            mHandle, code, data, reply, flags);
+        if (status == DEAD_OBJECT) mAlive = 0;
+        return status;
+    }
+
+    return DEAD_OBJECT;
+}
+}}}
+
+== IServiceManager.cpp ==
+=== BpServerManager::addService ===
+{{{class="brush:c++"
+virtual status_t addService(const String16& name, const sp<IBinder>& service)
+{
+    Parcel data, reply;
+    data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());
+    data.writeString16(name);
+    data.writeStrongBinder(service);
+    status_t err = remote()->transact(ADD_SERVICE_TRANSACTION, data, &reply);
+    return err == NO_ERROR ? reply.readInt32() : err;
+}
+}}}
+
+=== BpServerManager::getService ===
+{{{class="brush:c++"
+virtual sp<IBinder> getService(const String16& name) const
+{
+    unsigned n;
+    for (n = 0; n < 5; n++){
+        sp<IBinder> svc = checkService(name);
+        if (svc != NULL) return svc;
+        sleep(1);
+    }
+    return NULL;
+}
+}}}
+
+=== BpServerManager::checkService ===
+{{{class="brush:c++"
+virtual sp<IBinder> checkService( const String16& name) const
+{
+    Parcel data, reply;
+    data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());
+    data.writeString16(name);
+    remote()->transact(CHECK_SERVICE_TRANSACTION, data, &reply);
+    return reply.readStrongBinder();
+}
+}}}

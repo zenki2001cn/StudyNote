@@ -1,0 +1,75 @@
+= 自定义Activity窗口 =
+
+%toc
+
+== 创建一个背景配置文件 ==
+- 配置文件float_box.xml，放在res/drawable下
+
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#ffffff" />
+    <stroke android:width="3dp" color="#000000" />
+    <corners android:radius="3dp" />
+    <padding android:left="10dp" android:top="10dp" android:right="10dp" android:bottom="10dp" />
+</shape>
+}}}
+
+== 定义一个对话框样式 ==
+- 对话框样式，放在res/values/styles.xml
+
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FloatActivity" parent="android:style/Theme.Dialog">
+        <item name="android:windowBackground">@drawable/float_box</item>
+    </style>
+</resources>
+}}}
+
+== 创建一个视图配置文件 ==
+- Activity样式，放在res/layout/float_activity.xml
+
+{{{class="brush:xml"
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:layout_width="fill_parent" 
+    android:layout_height="fill_parent"> 
+    
+    <ImageView 
+        android:id="@+id/ideasandroidlogo"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/ideasandroid" />
+    
+    <TextView  android:layout_width="wrap_content" android:text="@string/ideasandroidIntr"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ideasandroidlogo"
+        android:textColor="@android:color/black />
+</RelativeLayout>
+}}}
+
+== 创建Activity ==
+{{{class="brush:java"
+public class FloatActivityDemo extends Activity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        //先去除应用程序标题栏  注意：一定要在setContentView之前
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //将我们定义的窗口设置为默认视图
+        setContentView(R.layout.float_activity);
+    }
+}
+}}}
+
+== 配置AndroidManifest.xml ==
+{{{class="brush:xml"
+<activity android:name=".FloatActivityDemo" android:theme="@style/Theme.FloatActivity">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
+}}}

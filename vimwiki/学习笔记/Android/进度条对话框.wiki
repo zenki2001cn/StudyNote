@@ -1,0 +1,82 @@
+= 进度条对话框 =
+
+[pic/progressdialog.png]
+[pic/progressdialog2.png]
+
+例程源码(JAVA)
+{{{class="brush:java"
+public class AlertDialogSamples extends Activity {
+
+    private static final int DIALOG_PROGRESS = 4;
+
+    private ProgressDialog mProgressDialog;
+    private int mProgress;
+    private Handler mProgressHandler;
+
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        switch (id) {
+        case DIALOG_PROGRESS:
+            mProgressDialog = new ProgressDialog(AlertDialogSamples.this);
+            // 设置图标
+            mProgressDialog.setIcon(R.drawable.alert_dialog_icon);
+            // 设置标题
+            mProgressDialog.setTitle(R.string.select_dialog);
+            // 设置长形风格
+            mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            // 设置提示信息
+            mProgressDialog.setMessage(getResources().getString(R.string.second));
+            // 设置最大长度
+            mProgressDialog.setMax(MAX_PROGRESS);
+            // 设置按钮
+            mProgressDialog.setButton(getText(R.string.alert_dialog_hide), new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // do something
+                }
+            });
+            mProgressDialog.setButton2(getText(R.string.alert_dialog_cancel), new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // do something
+                }
+            });
+            return mProgressDialog;
+ 
+        default :
+            return null;
+    }
+    
+    @Override
+	protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.alert_dialog);
+        
+        /* Display a custom progress bar */
+        Button progressButton = (Button) findViewById(R.id.progress_button);
+        progressButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                showDialog(DIALOG_PROGRESS);
+                mProgress = 0;
+                // 设置进度
+                mProgressDialog.setProgress(0);
+                // 发送message更新进度条
+                mProgressHandler.sendEmptyMessage(0);
+            }
+        });
+        
+        mProgressHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                if (mProgress >= MAX_PROGRESS) {
+                    mProgressDialog.dismiss();
+                } else {
+                    mProgress++;
+                    mProgressDialog.incrementProgressBy(1);
+                    mProgressHandler.sendEmptyMessageDelayed(0, 100);
+                }
+            }
+        };
+    }
+}
+}}}

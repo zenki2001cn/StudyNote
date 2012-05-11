@@ -1,0 +1,126 @@
+= StatusBarPolicy =
+_简单来说，是用来控制图标的显示与更新。通过BroadcastReceiver机制来处理更新。_
+
+%toc
+
+== 要点分析 ==
+- 图标资源使用一个`private static final int[]`来定义。
+- 通过`IconData.makeIcon`和`service.addIcon`方法创建和加载图标，并设置相应的slot名称，该slot在`StatusBarService`中用来处理对应的事件。
+- `IconData`用来标识图标类型，图标资源ID和Slot信息。
+- `addIcon`方法生成IBinder类型变量，该变量用于在StatusBarService中处理消息。
+- 定义了`mIntentReceiver`接收广播，`filter.addAction`来过滤action类型，并根据action来更新图标。
+- `StatusBarHandler`用来处理消息。
+
+== 代码片断解析 ==
+{{{class="brush:java"
+......
+
+// 定义图标资源
+// Use 3G icons for EVDO data and 1x icons for 1XRTT data
+private static final int[] sDataNetType_1x = new int[] {
+    com.android.internal.R.drawable.stat_sys_data_connected_1x,
+    com.android.internal.R.drawable.stat_sys_data_in_1x,
+    com.android.internal.R.drawable.stat_sys_data_out_1x,
+    com.android.internal.R.drawable.stat_sys_data_inandout_1x,
+};
+
+// 构造方法中初始化图标
+private StatusBarPolicy(Context context, StatusBarService service) {
+    ......
+
+    // 定义IconData和IBinder
+    // IconData中包含图标资源ID，图标类型和Slot标识
+    // 通过service.addIcon方法初始化IBinder变量，并且通过该变量进行以后的更新操作
+    private IconData mMusicData;
+    private IBinder mMusicIcon;
+
+    ......
+    
+    // 设置图标slot，资源，并将之与StatusBarService关联
+    mMusicData = IconData.makeIcon("music", null, com.android.internal.R.drawable.statusbar_music, 0, 0);
+    mMusicIcon = service.addIcon(mMusicData, null);
+    service.setIconVisibility(mMusicIcon, false);
+    
+    ......
+    
+    // 添加事件过滤
+    filter.addAction(Intent.ACTION_TIME_TICK);
+    filter.addAction(Intent.ACTION_TIME_CHANGED);
+    filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
+    filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+    filter.addAction(Intent.ACTION_BATTERY_LOW);
+    filter.addAction(Intent.ACTION_BATTERY_OKAY);
+    filter.addAction(Intent.ACTION_POWER_CONNECTED);
+    filter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+    ......
+    mContext.registerReceiver(mIntentReceiver, filter, null, mHandler);
+}
+
+......
+
+// 通过BroadcastReceiver来更新图标
+private BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        String action = intent.getAction();
+        
+        if (action.equals(Intent.ACTION_TIME_TICK)) {
+            updateClock();
+        }
+        else if (action.equals(Intent.ACTION_TIME_CHANGED)) {
+            updateClock();
+        }
+        else if (action.equals(Intent.ACTION_BATTERY_CHANGED)) {
+            updateBattery(intent);
+        }
+        ......
+        ......
+    }
+}
+
+// 更新图标方法
+private final void updateClock() {
+    mCalendar.setTimeInMillis(System.currentTimeMillis());
+    mClockData.text = DateFormat.getTimeFormat(mContext).format(mCalendar.getTime());
+    mService.updateIcon(mClockIcon, mClockData, null);
+}
+
+private final void updateMusic(Intent intent) {
+    final String action = intent.getAction();
+    if (action.equals("com.android.music.MUSIC_ON_PLAY")) {
+        mService.setIconVisibility(mMusicIcon, true);
+        mService.setIconVisibility(mMusicPlayerIcon, false);
+    }
+    else if (action.equals("com.android.music.MUSIC_CANCEL")) {
+        mService.setIconVisibility(mMusicPlayerIcon, true);
+        mService.setIconVisibility(mMusicIcon, false);
+    }
+}
+
+......
+
+// 消息处理
+private class StatusBarHandler extends Handler {
+    @Override
+    public void handleMessage(Message msg) {
+        switch (msg.what) {
+        case EVENT_BATTERY_CLOSE:
+            if (msg.arg1 == mBatteryViewSequence) {
+                closeLastBatteryView();
+            }
+            break;
+        case EVENT_UMS_CLOSE:
+            closeLastUmsView();
+            break;
+        case EVENT_UMS_KEYGUARD_ENABLE:
+            mUmsDialog.show();
+            break;
+        case EVENT_UMS_KEYGUARD_DISABLE:
+            mUmsDialog.dismiss();
+            break;
+        }
+    }
+}
+
+......
+}}}

@@ -1,0 +1,37 @@
+= 加载图片 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.drawable.BitmapDrawable;
+}}}
+
+== 基本流程 ==
+- 使用BitmapFactory生成Bitmap对象
+- 使用BitmapDrawable对象的getBitmap()方法生成Bitmap对象
+    
+=== 使用BitmapFactory ===
+{{{class="brush:java"
+public final Bitmap CreatImage(Context context, int id) {
+    Bitmap bitmaptemp = null;
+    bitmaptemp = BitmapFactory.decodeResource(context.getResources(), id);
+    
+    return bitmaptemp;
+}
+}}}
+
+=== 使用BitmapDrawable ===
+{{{class="brush:java"
+public final Bitmap CreatImage(Context context, int id) {
+    Bitmap bitmaptemp = null;
+    Resources res = context.getResources();
+    BitmapDrawable bitDrawable = new BitmapDrawable(res.openRawResource(id));
+    bitmaptemp = bitDrawable.getBitmap();
+    
+    return bitmaptemp;
+}
+}}}

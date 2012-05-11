@@ -1,0 +1,68 @@
+= 不常用的几种标签 =
+
+== <ViewStub> ==
+{{{class="brush:text"
+    此标签可以使UI在特殊情况下，直观效果类似于设置View的不可见性，但是其更大的意义在于被这个标签所包裹的Views在默认状态下不会占用任何内存空间。
+ViewStub通过include从外部导入Views元素。
+    用法：通过android:layout来指定所包含的内容。默认情况下，ViewStub所包含的标签都属于visibility=GONE。
+viewStub通过方法inflate()来召唤系统加载其内部的Views。
+}}}
+
+=== 示例代码 ===
+{{{class="brush:xml"
+<ViewStub android:id="@+id/stub"  
+    android:inflatedId="@+id/subTree"  
+    android:layout="@layout/mySubTree"  
+    android:layout_width="120dip"  
+    android:layout_height="40dip" />
+}}}
+
+== <merge> ==
+{{{class="brush:text"
+    减少视图层级结构。
+}}}
+
+=== 示例代码 ===
+{{{class="brush:xml"
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" 
+        android:scaleType="center"
+        android:src="@drawable/golden_gate" />
+        
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Golden Gate" />
+</merge>
+}}}
+
+== <include> ==
+{{{class="brush:text"
+    可以通过这个标签直接加载外部的xml到当前结构中，是复用UI资源的常用标签。
+    用法：将需要复用xml文件路径赋予include标签的Layout属性。 
+}}}
+
+=== 示例代码 ===
+{{{class="brush:xml"
+<include android:id="@+id/cell1" layout="@layout/ar01" />
+<include android:layout_width="fill_parent" layout="@layout/ar02" />
+}}}
+
+== <requestFocus> ==
+{{{class="brush:text"
+    用于指定屏幕内的焦点View。
+}}}
+
+=== 示例代码 ===
+{{{class="brush:xml"
+<EditText id="@+id/text"  
+    android:layout_width="fill_parent"  
+    android:layout_height="wrap_content"  
+    android:layout_weight="0"  
+    android:paddingBottom="4">  
+    
+    <requestFocus />  
+</EditText>
+}}}

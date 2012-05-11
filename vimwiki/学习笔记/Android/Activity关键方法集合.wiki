@@ -1,0 +1,60 @@
+= Activity关键方法集合 =
+
+=== 公用方法 ===
+| 返回值         | 方法名                                                                                                 | 描述                                                                       |
+|----------------+--------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------|
+| void           | addContentView(View view, ViewGroup.LayoutParams params)                                               | 添加一个View                                                               |
+| PendingIntent  | createPendingResult(int requestCode, Intent data, int flags)                                           | 创建一个延迟的Intent，并通过onActivityResult(int, int, Intent)回调返回结果 |
+| final void     | dismissDialog(int id)                                                                                  | 取消一个之前通过showDialog(int)创建的对话框                                |
+| boolean        | dispatchKeyEvent(KeyEvent event)                                                                       | 分发按键事件                                                               |
+| boolean        | dispatchTouchEvent(MotionEvent ev)                                                                     | 分发触摸事件                                                               |
+| boolean        | dispatchTrackballEvent(MotionEvent ev)                                                                 | 分发轨迹球事件                                                             |
+| void           | finishActivity(int requestCode)                                                                        | 强制关闭由startActivityForResult(Intent, int)启动的Activity                |
+| void           | finishActivityFromChild(Activity child, int requestCode)                                               | 当子Activity调用finishActivity()方法时，调用该方法                         |
+| void           | finishFromChild(Activity child)                                                                        | 当子Activity调用finish()方法时，调用该方法                                 |
+| ComponentName  | getCallingActivity()                                                                                   | 返回调用此Activity的组件名                                                 |
+| View           | getCurrentFocus()                                                                                      | 获取当前焦点的View                                                         |
+| LayoutInflater | getLayoutInflater()                                                                                    | 获取LayoutInflater                                                         |
+| MenuInflater   | getMenuInflater()                                                                                      | 获取MenuInflater                                                           |
+| Object         | getSystemService  (String name)                                                                        | 根据名称获取系统服务                                                       |
+| int            | getTaskId()                                                                                            | 获取该Activity的ID标识                                                     |
+| Window         | getWindow()                                                                                            | 获取Window                                                                 |
+| WindowManager  | getWindowManager()                                                                                     | 获取WindowManager                                                          |
+| boolean        | hasWindowFocus()                                                                                       | 是否有Window焦点                                                           |
+| boolean        | isFinishing()                                                                                          | 判断是pause还是finish                                                      |
+| boolean        | isTaskRoot()                                                                                           | 是否为Task的根                                                             |
+| final Cursor   | managedQuery(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) | 管理数据库光标                                                             |
+| boolean        | moveTaskToBack(boolean nonRoot)                                                                        | 将Task移动到任务堆栈后                                                     |
+| void           | onBackPressed()                                                                                        | 按下Back键                                                                 |
+| void           | onConfigurationChanged(Configuration newConfig)                                                        | 配置信息发生变化                                                           |
+| void           | onContentChanged()                                                                                     | 当前视图发生变化后的回调                                                   |
+| View           | onCreateView(String name, Context context, AttributeSet attrs)                                         | LayoutInflater装载视图时回调                                               |
+| void           | onLowMemory()                                                                                          | 内存低时回调                                                               |
+| boolean        | onSearchRequested()                                                                                    | 开始搜索时回调                                                             |
+| void           | onUserInteraction()                                                                                    | 当用户产生交互时调用                                                       |
+| final void     | requestWindowFeature(int featureId)                                                                    | 设置窗口属性                                                               |
+| final void     | runOnUiThread(Runnable action)                                                                         | Post一个线程到UI线程中                                                     |
+| final boolean  | showDialog(int id, Bundle args)                                                                        | 显示对话框回调                                                             |
+| void           | startActivityFromChild(Activity child, Intent intent, int requestCode)                                 | 当子Activity调用startActivity(Intent)时，调用该回调                        |
+| void           | startManagingCursor(Cursor c)                                                                          | 开始管理数据库光标                                                         |
+| void           | stopManagingCursor(Cursor c)                                                                           | 停止管理数据库光标                                                         |
+| void           | takeKeyEvents(boolean get)                                                                             | 获取Key事件，当没有View具有焦点时                                          |
+
+=== 保护方法 ===
+| 返回值 | 方法名                                                                | 描述                                                                   |
+|--------+-----------------------------------------------------------------------+------------------------------------------------------------------------|
+| void   | onApplyThemeResource(Resources.Theme theme, int resid, boolean first) | 应用主题资源时回调                                                     |
+| void   | onChildTitleChanged(Activity childActivity, CharSequence title)       | 子Activity标题改变时回调                                               |
+| Dialog | onCreateDialog(int id, Bundle args)                                   | 创建对话框时回调                                                       |
+| void   | onPostResume()                                                        | 当onResume()调用完成后调用                                             |
+| void   | onRestart()                                                           | 从HOME键返回该Activity                                                 |
+| void   | onUserLeaveHint()                                                     | 当用户离开交互时回调                                                   |
+| void   | onNewIntent(Intent intent)                                            | 当launchMode被设置成"singleTop"模式，该Activity被re-launch时调用该方法 |
+| void   | onActivityResult(int requestCode, int resultCode, Intent data)        | 将该Activity的启动结果返回给调用它的Activity                           |
+| void   | onRestoreInstanceState(Bundle savedInstanceState)                     | onStart()之后被调用以用来恢复保存的状态数据                            |
+| void   | onSaveInstanceState(Bundle outState)                                  | 保存任务堆栈状态                                                       |
+
+=== 继承父类 ===
+{{{class="brush:java"
+android.content.Context
+}}}

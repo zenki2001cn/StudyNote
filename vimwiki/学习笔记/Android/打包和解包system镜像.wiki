@@ -1,0 +1,16 @@
+= 打包和解包system镜像 =
+
+%toc
+
+== 基本流程 ==
+=== 解包 ===
+{{{class="brush:text"
+1、创建temp目录，将system.img拷贝到该目录
+2、unyaffs system.img 解包镜像
+}}}
+
+=== 打包 ===
+{{{class="brush:text"
+1、创建temp目录，将目录文件拷贝到该目录
+2、mkyaffs2img temp/ system.img 打包镜像
+}}}

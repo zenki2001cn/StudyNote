@@ -1,0 +1,107 @@
+= 如何编译Android =
+
+%toc
+
+== 官方的连接地址 ==
+配置环境 :: http://source.android.com/source/initializing.html
+编译 :: http://source.android.com/source/building.html
+
+== 安装编译环境 ==
+{{{class="brush: bash"
+$ sudo apt-get install git-core gnupg sun-java5-jdk flex bison gperf \
+            libsdl-dev libesd0-dev libwxgtk2.6-dev build-essential   \
+            zip curl libncurses5-dev zlib1g-dev
+
+# 根据版本可选择安装jdk6
+$ sudo apt-get install sun-java6-jdk
+}}}
+
+== 设置环境变量 ==
+{{{class="brush: bash"
+vim ~/.bashrc
+
+####设置以下变量####
+JAVA_HOME=/usr/lib/jvm/java-6-sun
+JRE_HOME=${JAVA_HOME}/jre
+CLASSPATH=.:${JAVA_HOME}/lib:$JRE_HOME/lib:$CLASSPATH
+
+export JAVA_HOME;
+export JRE_HOME;
+export CLASSPATH;
+export JAVA_PATH=${JAVA_HOME}/bin:${JRE_HOME}/bin
+export PATH=${PATH}:${JAVA_PATH};
+
+source ~/.bashrc
+}}}
+
+== 编译整个Android ==
+例如,刚把整个Android源码下载到~/android目录
+{{{class="brush: bash"
+$ cd ~/android
+$ . build/envsetup.sh
+$ lunch 1 #加载默认编译环境
+$ make
+
+# 输入help查看有用的命令
+- croot:   Changes directory to the  of the tree.
+- m:       Makes from the  of the tree.
+- mm:      Builds all of the modules in the current directory.
+- mmm:     Builds all of the modules in the supplied directories.
+- cgrep:   Greps on all local C/C++ files.
+- jgrep:   Greps on all local Java files.
+- resgrep: Greps on all local res/*.xml files. 
+}}}
+*这个过程需要很长时间,之后在生成out目录,该编译不产生SDK*
+{{{class="brush: text"
+~/android/out/target/product/generic    --- 系统镜像等文件
+~/android/out/host/linux-x86/bin        --- android工具软件
+}}}
+
+== 制作uboot启动的ramdisk ==
+{{{class="brush:bash"
+$ mkdir inand_rootfs
+$ cp -Rfp $OUT_PROD/root/* ./inand_rootfs
+
+$ cd $OUT_PROD/inand_rootfs
+$ find . | cpio -o -H newc | gzip > ../ramdisk.img
+$ cd ..
+$ mkimage -A arm -O linux -T ramdisk -C none -a 0x80800000 -e 0x80800000 -n 'ramdisk-uboot' \
+          -d ramdisk.img ramdisk-uboot.img
+}}}
+
+== 编译镜像 ==
+- 编译时需要设置TARGET_PRODUCT变量，变量名为A0007.mk中的PRODUCT_NAME定义
+- APK签名请参考[[签名机制]]
+- 发布版本请参考[[版本发布]]
+
+{{{class="brush:bash"
+# 编译eng版的镜像
+$ make PRODUCT-A0007-eng
+或
+$ make TARGET_PRODUCT=A0007 TARGET_BUILD_VARIANT=eng
+
+# 编译user版的镜像
+$ make PRODUCT-A0007-user
+或
+$ make TARGET_PRODUCT=A0007 TARGET_BUILD_VARIANT=user
+
+# 生成发布系统
+$ make -j4 PRODUCT-A0007-user dist
+}}}
+
+== 增量编译 ==
+{{{class="brush:bash"
+# 1.编译修改的模块代码
+cd ~/android/src 
+mmm packages/apps/Contacts
+
+# 2.生成新的系统镜像system.img
+cd ~/android/src
+make stnod
+
+# 3.拷贝到目标目录
+cp out/target/product/generic/system.img des/
+
+# 4.删除遗留数据
+emulator -wipe-data
+}}}

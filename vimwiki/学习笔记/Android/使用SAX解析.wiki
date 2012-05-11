@@ -1,0 +1,118 @@
+= 使用SAX解析XML文件 =
+
+== 相关类 ==
+{{{class="brush:java"
+import org.xml.sax.helpers.DefaultHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.Attributes;
+
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.parsers.SAXParser;
+
+import java.util.Stack;
+import java.util.ArrayList;
+}}}
+
+== 基本流程 ==
+- 从DefaultHandler继承子类，并实现`startDocument`、`startElement`、`endElement`、`endDocument`、`characters`等方法，这些方法在读取XML文件的同时进行解析。
+- 使用栈来保存每个元素的信息，在startElement方法中压栈，在endElement方法中出栈，在characters方法中获取当前元素信息。
+- SAXParserFactory.newInstance()生成`SAXParserFactory`对象，并通过SAXParserFactory.newSAXParser()生成`SAXParser`对象实例进行解析。
+
+== 示例代码 ==
+DefaultHandler继承类
+{{{class="brush:java"
+public class SaxDemo extends DefaultHandler {
+    
+    // 需要获取的信息列表
+    ArrayList<Book> bookList = new ArrayList<Book>();
+    Book book = null;
+    // 声明一个栈保存元素标识
+    Stack tags;
+
+    @Override
+    public void startDocument() 
+                throws SAXException {
+        // 文档开头创建栈
+        tags = new Stack();
+    }
+
+    @Override
+    public void startElement(String uri, String localName, String qName, Attributes atts) 
+                throws SAXException {
+        // 元素压栈
+        tags.push(qName);
+
+        // 生成新的信息
+        if ( qName.equals("Book") ) {
+            if ( book == null ) {
+                book = new Book();
+            }
+        }
+    }
+
+    @Override
+    public void endElement(String uri, String localName, String qName) 
+                throws SAXException {
+        // 元素出栈
+        tags.pop();
+
+        // 加入信息列表
+        if ( qName.equals("Book") ) {
+            if ( book != null ) {
+                bookList.add(book);
+            }
+            book = null;
+        }
+    }
+
+    @Override
+    public void characters(char[] ch, int start, int length) 
+                throws SAXException {
+        String str = new String(ch, start, length );
+
+        // 查看当前的标识，根据标识来处理信息
+        String tag = (String)tags.peek();
+        
+        if ( tag.equals("Author") && (book != null) ) {
+            book.setAuthor(str);
+        }
+        else if ( tag.equals("Title") && (book != null) ) {
+            book.setTitle(str);
+        }
+        else if ( tag.equals("Line") && (book != null) ) {
+            book.setLine(str);
+        }
+
+    }
+
+    @Override
+    public void endDocument() 
+                throws SAXException {
+
+        // 文档结束时显示所有信息
+        for (Book bk : bookList) {
+            bk.show();        
+        }
+    }
+}
+}}}
+
+使用SAX
+{{{class="brush:java"
+SAXParserFactory spf = SAXParserFactory.newInstance();
+SAXParser saxParser = null;
+
+try {
+    saxParser = spf.newSAXParser();
+}
+catch(Exception e) {
+    System.err.println(e);
+}
+
+try {
+    saxParser.parse(new File("../src/demo.xml"), new SaxDemo());
+}
+catch(Exception e) {
+    System.err.println(e);
+}
+}}}

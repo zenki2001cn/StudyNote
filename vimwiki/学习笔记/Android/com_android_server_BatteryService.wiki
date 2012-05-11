@@ -1,0 +1,202 @@
+= 电池电量信息获取 =
+
+%toc
+
+== 相关变量 ==
+{{{class="brush:c++"
+struct FieldIds {
+    jfieldID mAcOnline;
+    ......
+};
+static FieldIds gFieldIds;
+
+// 电池状态标识
+struct BatteryManagerConstants {
+    jint statusUnknown;
+    ......
+};
+static BatteryManagerConstants gConstants;
+
+// 各种电池信息的地址
+struct PowerSupplyPaths {
+    char* acOnlinePath;
+    ......
+};
+static PowerSupplyPaths gPaths;
+
+static int gVoltageDivisor = 1;
+}}}
+
+== 代码分析 ==
+=== 电量信息路径定义 ===
+- 当电池状态发生变化时，driver会更新下面这些文件
+
+{{{class="brush:c++"
+#define POWER_SUPPLY_PATH "/sys/class/power_supply"
+
+// 各种信息对应的路径定义
+#define AC_ONLINE_PATH "/sys/class/power_supply/ac/online"                      // AC电源连接状态
+#define USB_ONLINE_PATH "/sys/class/power_supply/usb/online"                    // USB电源连接状态
+#define BATTERY_STATUS_PATH "/sys/class/power_supply/battery/status"            // 充电状态
+#define BATTERY_HEALTH_PATH "/sys/class/power_supply/battery/health"            // 电池状态
+#define BATTERY_PRESENT_PATH "/sys/class/power_supply/battery/present"          // 使用状态
+#define BATTERY_CAPACITY_PATH "/sys/class/power_supply/battery/capacity"        // 电池level
+#define BATTERY_VOLTAGE_PATH "/sys/class/power_supply/battery/batt_vol"         // 电池电压
+#define BATTERY_TEMPERATURE_PATH "/sys/class/power_supply/battery/batt_temp"    // 电池温度
+#define BATTERY_TECHNOLOGY_PATH "/sys/class/power_supply/battery/technology"    // 电池技术
+}}}
+
+=== 更新电量信息 ===
+{{{class="brush:c++"
+// 该方法将电池信息传递给BatteryService
+static void android_server_BatteryService_update(JNIEnv* env, jobject obj)
+{
+    setBooleanField(env, obj, gPaths.acOnlinePath, gFieldIds.mAcOnline);
+    setBooleanField(env, obj, gPaths.usbOnlinePath, gFieldIds.mUsbOnline);
+    setBooleanField(env, obj, gPaths.batteryPresentPath, gFieldIds.mBatteryPresent);
+    
+    setIntField(env, obj, gPaths.batteryCapacityPath, gFieldIds.mBatteryLevel);
+    setVoltageField(env, obj, gPaths.batteryVoltagePath, gFieldIds.mBatteryVoltage);
+    setIntField(env, obj, gPaths.batteryTemperaturePath, gFieldIds.mBatteryTemperature);
+    
+    const int SIZE = 128;
+    char buf[SIZE];
+    
+    if (readFromFile(gPaths.batteryStatusPath, buf, SIZE) > 0)
+        env->SetIntField(obj, gFieldIds.mBatteryStatus, getBatteryStatus(buf));
+    else
+        env->SetIntField(obj, gFieldIds.mBatteryStatus,
+                         gConstants.statusUnknown);
+    
+    if (readFromFile(gPaths.batteryHealthPath, buf, SIZE) > 0)
+        env->SetIntField(obj, gFieldIds.mBatteryHealth, getBatteryHealth(buf));
+
+    if (readFromFile(gPaths.batteryTechnologyPath, buf, SIZE) > 0)
+        env->SetObjectField(obj, gFieldIds.mBatteryTechnology, env->NewStringUTF(buf));
+}
+}}}
+
+=== 提供给Java层的接口 ===
+{{{class="brush:c"
+static JNINativeMethod sMethods[] = {
+     /* name, signature, funcPtr */
+	{"native_update", "()V", (void*)android_server_BatteryService_update},
+};
+}}}
+
+=== 读取电池信息 ===
+{{{class="brush:c++"
+// 该方法从文件中读取电量信息数据
+int register_android_server_BatteryService(JNIEnv* env)
+{
+    char    path[PATH_MAX];
+    struct dirent* entry;
+
+    // 打开电池信息文件
+    DIR* dir = opendir(POWER_SUPPLY_PATH);
+    if (dir == NULL) {
+        LOGE("Could not open %s\n", POWER_SUPPLY_PATH);
+        return -1;
+    }
+    
+    // 读取电池信息文件夹中对应信息的数据
+    while ((entry = readdir(dir))) {
+        const char* name = entry->d_name;
+
+        // ignore "." and ".."
+        if (name[0] == '.' && (name[1] == 0 || (name[1] == '.' && name[2] == 0))) {
+            continue;
+        }
+
+        char buf[20];
+        // Look for "type" file in each subdirectory
+        snprintf(path, sizeof(path), "%s/%s/type", POWER_SUPPLY_PATH, name);
+        int length = readFromFile(path, buf, sizeof(buf));
+        if (length > 0) {
+            if (buf[length - 1] == '\n')
+                buf[length - 1] = 0;
+
+            if (strcmp(buf, "Mains") == 0) {
+                snprintf(path, sizeof(path), "%s/%s/online", POWER_SUPPLY_PATH, name);
+                if (access(path, R_OK) == 0)
+                    gPaths.acOnlinePath = strdup(path);
+            }
+            else if (strcmp(buf, "USB") == 0) {
+                snprintf(path, sizeof(path), "%s/%s/online", POWER_SUPPLY_PATH, name);
+                if (access(path, R_OK) == 0)
+                    gPaths.usbOnlinePath = strdup(path);
+            }
+            else if (strcmp(buf, "Battery") == 0) {
+                snprintf(path, sizeof(path), "%s/%s/status", POWER_SUPPLY_PATH, name);
+                if (access(path, R_OK) == 0)
+                    gPaths.batteryStatusPath = strdup(path);
+                snprintf(path, sizeof(path), "%s/%s/health", POWER_SUPPLY_PATH, name);
+                if (access(path, R_OK) == 0)
+                    gPaths.batteryHealthPath = strdup(path);
+                snprintf(path, sizeof(path), "%s/%s/present", POWER_SUPPLY_PATH, name);
+                if (access(path, R_OK) == 0)
+                    gPaths.batteryPresentPath = strdup(path);
+                snprintf(path, sizeof(path), "%s/%s/capacity", POWER_SUPPLY_PATH, name);
+                if (access(path, R_OK) == 0)
+                    gPaths.batteryCapacityPath = strdup(path);
+
+                ......
+            }
+        }
+    }
+    closedir(dir);
+
+    ......
+       
+    // 获取BatteryService中分配的变量，用于读取电池信息
+    gFieldIds.mAcOnline = env->GetFieldID(clazz, "mAcOnline", "Z");
+    gFieldIds.mUsbOnline = env->GetFieldID(clazz, "mUsbOnline", "Z");
+    gFieldIds.mBatteryHealth = env->GetFieldID(clazz, "mBatteryHealth", "I");
+    gFieldIds.mBatteryVoltage = env->GetFieldID(clazz, "mBatteryVoltage", "I");
+    gFieldIds.mBatteryTemperature = env->GetFieldID(clazz, "mBatteryTemperature", "I");
+    ......
+
+    clazz = env->FindClass("android/os/BatteryManager");
+    
+    if (clazz == NULL) {
+        LOGE("Can't find android/os/BatteryManager");
+        return -1;
+    }
+    
+    // 从BatteryService获取状态值
+    gConstants.healthGood = env->GetStaticIntField(clazz, 
+            env->GetStaticFieldID(clazz, "BATTERY_HEALTH_GOOD", "I"));
+
+    gConstants.healthOverheat = env->GetStaticIntField(clazz, 
+            env->GetStaticFieldID(clazz, "BATTERY_HEALTH_OVERHEAT", "I"));
+    ......
+
+    return jniRegisterNativeMethods(env, "com/android/server/BatteryService", sMethods, NELEM(sMethods));
+}
+}}}
+
+=== 读取文件方法 ===
+{{{class="brush:c++"
+static int readFromFile(const char* path, char* buf, size_t size)
+{
+    if (!path)
+        return -1;
+    int fd = open(path, O_RDONLY, 0);
+    if (fd == -1) {
+        LOGE("Could not open '%s'", path);
+        return -1;
+    }
+    
+    size_t count = read(fd, buf, size);
+    if (count > 0) {
+        count = (count < size) ? count : size - 1;
+        while (count > 0 && buf[count-1] == '\n') count--;
+        buf[count] = '\0';
+    } else {
+        buf[0] = '\0';
+    } 
+
+    close(fd);
+    return count;
+}
+}}}

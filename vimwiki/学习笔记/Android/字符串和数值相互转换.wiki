@@ -1,0 +1,24 @@
+= 字符串和数值的相互转换 =
+
+文字到数值的转换
+- 把字符串转换成Integer（整数）的时候，调用java.lang.Integer类
+
+例程源码(Java) 
+{{{class="brush:java"
+String string = "123";
+int stringToValue = Integer.valueOf(string);
+
+String string = "123.123";
+double stringToValue = Double.valueOf(string);
+}}}
+
+ 
+
+数值到文字的转换
+- 把Integer（整数）转换成字符串的时候，调用java.lang.String类
+
+例程源码(Java) 
+{{{class="brush:java"
+int value = 456;
+String valueToString = String.valueOf(value);
+}}}

@@ -1,0 +1,98 @@
+= 正则表达式 =
+
+== 正则表达式规则 ==
+
+*字符*
+| 表达式 | 语义                      |
+|--------+---------------------------|
+| B      | 字符B                     |
+| \xhh   | 十六进制\0hh              |
+| \uhhhh | 十六进制的unicode，0xhhhh |
+| \t     | 制表符                    |
+| \n     | 换行符                    |
+| \r     | 回车                      |
+| \f     | 换页                      |
+| \e     | Escape                    |
+
+*字符类*
+| 表达式         | 语义                        |
+|----------------+-----------------------------|
+| .              | 表示任何字符                |
+| [abc]          | 包含a,b,c的任何字符         |
+| [^abc]         | 除a,b,c之外的任何字符       |
+| [a-zA-Z]       | 任何从a到z,从A到Z的字符     |
+| [abc[hij]]     | 包含a,b,c,h,i,j的任何字符   |
+| [a-z && [hij]] | 任意h,i,j                   |
+| \s             | 空格，tab，换行，换页，回车 |
+| \S             | 非空白符                    |
+| \d             | 数字[0-9]                   |
+| \D             | 非数字                      |
+| \w             | 字母和数字[a-zA-Z_0-9]      |
+| \W             | 非字母和数字                |
+
+*逻辑操作*
+| 表达式 | 语义                         |
+|--------+------------------------------|
+| xy     | xy                           |
+| x/y    | x或y                         |
+| (x)    | 随后可以用\i来引用第i个group |
+
+*边界检查*
+| 表达式 | 语义       |
+|--------+------------|
+| ^      | 一行开始   |
+| $      | 一行结束   |
+| \b     | 词界       |
+| \B     | 非词界     |
+| \G     | 上一级结尾 |
+
+*量词*
+| 贪婪的 | 勉强的  | 占有的  | 语义                 |
+|--------+---------+---------+----------------------|
+| X?     | X??     | X?+     | X,一或无             |
+| X*     | X*?     | X*+     | X,0或多个            |
+| X+     | X+?     | X++     | X,1或多个            |
+| X{n}   | X{n}?   | X{n}+   | X,恰好n次            |
+| X{n,}  | X{n,}?  | X{n,}+  | X,至少n次            |
+| X{n,m} | X{n,m}? | X{n,m}+ | X,至少n次，不多于m次 |
+
+== 两个类：模式和匹配器 ==
+- java.util.regex.Pattern类和java.util.regex.Matcher类
+- Pattern用来编译正则表达式，Matcher用来处理符合正则表达式的元素
+
+{{{class="brush:java"
+Pattern p = Pattern.compile(args[1]);
+Matcher m = p.matcher(args[0]);
+while(m.find()) {
+    System.out.println("Match \"" + m.group() + 
+                       "\" at positions " + m.start() + 
+                       "-" + (m.end() - 1));
+}
+}}}
+
+== 反斜线用法 ==
+    在 Java 中,“\\”意味着“我正在插入一个正则表达式反斜杠,那么随后的字符具有特殊意义。”
+    例如,我们想指示一个或多个字符,我们的正则表达式串仍旧是“\\w+”这种形式。 
+    如果我们想插入一个字面意义上的反斜杠,我们得这样表示“\\\\”。
+    然而,像换行符和制表符这样的字符只需要用到一个反斜杠:“\n\t”
+
+== 模式标记 ==
+- Pattern Pattern.compile(String regex, int flag)
+
+| Flag                     | 说明                                                  |
+|--------------------------+-------------------------------------------------------|
+| Pattern.CANON_EQ         | 仅当完全规范分解匹配时，认为他们是匹配的              |
+| Pattern.CASE_INSENSITIVE | 不考虑大小写                                          |
+| Pattern.COMMENTS         | 空格行将被忽略，且以#开头的注释行也被忽略             |
+| Pattern.DOTALL           | “.”号匹配所有字符，包括行终结符                       |
+| Pattern.MULTILINE        | “^”和“$”匹配多行模式下的开始和结束                    |
+| Pattern.UNICODE_CASE     | 与CASE_INSENSITIVE同时使用时，可以和UNICODE标准相一致 |
+| Pattern.UNIX_LINES       | “.”，“^”和“$”只识别行终结符'\n'                       |
+
+- 可以使用“|”方式相结合
+
+{{{class="brush:java"
+Pattern p = Pattern.compile("^java",
+            Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+}}}
+

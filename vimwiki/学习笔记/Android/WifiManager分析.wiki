@@ -1,0 +1,32 @@
+= WifiManager分析 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+framework/base/wifi/java/android/net/wifi/WifiManager.java
+}}}
+
+== 应用层的接口类 ==
+- WifiManager向应用层提供Wifi操作的接口，包括开启Wifi、关闭Wifi、连接AP、扫描AP等功能。可以将其看作Wifi功能的控制中心。该类主要是通过调用WifiService的接口来实现这些功能。
+- 同时在WifiManager中定义了一些命令标识，用来对应状态机的功能。参见[[WIFI状态机]]
+- 以下表列出了部分功能方法：
+
+| 方法名                       | 功能描述                   | 状态机的命令标识              |
+|------------------------------+----------------------------+-------------------------------|
+| startScan                    | 扫描Wifi热点               |                               |
+| setWifiEnabled               | 开启Wifi                   |                               |
+| startWifi                    | 保持driver与网络的连接     |                               |
+| connectNetwork               | 连接指定的一个网络节点     | CMD_CONNECT_NETWORK           |
+| initializeMulticastFiltering | 开启多播支持               |                               |
+| addToBlacklist               | 加入黑名单                 |                               |
+| getDhcpInfo                  | 获取dhcp信息               |                               |
+| pingSupplicant               | 检查wpa_supplicant是否存在 |                               |
+| forgetNetwork                | 忘记一个网络连接信息       | CMD_FORGET_NETWORK            |
+| saveNetwork                  | 保存一个网络连接信息       | CMD_SAVE_NETWORK              |
+| startWps                     | 开启安全连接               | CMD_START_WPS                 |
+| disableNetwork               | 禁用一个网络节点的连接     | CMD_DISABLE_NETWORK           |
+| 无                           | WifiService的事件          | CMD_WPS_COMPLETED             |
+| 无                           | 系统专用                   | CMD_ENABLE_TRAFFIC_STATS_POLL |
+| 无                           | 系统专用                   | CMD_TRAFFIC_STATS_POLL        |
+

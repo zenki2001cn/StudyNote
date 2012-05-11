@@ -1,0 +1,47 @@
+1、创建工程
+/bin/paster create -t bfg_starter [ proj_name ]
+/*或者支持zodb的工程*/
+/bin/paster create -t bfg_zodb [ proj_name ]
+
+2、安装应用
+../bin/python setup.py develop
+
+3、测试应用
+../bin/python setup.py test -q
+
+4、运行工程
+../bin/paster serve proj_name.ini
+../bin/paster serve --reload proj_name.ini
+
+5、将项目生成一个包
+../bin/python setup.py sdist
+
+6、proj_name.ini 配置文件
+[DEFAULT]
+debug = true
+
+[app:main]
+use = egg:MyProject#app
+reload_templates = true         #当模板改变后,自动加载
+debug_authorization = false
+debug_notfound = false
+
+[server:main]
+use = egg:Paste#http
+host = 0.0.0.0
+port = 6543
+
+7、视图、模板和模块
+configure.zcml:指定了view和module之间的映射关系
+views.py:视图渲染功能
+models.py:模块
+templates:HTML模板
+
+8、views.py的方法
+from repoze.bfg.chameleon_zpt import render_template_to_response
+from repoze.bfg.chameleon_zpt import render_template
+from repoze.bfg.chameleon_zpt import get_template
+from webob import Response
+
+
+

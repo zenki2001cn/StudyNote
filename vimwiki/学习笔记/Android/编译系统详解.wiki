@@ -1,0 +1,159 @@
+= 编译系统详解 =
+_本章内容实际是Android的Makefile详解，使用Makefile语法，但又带有Andriod的特色。_
+
+%toc
+
+== Android Makefile的作用 ==
+- Android Makefile具有以下几个重要的功能：
+    - 增添子模块编译
+    - 多CPU架构 –  ARM/PPC(maybe)/X86(maybe)
+    - 多语言编译 – C/C++/Java
+    - 多目标 – static lib/share lib/execute/Java/Java library
+    - 多发布版本
+
+- Android Makefile包含以下几个重要元素：
+    - 清空变量：清空本地变量。`include $(CLEAR_VARS)`
+    - 名称：模块的名称。`LOCAL_MODULE := <build_name>`
+    - 文件列表：模块依赖的源文件。`LOCAL_SRC_FILES := main.c`
+    - TAGS：必要时定义标识。`LOCAL_MODULE_TAGS := eng development`
+    - 库：依赖的其他库。`LOCAL_SHARED_LIBRARIES := cutils`
+    - 编译指令：用来编译的makefile模板。`include $(BUILD_EXECUTABLE)`
+
+=== Android.mk示例 ===
+{{{class="brush:bash"
+LOCAL_PATH := $(my-dir)
+include $(CLEAR_VARS)
+LOCAL_MODULE := <buil_name>
+LOCAL_SRC_FILES := main.c
+LOCAL_MODULE_TAGS := eng development
+LOCAL_SHARED_LIBRARIES := cutils
+include $(BUILD_EXECUTABLE)
+}}}
+
+== Build环境解析 ==
+=== Build Layers ===
+- Build Layers描述的是产品的硬件配置情况，据此make时选择不同的配置和模块。
+
+| Layer   | 描述           |
+|---------+----------------|
+| Product | 产品类型的代号 |
+| Device  | 设备类型的代号 |
+| Board   | 板子类型的代号 |
+| Arch    | 处理器种类     |
+
+- [[Build目录树]]
+- [[Build环境变量]]
+- [[envsetup脚本解析]]
+
+=== 几个重要的.mk文件 ===
+| 文件名              | 功能                                                                                                                                                                 | 备注 |
+|---------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+------|
+| buildspec.mk        | 位于根目录下，可在此选择要产生的product 、平台、额外的module/package等。buildspec.mk.default是样板文件。                                                             |      |
+| AndroidProducts.mk  | build system提供给厂商的接口文件。通过此文件即可定义所需编译和安装的packages（也即应用程序）。缺省选项是generic。                                                    |      |
+| BoardConfig.mk      | 为product主板做设定，例如driver选择设定，选择CPU架构等等。                                                                                                           |      |
+| Android.mk          | module和package的设置文件，每个 module/package 的目录下都会有一个Android.mk。所谓的module是指系统的native code，相对于用Java写成的Android application 称为 package。 |      |
+| envsetup.mk         | 编译环境初始化，定义一些实用的shell函数，方便编译使用。                                                                                                              |      |
+| build/core/Makefile | 包含在build/core/main.mk，此文件主要控制生成属性信息、system.img、ramdisk.img、userdata.img，以及recorvery image、sdk等。                                            |      |
+| main.mk             | 实际的主控Makefile，例如找到TOP目录下所有Android.mk文件。                                                                                                            |      |
+| config.mk           | 定义了编译目标程序所需的工具链及编译参数。                                                                                                                           |      |
+| base_rules.mk       | 对一些Makefile的变量规则化                                                                                                                                           |      |
+| binary.mk           | 控制如何生成目标文件                                                                                                                                                 |      |
+| clear_vars.mk       | 清除编译系统中用到的临时变量                                                                                                                                         |      |
+| definations.mk      | 定义了很多编译系统中用到的宏，相当于函数库                                                                                                                           |      |
+| copy_headers.mk     | 将头文件拷贝到指定目录                                                                                                                                               |      |
+| combo/linux-arm.mk  | 控制如何生成linux-arm二进制文件，包括ARM相关的编译器，编译参数等的设置                                                                                               |      |
+| build/envsetup.sh   | 提供了几个有用的命令，执行. build/envsetup.sh(.后面有空格)。                                                                                                         |      |
+
+== Build工作流程 ==
+整个编译环境以`build/core/main.mk`为入口，并和其他*.mk组成整个编译环境。编译过程可参考以下流程。
+=== 设定环境变量 ===
+- 1. 初始化相关变量
+- 2. 检测编译环境和目标环境
+
+{{{class="brush:text"
+    由build/core/config.mk开始。build/core/envsetup.mk检查developer的设定(buildspec.mk)，并检查执行环境，
+以决定输出目录和环境设定。build/core/config.mk本身还依据参数，决定解释时的相关参数，例如compiler的路径、flags，lex 、yacc
+的路径参数等。关于product的相关设定，则是由build/core/product_config.mk所处理，使用build/core/product.mk提供的macro载入。
+根据AndroidProduct.mk的內容，product_config.mk决定了：PRODUCT_TAGS，OTA_PUBLIC_KEYS，PRODUCT_POLICY等。
+}}}
+
+=== 设定product ===
+- 3. 决定目标product
+- 4. 读取product的设定
+- 5. 读取product所指定之目标平台架构设定
+
+{{{class="brush:text"
+    Android product的设定来自于build/target/product/AndroidProduct.mk和vendor子目录下AndroidProduct.mk。
+building system透过find指令，找出所有可能的AndroidProduct.mk。AndroidProduct.mk里定义PRODUCT_MAKEFILES变量，列举所有实际定义
+product的makefile。这些makefile各自定义独立的product。product相关参数被存成PRODUCTS.*.*形式的变量，并将makefile路径存在PRODUCTS变量。
+因此，透过PRODUCTS能取得所有的product路径/名称，并透过PRODUCTS.*.*形式的变量取得內容。
+}}}
+
+=== 设定toolchain和BoardConfig ===
+- 6. 选择toolchain
+- 7. 指定编译参数(*-.mk)
+- 8. 清除输出目录
+- 9. 设定/检查版本编号
+- 10. 读取所有BoardConfig.mk文件
+
+{{{class="brush:text"
+    目标平台主板相关的设定，例如使用了什么装置、driver等，或是否需要编译bootloader、kernel等，都是在BoardConfig.mk里设定。同样，
+每张主板可以有不同设定，存在不同目录下的BoardConfig.mk中，以find寻找如下文件:
+    build/target/board/$(TARGET_DEVICE)/BoardConfig.mk
+    device$(TARGET_DEVICE)/BoardConfig.mk
+    
+    TARGET_DEVICE是product所定义，因此同一个BoardConfig.mk可被多个product所使用。一个TARGET_DEVICE，通常只有一个BoardConfig.mk。
+BoardConfig.mk会被直接include到building system的name space里。因此，一些module的enable/disable，可以在BoardConfig.mk定义以对应不同的主板。
+}}}
+
+=== 编译所有模块 ===
+- 11. 读取所有module的设定
+
+{{{class="brush:text"
+    Module是指native code的软件模块，而Java application則被称为package。build/core/definitions.mk定义module/package相关macro，用来读取、
+检查module/package的定义档。
+    build/core/main.mk使用find指令，在这些子目录下找出所有Android.mk，并将路径存在subdir_makefiles变量里。最后，include这些文件。这些
+Android.mk会被include定义成变量BUILD_SHARED_LIBRARY 、BUILD_PACKAGE等和其目的相配的makefile。这些makefile会将Android.mk定义的內容，
+存成ALL_MODULES.<Android.mk>.*的形式。例如，Android.mk定义了LOCAL_MODULE_SUFFIX，会变存成ALL_MODULES.<Android.mk>.LOCAL_MODULE_SUFFIX。
+而Android.mk路径，同样会存于ALL_MODULES变量中。基本上会在整个source tree中查找Android.mk的路径。但会依特定的goal，选择性只找寻特定目录。
+例如SDK只需特定目录下的Android.mk。
+}}}
+
+- 12. 根据设定，产生必需的rule
+
+{{{class="brush:text"
+    在module的定义文件Android.mk中，可定义module的tag——LOCAL_MODULE_TAGS，以分类这些module。每一个product可以指定需要的tag(PRODUCT_TAGS)，
+使building system只遍历标识这些tag的module。在build/core/main.mk里，所有标示特定tag的module被加入到ALL_DEFAULT_INSTALLED_MODULES中，并被
+build/core/Makefile处理。build/core/Makefile为这些module产生rule，并使产生image的目标依赖这些rule，使这些module被编译。
+}}}
+
+=== 产生目标镜像 ===
+- 13. 设定prop属性(参见[[系统属性prop文件设置]])
+- 14. 产生image
+
+{{{class="brush:text"
+    Makefile根据之前的product设定和一些默认设定生成prop的属性列表。并将生成的目标文件打包成相应的ramdisk.img，system.img，userdata.img。
+}}}
+
+[[pic/build_system_main.png]]
+
+== 各组件编译详解 ==
+=== 系统属性prop文件设置 ===
+- [[系统属性prop文件设置]]
+
+=== 签名机制详解 ===
+- [[签名机制]]
+
+=== 如何进行版本发布 ===
+- [[版本发布]]
+
+=== 怎样制作update升级包 ===
+- [[制作update升级包]]
+
+[[pic/build_system_sub.png]]
+
+== build/core下的参考文件 ==
+- [[示例文件]]
+
+== Product Tree 示例 ==
+- [[制作自己的Product Tree]]

@@ -1,0 +1,55 @@
+= 基本线程 =
+
+== 创建线程的两种方法 ==
+- 方法一：从Thread派生子类，并且实现run方法
+- 方法二：实现Runnable接口的run方法，并且将其作为参数传递给Thread对象
+- 需要执行start方法来启动线程
+
+{{{class="brush:java"
+// 方法一
+class PrimeThread extends Thread {
+    long minPrime;
+    PrimeThread(long minPrime) {
+        this.minPrime = minPrime;
+    }
+
+    public void run() {
+        // compute primes larger than minPrime
+        . . .
+    }
+}
+
+PrimeThread p = new PrimeThread(143);
+p.start();
+
+// 方法二
+class PrimeRun implements Runnable {
+    long minPrime;
+    PrimeRun(long minPrime) {
+        this.minPrime = minPrime;
+    }
+
+    public void run() {
+        // compute primes larger than minPrime
+        . . .
+    }
+}
+
+PrimeRun p = new PrimeRun(143);
+new Thread(p).start();
+}}}
+
+yield() :: yield调用可以使线程让出CPU时间，但其并不能保证必须那样做
+
+sleep() :: sleep调用可以使线程休眠一段时间，其参数为休眠的毫秒数，需要在try块中执行，以防止期间被中断
+
+setPriority() :: 设置线程运行的优先级，分为MAX_PRIORITY，NORM_PRIORITY，MIN_PRIORITY
+
+setDaemon() :: 设置成后台线程，只要有一个非后台线程在运行，进程就不会终止，反之亦然
+
+== 线程的缺陷 ==
+# 等待共享资源的时候性能降低。
+# 需要处理线程的额外 CPU 耗费。
+# 糟糕的程序设计导致不必要的复杂度。
+# 有可能产生一些病态行为,如饿死、竞争、死锁和活锁。
+# 不同平台导致的不一致性。

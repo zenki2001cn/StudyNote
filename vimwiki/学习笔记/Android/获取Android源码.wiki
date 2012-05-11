@@ -1,0 +1,63 @@
+= 如何获取源码 =
+
+%toc
+
+== 官方的连接地址 ==
+下载源码 :: http://source.android.com/source/downloading.html
+
+== 安装git ==
+安装下载工具
+{{{class="brush: bash"
+$ apt-get install git-core curl
+}}}
+
+== 安装repo ==
+安装android下载工具
+{{{class="brush: bash"
+$ curl https://dl-ssl.google.com/dl/googlesource/git-repo/repo > ~/bin/repo
+$ chmod +x ~/bin/repo
+}}}
+
+== 获取Android源码 ==
+1.获取主线上的源码
+{{{class="brush: bash"
+# 建立下载的目录,如mkdir ~/android
+$ repo init -u https://android.googlesource.com/platform/manifest
+# 同步到本地
+$ repo sync -j4
+}}}
+
+2.获取branch上的源码
+{{{class="brush: bash"
+# cupcake为版本的代号
+$ repo init -u https://android.googlesource.com/platform/manifest -b android-4.0.1_r1
+# 同步到本地
+$ repo sync -j4
+}}}
+
+3.获取project代码
+{{{class="brush: bash"
+$ git clone git://android.git.kernel.org/kernel/common.git
+}}}
+
+4.获取内核branch代码
+{{{class="brush: bash"
+$ git checkout origin/android-goldfish-2.6.27 -b goldfish
+}}}
+
+== 同步版本库 ==
+1.同步整个Android代码树
+{{{class="brush:bash"
+$ repo sync
+}}}
+
+2.把几个项目同步到本地
+{{{class="brush: bash"
+$ repo sync project1 project2 ...
+}}}
+
+3.同步单个项目
+{{{class="brush: bash"
+# 在项目目录下执行
+$ git pull
+}}}

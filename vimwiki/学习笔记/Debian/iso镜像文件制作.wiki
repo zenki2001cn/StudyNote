@@ -1,0 +1,84 @@
+= iso镜像文件制作 =
+
+%toc
+
+== 使用mkisofs ==
+=== mkisofs命令行格式 ===
+{{{class="brush:text"
+mkisofs [-adDfhJlLNrRTvz][-print-size][-quiet][-A <应用程序ID>][-b <开机映像文件>][-c <开机文件名称>][-hide <目录或文件名>][-hide-joliet <文件或目录名>][-m <目录或文件名>][-M <映像文件>][-o <映像文件>][-sysid <系统ID >][-V <volume ID >][-x <目录>][目录或文件]
+}}}
+
+=== 基本参数 ===
+{{{class="brush:text"
+-o 设置输出文件名
+-V Set Volume ID
+-v verbose
+-m <目录或文件名> or -exclude <目录或文件名>  排除某目录或文件，其将不会放入映像文件中
+-M <映像文件> or -prev-session <映像文件> Iso文件合并(与指定的映像文件合并)
+}}}
+
+=== 启动光盘参数 ===
+{{{class="brush:text"
+-no-emul-boot
+    Boot image is 'no emulation' image
+    非模拟模式启动
+
+-b <开机映像文件> or
+-eltorito-boot <开机映像文件>
+    指定在制作启动光盘时所需的开机映像文件
+    -b:启动image
+
+-c <开机文件名称>
+    -c:cat文件
+    制作启动光盘时，mkisofs会将开机映像文件中的全-eltorito-catalog*文 件的全部内容作成一个文件
+
+-J或-joliet
+    Generate Joliet directory information
+    生成Joliet 格式信息
+    Joliet是用于在 Windows 环境下使用的光盘
+
+-R或-rock
+    Generate Rock Ridge directory information
+    生成Rock Ridge目录格式信息
+    Rock Ridge用于 UNIX/Linux 环境下的光盘。
+    文件名区分大小写，同时记录文件长度
+
+-r或-rational-rock
+    使用Rock Ridge
+    并开放全部文件的读取权限
+    其他参数
+
+-hide-rr-moved
+    Rename RR_MOVED to .rr_moved in Rock Ridge tree
+    隐藏 Unix RR 目录
+
+-hide  <目录或文件名>
+    使指定的目录或文件在ISO 9660或Rock RidgeExtensions的系统中隐藏
+
+-hide-joliet <目录或文件名>
+    使指定的目录或文件在Joliet系统中隐藏
+
+-O
+    采用 MD5 空间优化
+
+-C <盘区编号，盘区编号>
+    将许多节区合成一个映像文件时，必须使用此参数
+
+-l
+-relaxed-filenames
+-gbk4dos-filenames
+-gbk4win-filenames
+    允许长文件名
+    扩展的文件名
+    DOS下支持中文
+    WIN下支持中文
+
+要做 Unix/Linux 下的数据盘或者开机启动盘，必须使用 Unix Rock Ridge 格式（mkisofs -r）, 这种格式可以保存文件相关的权限
+要所DOS/WIN下的光盘，用Joliet格式（-J）
+}}}
+
+== 使用范例 ==
+{{{class="brush:bash"
+#制作linux启动光盘
+mkisofs -no-emul-boot -r -T -RJ -b isolinux/isolinux.bin -c isolinux/boot.cat -boot-load-size 4 -boot-info-table -o output.iso input_path
+}}}

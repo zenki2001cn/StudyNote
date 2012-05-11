@@ -1,0 +1,14 @@
+= 播放多媒体 =
+
+{{{class="brush:java"
+// 使用本地文件
+Intent it = new Intent(Intent.ACTION_VIEW);
+Uri uri = Uri.parse("file:///sdcard/song.mp3");
+it.setDataAndType(uri, "audio/mp3");
+startActivity(it);
+
+// 使用Provider
+Uri uri = Uri.withAppendedPath(MediaStore.Audio.Media.INTERNAL_CONTENT_URI, "1");     
+Intent it = new Intent(Intent.ACTION_VIEW, uri);     
+startActivity(it);
+}}}

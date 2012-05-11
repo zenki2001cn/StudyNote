@@ -1,0 +1,105 @@
+= AsyncTask的处理 =
+
+_AysncTask是一个有效且简单的UI线程处理对象，它可以执行后台数据处理，并把结果提交给前台。_
+
+== 相关类 ==
+{{{class="brush:java"
+import android.os.AsyncTask;
+}}}
+
+== Android线程处理的几种方法 ==
+- Activity.runOnUiThread(Runnable)
+- View.post(Runnable)
+- View.postDelayed(Runnable, long)
+- Handler机制
+
+== 三种generic types ==
+# *Params* - 传递给task的参数类型
+# *Progress* - 后台数据处理的过程
+# *Result* - 后台处理的结果
+
+{{{class="brush:java"
+private class MyTask extends AsyncTask<Params, Progress, Result> { ... }
+}}}
+
+== 四个阶段 ==
+# *onPreExecute()* - 当调用`execute`后，立即执行，通常做一些初始化工作，该方法运行在非UI线程
+# *doInBackground(Params...)* - 当onPreExecute完成后被调用，该方法用于长时间的后台处理，完成任务的主要工作，该方法运行在非UI线程
+# *onProgressUpdate(Progress...)* - 在`publishProgress(Progress...)`调用之后执行，主要用来显示任务执行进度，该方法运行在UI线程
+# *onPostExecute(Result)* - doInBackground处理完成后被调用,且返回值将作为参数传递给该方法，该方法运行在UI线程
+
+== 创建规则 ==
+- 必须创建在UI线程中
+- execute(Params...)必须在UI线程中调用
+- 不要手动调用onPreExecute()、 onPostExecute(Result)、 doInBackground(Params...)、 onProgressUpdate(Progress...)
+- 只能被执行一次
+
+== 示例代码 ==
+
+=== AsyncTask派生类 ===
+{{{class="brush:java"
+// 构造函数的参数类型分别代表后台处理时接受的参数类型、任务更新时的参数类型和处理结果的参数类型
+public class MyAsyncTask extends AsyncTask<String, Integer, boolean> {
+
+    // 在任务开始前作初始化工作
+    @Override
+    protected void onPreExecute() {
+        Log.v(TAG, " onPreExecute ");
+
+        super.onPreExecute();
+    }
+
+    // 作后台处理任务，其可选参数列表的类型为Params，返回值类型为Result
+    @Override
+    protected boolean doInBackground(String...params) {
+        String str1 = params[0];
+
+        int i = 0;
+        try {
+            while ( i<10 ) {
+                i++;
+                Thread.sleep(500);
+            }
+        }
+        catch(Exception e) {
+        }
+
+        return true;
+    }
+
+    // 处理任务更新的方法，其参数类型为Progress
+    @Override
+    protected void onProgressUpdate(Integer...values) {
+        Log.v(TAG, " onProgressUpdate " + values[0]);
+
+        super.onProgressUpdate(values);
+    }
+
+    // 处理结果的方法，其参数类型为Result
+    @Override
+    protected void onPostExecute(boolean result) {
+        Log.v(TAG, " result: " + result);
+
+        super.onPostExecute(result);
+    }
+
+    // 取消任务时被调用的方法
+    @Override
+    protected void onCancelled() {
+        Log.v(TAG, " onCancelled ");
+
+        super.onCancelled();
+    }
+}
+}}}
+
+=== 创建任务 ===
+{{{class="brush:java"
+MyAsyncTask mTask = new MyAsyncTask();
+mTask.execute(params1, params2, params3);
+}}}
+
+=== 终止任务 ===
+{{{class="brush:java"
+mTask.cancel(true);
+}}}

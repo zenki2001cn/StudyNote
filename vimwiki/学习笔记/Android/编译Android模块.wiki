@@ -1,0 +1,36 @@
+= 编译模块 =
+
+%toc
+
+1.进入android目录,运行脚本
+{{{class="brush: bash"
+$ . build/envsetup.sh
+}}}
+2.该脚本可以生成很多命令,如下
+{{{class="brush: text"
+- croot:   Changes directory to the top of the tree.
+- m:       Makes from the top of the tree.
+- mm:      Builds all of the modules in the current directory.
+- mmm:     Builds all of the modules in the supplied directories.
+- cgrep:   Greps on all local C/C++ files.
+- jgrep:   Greps on all local Java files.
+- resgrep: Greps on all local res/*.xml files.
+- godir:   Go to the directory containing a file.
+
+可以使用-help参数查看帮助
+}}}
+
+3.使用mmm可以编译某个目录下的模块
+{{{class="brush: bash"
+$ mmm packages/apps/Contacts/
+
+生成两个文件
+out/target/product/generic/data/app/ContactsTests.apk
+out/target/product/generic/system/app/Contacts.apk
+}}}
+
+4.生成新的系统镜像
+{{{class="brush: bash"
+$ make stnod
+}}}
+

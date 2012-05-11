@@ -1,0 +1,84 @@
+= 通知消息 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.widget.RemoteViews;
+}}}
+
+- 创建一个NotificationManager实例和一个PendingIntent实例
+- 创建一个Notification实例
+- 使用Notification类的setLatestEventInfo方法将之与PendingIntent实例关联
+- 使用NotificationManager类的notify方法管理Notification方法
+- 在manifest文件中设置用户权限，加入android.permission.VIBRATE"
+
+例程源码(XML)
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.VIBRATE" />
+}}}
+
+例程源码(JAVA)
+{{{class="brush:java"
+protected void showNotification() {
+    // look up the notification manager service
+    NotificationManager nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+    // The PendingIntent to launch our activity if the user selects this notification
+    PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
+            new Intent(this, IncomingMessageView.class), 0);
+
+    // construct the Notification object.
+    Notification notif = new Notification(R.drawable.stat_sample, tickerText,
+            System.currentTimeMillis());
+
+    // Set the info for the views that show in the notification panel.
+    notif.setLatestEventInfo(this, from, message, contentIntent);
+
+    // after a 100ms delay, vibrate for 250ms, pause for 100 ms and
+    // then vibrate for 500ms.
+    notif.vibrate = new long[] { 100, 250, 100, 500};
+
+    // Note that we use R.layout.incoming_message_panel as the ID for
+    // the notification.  It could be any integer you want, but we use
+    // the convention of using a resource id for a string related to
+    // the notification.  It will always be a unique number within your
+    // application.
+    nm.notify(R.string.imcoming_message_ticker_text, notif);
+}
+}}}
+
+== 自定义状态栏视图 ==
+- 需要创建RemoteViews实例,并赋予Notification实例
+
+{{{class="brush:java"
+private void setMoodView(int moodId, int textId) {
+    // Instead of the normal constructor, we're going to use the one with no args and fill
+    // in all of the data ourselves.  The normal one uses the default layout for notifications.
+    // You probably want that in most cases, but if you want to do something custom, you
+    // can set the contentView field to your own RemoteViews object.
+    Notification notif = new Notification();
+
+    // This is who should be launched if the user selects our notification.
+    notif.contentIntent = makeMoodIntent(moodId);
+
+    // In this sample, we'll use the same text for the ticker and the expanded notification
+    CharSequence text = getText(textId);
+    notif.tickerText = text;
+
+    // the icon for the status bar
+    notif.icon = moodId;
+
+    // our custom view
+    RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.status_bar_balloon);
+    contentView.setTextViewText(R.id.text, text);
+    contentView.setImageViewResource(R.id.icon, moodId);
+    notif.contentView = contentView;
+
+    // we use a string id because is a unique number.  we use it later to cancel the
+    // notification
+    mNotificationManager.notify(R.layout.status_bar_notifications, notif);
+}
+}}}

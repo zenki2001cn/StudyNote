@@ -1,0 +1,5 @@
+=== 今日备份 ===
+    - home/Wiki
+    - site/Wiki
+    - .vim/vimwiki-template
+    - .toolkit/snippet

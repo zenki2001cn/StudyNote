@@ -1,0 +1,77 @@
+= Provider-Settings-Secure =
+
+== 要点说明 ==
+- 通过键/值对来存储属性信息。
+- 使用`put*`和`get*`系列方法来设置和存储属性值。
+
+== 主要参数说明 ==
+| 类型          | 方法名                                          | 描述                            |
+|---------------+-------------------------------------------------+---------------------------------|
+| String        | ACCESSIBILITY_ENABLED                           | 开启UI                          |
+| String        | ADB_ENABLED                                     | ADB是否可用                     |
+| String        | ALLOWED_GEOLOCATION_ORIGINS                     | 浏览器允许geolocation           |
+| String        | ALLOW_MOCK_LOCATION                             |                                 |
+| String        | ANDROID_ID                                      | 启动时生成的64-bit数            |
+| String        | BACKGROUND_DATA                                 | 是否允许用户使用后台数据        |
+| String        | BLUETOOTH_ON                                    | 开启蓝牙                        |
+| Uri           | CONTENT_URI                                     | 返回content:// 的URI            |
+| String        | DATA_ROAMING                                    | 是否数据漫游                    |
+| String        | DEFAULT_INPUT_METHOD                            | 设置默认输入法                  |
+| String String | DEVICE_PROVISIONED                              | 设备是否被供应                  |
+| String        | ENABLED_ACCESSIBILITY_SERVICES                  | 开启服务                        |
+| String        | ENABLED_INPUT_METHODS                           | 列出当前开启的输入法            |
+| String        | HTTP_PROXY                                      | HTTP代理                        |
+| String        | INSTALL_NON_MARKET_APPS                         | 是否允许下载应用商店的程序      |
+| String        | LOCATION_PROVIDERS_ALLOWED                      | Activity可进入的本地列表        |
+| String        | LOCK_PATTERN_ENABLED                            | 是否开启自动锁                  |
+| String        | LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED           | 自动锁是否震动                  |
+| String        | LOCK_PATTERN_VISIBLE                            | 自动锁是否可见                  |
+| String        | NETWORK_PREFERENCE                              | 网络属性                        |
+| String        | SETTINGS_CLASSNAME                              | 当Settings被点击时启动的class名 |
+| String        | SYS_PROP_SETTING_VERSION                        |                                 |
+| String        | TTS_DEFAULT_COUNTRY                             | TTS默认国家                     |
+| String        | TTS_DEFAULT_LANG                                | TTS默认语言                     |
+| String        | TTS_DEFAULT_PITCH                               |                                 |
+| String        | TTS_DEFAULT_RATE                                |                                 |
+| String        | TTS_DEFAULT_SYNTH                               |                                 |
+| String        | TTS_DEFAULT_VARIANT                             |                                 |
+| String        | TTS_ENABLED_PLUGINS                             |                                 |
+| String        | TTS_USE_DEFAULTS                                |                                 |
+| String        | USB_MASS_STORAGE_ENABLED                        | 开启U盘模式                     |
+| String        | USE_GOOGLE_MAIL                                 | 使用Goole Mail                  |
+| String        | WIFI_MAX_DHCP_RETRY_COUNT                       | WIFI尝试连接DHCP的最大次数      |
+| String        | WIFI_MOBILE_DATA_TRANSITION_WAKELOCK_TIMEOUT_MS |                                 |
+| String        | WIFI_NETWORKS_AVAILABLE_NOTIFICATION_ON         | 是否通知用户开启网络            |
+| String        | WIFI_NETWORKS_AVAILABLE_REPEAT_DELAY            | 通知WIFI可用通知的延迟          |
+| String        | WIFI_NUM_OPEN_NETWORKS_KEPT                     | 打开网络的最大数                |
+| String        | WIFI_ON                                         | 是否开启WIFI                    |
+| String        | WIFI_WATCHDOG_ACCEPTABLE_PACKET_LOSS_PERCENTAGE | WIFI可接受的网络丢包率          |
+| String        | WIFI_WATCHDOG_AP_COUNT                          | 监测的AP数量                    |
+| String        | WIFI_WATCHDOG_BACKGROUND_CHECK_DELAY_MS         | WIFI后台检测延迟                |
+| String        | WIFI_WATCHDOG_BACKGROUND_CHECK_ENABLED          | 是否开启WIFI后台检测            |
+| String        | WIFI_WATCHDOG_BACKGROUND_CHECK_TIMEOUT_MS       | WIFI后台检测超时                |
+| String        | WIFI_WATCHDOG_INITIAL_IGNORED_PING_COUNT        |                                 |
+| String        | WIFI_WATCHDOG_MAX_AP_CHECKS                     | AP检测的最大数                  |
+| String        | WIFI_WATCHDOG_ON                                | 是否开启WIFI看门狗              |
+| String        | WIFI_WATCHDOG_PING_COUNT                        | WIFI Ping次数                   |
+| String        | WIFI_WATCHDOG_PING_DELAY_MS                     | WIFI Ping延迟                   |
+| String        | WIFI_WATCHDOG_PING_TIMEOUT_MS                   | WIFI Ping超时                   |
+| String        | WIFI_WATCHDOG_WATCH_LIST                        | SSIDs列表                       |
+
+== 示例代码 ==
+=== 获取属性值 ===
+{{{class="brush:java"
+Settings.Secure.getInt(getContentResolver(), 
+    Settings.Secure.DEVICE_PROVISIONED);
+}}}
+
+=== 设置属性值 ===
+{{{class="brush:java"
+Settings.Secure.putInt(getContentResolver(),
+    Settings.Secure.INSTALL_NON_MARKET_APPS, 1);
+}}}
+
+=== XML添加权限 ===
+{{{class="brush:xml"
+<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+}}}

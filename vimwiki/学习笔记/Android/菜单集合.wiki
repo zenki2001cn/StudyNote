@@ -1,0 +1,44 @@
+= 菜单集合 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+}}}
+
+- 需要重写onCreateOptionsMenu方法,在其中加载菜单
+
+例程源码(JAVA)
+{{{class="brush:java"
+
+......
+Menu mMenu;
+......
+
+@Override
+public boolean onCreateOptionsMenu(Menu menu) {
+    // 保存菜单
+    mMenu = menu;
+    // 清空菜单
+    mMenu.clear();
+    
+    // 从XML提取菜单项
+    MenuInflater inflater = getMenuInflater();
+    inflater.inflate(R.menu.menu, menu);
+    
+    return true;
+}
+}}}
+
+- 根据需要创建不同的菜单,可在XML中定义
+
+- [[文本菜单]]
+- [[图标文本菜单]]
+- [[子菜单]]
+- [[组菜单]]
+- [[顺序菜单]]
+- [[按组排序菜单]]
+- [[单选和多选菜单]]
+- [[禁用菜单]]
+- [[快捷键菜单]]

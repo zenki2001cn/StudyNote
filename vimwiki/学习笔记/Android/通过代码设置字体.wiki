@@ -1,0 +1,14 @@
+= 设置字体 =
+
+- 保证文件一定是ttf格式
+- 放到assets/fonts目录下
+- 如果找不到相应的字体不会报错，只是在运行的时候显示不出来
+
+例程源码(JAVA)
+{{{class="brush:java"
+// 方法一
+mTextView.setTypeface(Typeface.createFromAsset(getAssets(),"fonts/HandmadeTypewriter.ttf"));    //设置字体
+
+// 方式二
+mFontButton.setTypeface(Typeface.defaultFromStyle(Typeface.ITALIC));                            //用内部支持的方式设置
+}}}

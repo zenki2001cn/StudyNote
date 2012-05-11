@@ -1,0 +1,188 @@
+= 输入和输出 =
+
+- IO库通常使用stream这个抽闲概念，它代表了所有有能力产生数据和接受数据的源。
+- 所有与输入有关的类都从InputStream继承，所有与输出有关的类都从OutputStream继承。
+
+== InputStream类型 ==
+InputStream类作用是从不同的数据源产生输入的类，其中数据源包括：
+# 字节数组
+# String 对象
+# 文件
+# 管道方式
+# 其他种类的流组成序列，以便我们将他们合并到单一流中
+# 其他数据源，如Internet连接
+
+| 类                      | 功能                                         |
+|-------------------------+----------------------------------------------|
+| ByteArrayInputStream    | 允许将内存缓冲区当做InputStream              |
+| StringBufferInputStream | 将String转换成InputStream                    |
+| FileInputStream         | 用于从文件读取信息                           |
+| PipedInputStream        | 实现管道化                                   |
+| SequenceInputStream     | 将两个和多个InputStream转换成一个InputStream |
+| FilterInputStream       | 抽象类，为其他InputStream提供有用功能        |
+
+== OutputStream类型 ==
+OutputStream类作用是将数据输出到某个地方：字节数组，文件或管道
+
+
+| 类                    | 功能                                         |
+|-----------------------+----------------------------------------------|
+| ByteArrayOutputStream | 在内存中创建缓冲区，所有数据都输出在此缓冲区 |
+| FileOutputStream      | 将数据写入文件                               |
+| PipedOutputStream     | 实现管道化                                   |
+| FilterOutputStream    | 抽象类，为其他OutputStream提供有用功能       |
+
+== Reader与Writer ==
+- Reader和Writer提供了兼容Unicode和面向字符的I/O功能
+- 面向字节的Stream类和面向字符Reader/Writer类继承关系
+
+| 原始IO                   | Reader和Writer  |
+|--------------------------+-----------------|
+| InputStream              | Reader          |
+| OutputStream             | Writer          |
+| FileInputStream          | FileReader      |
+| FileOutputStream         | FileWriter      |
+| StringBufferInputStream  | StringReader    |
+| (no corresponding class) | StringWriter    |
+| ByteArrayInputStream     | CharArrayReader |
+| ByteArrayOutputStream    | CharArrayWriter |
+| PipedInputStream         | PipedReader     |
+| PipedOutputStream        | PipedWriter     |
+
+== 典型的I/O使用 ==
+*1.读取行*
+
+{{{class="brush:java"
+BufferedReader in = new BufferedReader(new FileReader("IOStreamDemo.java"));
+String s, s2 = new String();
+
+while((s = in.readLine())!= null)
+s2 += s + "\n";
+
+in.close();
+}}}
+_注释：用FileReader打开文件，使用BufferedReader进行缓冲，使用readLine()方法读取行_
+
+*2.从标准输入读取*
+{{{class="brush:java"
+BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+
+System.out.print("Enter a line:");
+System.out.println(stdin.readLine());
+}}}
+_注释：System.in是InputStream类型，需要InputStreamReader转换成Reader，并通过BufferedReader来读取_
+
+*3.从内存读取*
+{{{class="brush:java"
+StringReader in2 = new StringReader(s2);
+int c;
+
+while((c = in2.read()) != -1) {
+    System.out.print((char)c);
+}
+}}}
+
+*4.格式化内存输入*
+{{{class="brush:java"
+try {
+    DataInputStream in3 = new DataInputStream(new ByteArrayInputStream(s2.getBytes()));
+    
+    while(true) {
+        System.out.print((char)in3.readByte());
+    }
+} catch(EOFException e) {
+    System.err.println("End of stream");
+}
+}}}
+_注释：读取格式化数据，需要DataInputStream类_
+
+*5.文件输出*
+{{{class="brush:java"
+try {
+    BufferedReader in4 = new BufferedReader(new StringReader(s2));
+    PrintWriter out1 = new PrintWriter(
+                       new BufferedWriter(
+                       new FileWriter("IODemo.out")));
+    int lineCount = 1;
+    
+    while((s = in4.readLine()) != null ) {
+        out1.println(lineCount++ + ": " + s);
+    }
+    out1.close();
+} catch(EOFException e) {
+    System.err.println("End of stream");
+}
+}}}
+_注释：通过FileWriter打开文件，并用BufferedWriter进行缓冲，PrintWriter用来格式化输出_
+
+*6.存储和恢复数据*
+{{{class="brush:java"
+try {
+    DataOutputStream out2 = new DataOutputStream(
+                            new BufferedOutputStream(
+                            new FileOutputStream("Data.txt")));
+    
+    out2.writeDouble(3.14159);
+    out2.writeUTF("That was pi");
+    out2.writeDouble(1.41413);
+    out2.writeUTF("Square root of 2");
+    out2.close();
+    
+    DataInputStream in5 = new DataInputStream(
+                          new BufferedInputStream(
+                          new FileInputStream("Data.txt")));
+                          
+    // Must use DataInputStream for data:
+    System.out.println(in5.readDouble());
+    // Only readUTF() will recover the
+    // Java-UTF String properly:
+    System.out.println(in5.readUTF());
+    // Read the following double and String:
+    System.out.println(in5.readDouble());
+    System.out.println(in5.readUTF());
+} catch(EOFException e) {
+    throw new RuntimeException(e);
+}
+}}}
+
+*7.读写随机访问文件*
+{{{class="brush:java"
+RandomAccessFile rf = new RandomAccessFile("rtest.dat", "rw");
+
+for(int i = 0; i < 10; i++)
+    rf.writeDouble(i*1.414);
+rf.close();
+
+rf = new RandomAccessFile("rtest.dat", "rw");
+
+rf.seek(5*8);
+rf.writeDouble(47.0001);
+rf.close();
+
+rf = new RandomAccessFile("rtest.dat", "r");
+for(int i = 0; i < 10; i++)
+    System.out.println("Value " + i + ": " + rf.readDouble());
+rf.close();
+}}}
+
+*8.文件映射*
+{{{class="brush:java"
+MappedByteBuffer out = new RandomAccessFile("test.dat", "rw").getChannel()
+                       .map(FileChannel.MapMode.READ_WRITE, 0, length);
+
+for(int i = 0; i < length; i++)
+    out.put((byte)'x');
+
+for(int i = length/2; i < length/2 + 6; i++)
+    System.out.print((char)out.get(i));
+
+}}}
+
+== 标准I/O重定向 ==
+System类提供了静态方法，可以对标准输入、输出和错误IO进行重定向
+{{{class="brush:java"
+System.setIn(InputStream);
+System.setOut(PrintStream);
+System.setErr(PrintStream);
+}}}
+

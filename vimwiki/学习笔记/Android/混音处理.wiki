@@ -1,0 +1,167 @@
+= 混音处理 =
+
+%toc
+
+== 混音初始化 ==
+- 混音处理用到AudioMixer类。当MixerThread线程初始化时，会创建AudioMixer对象。
+- stat_t数据结构用来保存需要的信息，其中`hook`成员对应数据处理的方法指针。默认包含以下几种处理方式：
+    - AudioMixer::process__nop：什么也不做。
+    - AudioMixer::process__genericNoResampling：普通无需重采样。
+    - AudioMixer::process__genericResampling：普通需重采样。
+    - AudioMixer::process__OneTrack16BitsStereoNoResampling：一路音频流，双声双道，PCM16格式，无需重采样。
+    - AudioMixer::process__TwoTracks16BitsStereoNoResampling：两路音频流，双声道，PCM16格式，无需重采样。
+    - AudioMixer::process__validate：根据Track的格式信息动态选择其他的处理函数。
+- 当所有参数设置好后，真正的混音操作是在处理线程中调用`AudioMixer::process`。
+
+[[pic/thread_track.png]]
+
+=== AudioMixer::AudioMixer ===
+{{{class="brush:c++"
+AudioMixer::AudioMixer(size_t frameCount, uint32_t sampleRate)
+    : mActiveTrack(0), mTrackNames(0), mSampleRate(sampleRate)
+{
+    mState.enabledTracks= 0;
+    mState.needsChanged = 0;
+    mState.frameCount   = frameCount;   // 该值等于音频输出对象的缓冲大小
+    mState.outputTemp   = 0;
+    mState.resampleTemp = 0;
+    mState.hook         = process__nop; // 设置数据处理hook，初始值为无任何操作
+    track_t* t = mState.tracks;         // track_t是和Track相对应的结构
+    
+    // 支持32路混音
+    for (int i=0 ; i<32 ; i++) {
+        t->needs = 0;
+        t->volume[0] = UNITY_GAIN;
+        t->volume[1] = UNITY_GAIN;
+        t->volumeInc[0] = 0;
+        t->volumeInc[1] = 0;
+        t->auxLevel = 0;
+        t->auxInc = 0;
+        t->channelCount = 2;
+        t->enabled = 0;
+        t->format = 16;
+        t->buffer.raw = 0;
+        t->bufferProvider = 0;          // 一路Track的数据提供者
+        t->hook = 0;                    // 每一个Track也有一个hook函数
+        t->resampler = 0;
+        t->sampleRate = mSampleRate;
+        t->in = 0;
+        t->mainBuffer = NULL;
+        t->auxBuffer = NULL;
+        t++;
+    }
+}
+}}}
+
+=== struct state_t ===
+{{{class="brush:c++"
+typedef void (*mix_t)(state_t* state);
+typedef void (*hook_t)(track_t* t, int32_t* output, size_t numOutFrames, int32_t* temp, int32_t* aux);
+
+struct state_t {
+    uint32_t        enabledTracks;
+    uint32_t        needsChanged;
+    size_t          frameCount;
+    mix_t           hook;
+    int32_t         *outputTemp;
+    int32_t         *resampleTemp;
+    int32_t         reserved[2];
+    track_t         tracks[32]; __attribute__((aligned(32)));
+};
+}}}
+
+== 加载音频缓冲区 ==
+- setBufferProvider方法将AudioBufferProvider类型作为参数（即Track的基类），加入到当前的state_t状态变量中。
+
+=== AudioMixer::setBufferProvider ===
+{{{class="brush:c++"
+status_t AudioMixer::setBufferProvider(AudioBufferProvider* buffer)
+{
+    mState.tracks[ mActiveTrack ].bufferProvider = buffer;
+    return NO_ERROR;
+}
+}}}
+
+== 混音方法的选择 ==
+- enable方法用来开启混音功能，它根据一个整形标识，决定采用哪种混音方法。
+- 这里需要注意一个技巧，即混音方法的选择本身也是通过一个process方法来处理。
+    - enable会调用invalidateState方法，并将hook设置成process__validate。
+    - 再调用process__validate来动态选择混音处理的方法。
+
+=== AudioMixer::enable ===
+{{{class="brush:c++"
+status_t AudioMixer::enable(int name)
+{
+    switch (name) {
+        case MIXING: {
+            if (mState.tracks[ mActiveTrack ].enabled != 1) {
+                mState.tracks[ mActiveTrack ].enabled = 1;
+                // 调用状态变更的方法
+                invalidateState(1<<mActiveTrack);
+            }
+        } break;
+        default:
+            return NAME_NOT_FOUND;
+    }
+    return NO_ERROR;
+}
+}}}
+
+=== AudioMixer::invalidateState ===
+{{{class="brush:c++"
+void AudioMixer::invalidateState(uint32_t mask)
+{
+    if (mask) {
+        mState.needsChanged |= mask;
+        // 将hook设置为process__validate
+        mState.hook = process__validate;
+    }
+}
+}}}
+
+=== AudioMixer::process__validate ===
+{{{class="brush:c++"
+void AudioMixer::process__validate(state_t* state)
+{
+    ......
+    state->hook = process__nop;
+    if (countActiveTracks) {
+        if (resampling) {
+            ...... 
+            // 如果需要重采样，则选择process__genericResampling
+            state->hook = process__genericResampling;
+        } else {
+            ...... 
+            state->hook = process__genericNoResampling;
+            if (all16BitsStereoNoResample && !volumeRamp) {
+                if (countActiveTracks == 1) {
+                    state->hook = process__OneTrack16BitsStereoNoResampling;
+                }
+            }
+        }
+    }
+
+    if (countActiveTracks) {
+        ...... 
+        if (allMuted) {
+            state->hook = process__nop;
+        } else if (all16BitsStereoNoResample) {
+            if (countActiveTracks == 1) {
+                // 只有一个Track，则选择process__OneTrack16BitsStereoNoResampling
+                state->hook = process__OneTrack16BitsStereoNoResampling;
+            }
+        }
+    }
+}
+}}}
+
+== 混音函数的执行 ==
+=== AudioMixer::process ===
+{{{class="brush:c++"
+void AudioMixer::process()
+{
+    // hook是mix_t类型的函数指针，指向了上面列出的process*方法。
+    // 参数为state_t类型的结构对象
+    mState.hook(&mState);
+}
+}}}

@@ -1,0 +1,82 @@
+= 如何编译Linux内核 =
+
+%toc
+
+== 交叉编译环境 ==
+*在android目录里有个prebuilt目录,包含了我们所需要的工具*
+
+== 设置环境变量 ==
+{{{class="brush: bash"
+vim ~/.bashrc
+
+export PATH=$PATH:~/android/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin
+export ARCH=arm
+
+source ~/.bashrc
+}}}
+
+== 获取内核源码 ==
+{{{class="brush: bash"
+$ cd ~/android
+
+获得内核源代码仓库
+$ git clone git://android.git.kernel.org/kernel/common.git kernel
+$ cd kernel
+
+显示当前分支
+$ git branch
+
+显示所有分支
+$ git branch -a 
+
+获取分支
+$ git checkout -b android-goldfish-2.6.29 origin/android-goldfish-2.6.29
+}}}
+
+== 设定编译环境 ==
+=== Makefile ===
+{{{class="brush:bash"
+ARCH := arm
+# 自定义的编译器，此处是编译器的前缀
+CROSS_COMPILE := arm-eabi-
+# 或Android compiler
+CROSS_COMPILE := ~/android/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin/arm-eabi-
+# 或gnu compiler
+CROSS_COMPILE := ~/kernel_build/arm-2010q1/bin/arm-none-linux-gnueabi-
+
+LDFLAGS_BUILD_ID := 
+}}}
+
+=== menuconfig ===
+{{{class="brush:bash"
+# 使用arch/arm/configs中的相应配置文件生成.config
+$ make xxx_defcofnig
+# 或手动配置
+$ make menuconfig
+
+CONFIG_SPLIT_ROOT_FOR_ANDROID=y
+CONFIG_ANDROID_PARANOID_NETWORK=y
+CONFIG_ANDROID_TIMED_GPIO=y
+CONFIG_BINDER_IPC=y
+CONFIG_USB_ANDROID_ADB_UMS=y
+LOW_MEMORY_KILLER=y
+CONFIG_ASHMEM=y
+}}}
+
+== 编译内核镜像 ==
+{{{class="brush: bash"
+$ cd ~/android/kernel
+$ make xxx_defconfig
+$ make
+}}}
+
+== 制作uboot启动的镜像 ==
+{{{class="brush:bash"
+# 生成arch/arm/boot/uImage镜像
+$ make uImage -j4
+}}}
+
+== 测试镜像 ==
+{{{class="brush: bash"
+$ emulator -avd myavd -kernel ~/android/kernel/arch/arm/boot/zImage
+}}}

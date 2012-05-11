@@ -1,0 +1,27 @@
+= 数据存储 =
+
+- Android支持四种数据存储方式，`Preference`、`File`、`Database`和`ContentProvider`
+- SharedPreference的数据存放路径为`/data/data/PackageName/Shared_Pref`
+- File的数据存放路径为`/data/data/PackageName/files`
+- Database的数据存放路径为`/data/data/PackageName/database`
+
+=== SharedPreference ===
+_一种轻量级的数据存储方式，采用键值对的方式存储，主要用于应用程序配置，数据不能共享_
+
+- 参见[[持久化]]
+
+=== File ===
+_主要使用文件操作，用于比较大的文件，如图片_
+
+- [[File存储]]
+- [[外部存储的读写]]
+
+=== Database ===
+_移动设备使用的小而强大的数据库，数据可以共享_
+
+- [[SQLiteDatabase]]
+
+=== ContentProvider ===
+_提供各种应用之间的数据共享机制，为数据访问提供一个统一的方法_
+
+- [[ContentProvider]]

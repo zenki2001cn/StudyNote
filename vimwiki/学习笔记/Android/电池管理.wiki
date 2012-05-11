@@ -1,0 +1,43 @@
+= 电池管理 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+frameworks/frameworks/base/services/java/com/android/server/BatteryService.java
+frameworks/frameworks/base/services/java/com/android/server/SystemServer.java
+frameworks/frameworks/base/core/java/android/os/UEventObserver.java
+frameworks/frameworks/base/services/jni/com_android_server_BatteryService.cpp
+}}}
+
+== 相关类分析 ==
+=== 电量信息获取 ===
+- [[com_android_server_BatteryService]]
+
+=== 电量数据传递 ===
+- [[BatteryService]]
+
+=== 如何接收电量信息 ===
+- 注册一个BroadcastReceiver来接收BatteryService发送的消息
+- 根据Intent的Extra值来获取信息
+
+{{{class="brush:java"
+private BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        String action = intent.getAction();
+        if (action.equals(Intent.ACTION_BATTERY_CHANGED)) {
+            int nVoltage = intent.getIntExtra("voltage", 0);
+            if(nVoltage != 0){      
+                mVoltage.setText("V: " + nVoltage + "mV - Success...");
+            } else {
+                mVoltage.setText("V: " + nVoltage + "mV - fail...");
+            }
+        }
+    }   
+}
+
+IntentFilter mIntentFilter = new IntentFilter();
+mIntentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+registerReceiver(mIntentReceiver, mIntentFilter);
+}}}

@@ -1,0 +1,57 @@
+= 快捷键启动设置 =
+
+== 相关类 ==
+{{{class="brush:java"
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Parcelable;
+}}}
+
+- 首先创建一个需要启动的Intent,添加自身的Activity类信息
+- 再创建一个返回给Home的Intent,将第一次创建的Intent当做快捷键设置参数返回给Home
+
+源码例程(JAVA)
+{{{class="brush:java"
+@Override
+public void onCreate(Bundle icicle) {
+    super.onCreate(icicle);
+
+    // Resolve the intent
+
+    final Intent intent = getIntent();
+    final String action = intent.getAction();
+
+    // If the intent is a request to create a shortcut, we'll do that and exit
+
+    if (Intent.ACTION_CREATE_SHORTCUT.equals(action)) {
+        setupShortcut();
+        finish();
+        return;
+    }
+}
+
+private void setupShortcut() {
+    // First, set up the shortcut intent.  For this example, we simply create an intent that
+    // will bring us directly back to this activity.  A more typical implementation would use a 
+    // data Uri in order to display a more specific result, or a custom action in order to 
+    // launch a specific operation.
+
+    Intent shortcutIntent = new Intent(Intent.ACTION_MAIN);
+    shortcutIntent.setClassName(this, this.getClass().getName());
+    shortcutIntent.putExtra(EXTRA_KEY, "ApiDemos Provided This Shortcut");
+
+    // Then, set up the container intent (the response to the caller)
+
+    Intent intent = new Intent();
+    intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+    intent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getString(R.string.shortcut_name));
+    Parcelable iconResource = Intent.ShortcutIconResource.fromContext(
+            this,  R.drawable.app_sample_code);
+    intent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+
+    // Now, return the result to the launcher
+
+    setResult(RESULT_OK, intent);
+}
+}}}

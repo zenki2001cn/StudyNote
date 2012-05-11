@@ -1,0 +1,184 @@
+= How-to Rebuild gdbserver =
+
+%toc
+
+== Assumptions ==
+- 1. An Android baseline is located at $MYDROID and you have already followed instructions to build the baseline. For instructions, see [Getting Started]
+- 2. The examples in this tutorial assume that you built Android for Blaze platform, but you should be able to apply them to any platform.
+- 3. We will be building gdbserver in a folder named gdb_build in your HOME directory. 
+
+== Step 1: Download GDB Source and Toolchain Build Scripts ==
+- Android's toolchain repo manifest is located at git://android.git.kernel.org/toolchain/manifest.git. You can choose to repo init/sync the whole manifest, but for the purposes of this tutorial, we will just be cloning the gdb and build trees. GDB source for Android is located at git://android.git.kernel.org/toolchain/gdb.git, and build scripts source is located at git://android.git.kernel.org/toolchain/build.git. For this tutorial, we will be downloading from the latest on the master branch. 
+
+{{{class="brush:bash"
+$ cd $HOME/gdb_build
+$ git clone git://android.git.kernel.org/toolchain/gdb.git
+$ git clone git://android.git.kernel.org/toolchain/build.git
+}}}
+
+== Step 2: Create sysroot Directory ==
+- The sysroot directory contains all the header files and libraries needed to build gdbserver (and other Android toolchains but that will be for another topic). The script to generate the sysroot directory is in the build  tree that we cloned in the last step. It basically just copies the relevant libraries and header files located in various places in your Android environment into a central location. 
+
+{{{class="brush:bash"
+# ./build/build-sysroot.sh <product out directory> <install directory>
+# Note: path to <install directory> needs to be explicit
+$ cd $HOME/gdb_build
+$ ./build/build-sysroot.sh $MYDROID/out/target/product/blaze/ $HOME/gdb_build/sysroot
+}}}
+
+== Step 3: Build gdbserver ==
+- The ndk tree in your $MYDROID repo provides a script (build-gdbserver.sh) to rebuild gdbserver. 
+=== Modify Scripts ===
+- However, the scripts in NDK tree are for NDK users and not for developers with an entire Android environment, so we will need to make some small modifications.$MYDROID/ndk/build/tools/build-gdbserver.sh removes the libthread_db related binaries and header files from the sysroot directory and tries to replace them with the ones found in the NDK. In our case, we want to use the libthread_db binaries that we built. 
+
+{{{class="brush:bash"
+In $MYDROID/ndk/build/tools/build-gdbserver.sh, change the following:
+ # Remove libthread_db to ensure we use exactly the one we want.
+ rm -f $BUILD_SYSROOT/usr/lib/libthread_db*
+ rm -f $BUILD_SYSROOT/usr/include/thread_db.h
+ 
+ if [ "$NOTHREADS" != "yes" ] ; then
+     # We're going to rebuild libthread_db.o from its source
+     # that is under sources/android/libthread_db and place its header
+     # and object file into the build sysroot.
+     LIBTHREAD_DB_DIR=$ANDROID_NDK_ROOT/sources/android/libthread_db/gdb-$GDB_VERSION
+     if [ ! -d "$LIBTHREAD_DB_DIR" ] ; then
+         dump "ERROR: Missing directory: $LIBTHREAD_DB_DIR"
+         exit 1
+     fi
+     # Small trick, to avoid calling ar, we store the single object file
+     # with an .a suffix. The linker will handle that seamlessly.
+     run cp $LIBTHREAD_DB_DIR/thread_db.h $BUILD_SYSROOT/usr/include/
+     run $TOOLCHAIN_PREFIX-gcc --sysroot=$BUILD_SYSROOT -o $BUILD_SYSROOT/usr/lib/libthread_db.a -c $LIBTHREAD_DB_DIR/libthread_db.c
+     if [ $? != 0 ] ; then
+         dump "ERROR: Could not compile libthread_db.c!"
+         exit 1
+     fi
+ fi
+ 
+ to
+ 
+ <<NOT_NEEDED
+ # Remove libthread_db to ensure we use exactly the one we want.
+ rm -f $BUILD_SYSROOT/usr/lib/libthread_db*
+ rm -f $BUILD_SYSROOT/usr/include/thread_db.h
+ 
+ if [ "$NOTHREADS" != "yes" ] ; then
+     # We're going to rebuild libthread_db.o from its source
+     # that is under sources/android/libthread_db and place its header
+     # and object file into the build sysroot.
+     LIBTHREAD_DB_DIR=$ANDROID_NDK_ROOT/sources/android/libthread_db/gdb-$GDB_VERSION
+     if [ ! -d "$LIBTHREAD_DB_DIR" ] ; then
+         dump "ERROR: Missing directory: $LIBTHREAD_DB_DIR"
+         exit 1
+     fi
+     # Small trick, to avoid calling ar, we store the single object file
+     # with an .a suffix. The linker will handle that seamlessly.
+     run cp $LIBTHREAD_DB_DIR/thread_db.h $BUILD_SYSROOT/usr/include/
+     run $TOOLCHAIN_PREFIX-gcc --sysroot=$BUILD_SYSROOT -o $BUILD_SYSROOT/usr/lib/libthread_db.a -c $LIBTHREAD_DB_DIR/libthread_db.c
+     if [ $? != 0 ] ; then
+         dump "ERROR: Could not compile libthread_db.c!"
+         exit 1
+     fi
+ fi
+ NOT_NEEDED
+}}}
+
+- $MYDROID/ndk/build/tools/prebuilt-common.sh points to the toolchain found in NDK. We want to use the toolchain provided in the $MYDROID/prebuilts tree. 
+
+{{{class="brush:bash"
+In $MYDROID/ndk/build/tools/prebuilt-common.sh, change the following:
+ get_toolchain_install ()
+ {
+     echo "$1/toolchains/$TOOLCHAIN/prebuilt/$HOST_TAG"
+ }
+ 
+ to
+ 
+ get_toolchain_install ()
+ {
+     echo "$1/prebuilt/$HOST_TAG/toolchain/$TOOLCHAIN"
+ }
+}}}
+
+=== Modify GDB 7.1.x ===
+- There is a small bug in the GDB 7.1.x code in the Android GDB tree.
+   - 1. The Makefile.in for gdbserver has the LDFLAG in the wrong place for linking of gdbserver and gdbreplay
+   - 2. PTRACE_GETVFPREGS is defined in Bionic's ptrace.h, but PTRACE_SETVFPREGS is undefined. Need to define it in gdb-7.1.x/gdb/gdbserver/linux-arm-low.c 
+- Apply the following patch: 
+
+{{{class="brush:bash"
+diff --git a/gdb-7.1.x/gdb/gdbserver/Makefile.in b/gdb-7.1.x/gdb/gdbserver/Makefile.in
+ index 5bf82e2..488bfb6 100644
+ --- a/gdb-7.1.x/gdb/gdbserver/Makefile.in
+ +++ b/gdb-7.1.x/gdb/gdbserver/Makefile.in
+ @@ -176,13 +176,13 @@ clean-info:
+  
+  gdbserver$(EXEEXT): $(OBS) ${ADD_DEPS} ${CDEPS}
+  	rm -f gdbserver$(EXEEXT)
+ -	${CC-LD} $(INTERNAL_CFLAGS) $(INTERNAL_LDFLAGS) -o gdbserver$(EXEEXT) $(OBS) \
+ -	  $(GDBSERVER_LIBS) $(XM_CLIBS)
+ +	${CC-LD} $(INTERNAL_CFLAGS) -o gdbserver$(EXEEXT) $(OBS) \
+ +	  $(GDBSERVER_LIBS) $(XM_CLIBS) $(INTERNAL_LDFLAGS)
+  
+  gdbreplay$(EXEEXT): $(GDBREPLAY_OBS)
+  	rm -f gdbreplay$(EXEEXT)
+ -	${CC-LD} $(INTERNAL_CFLAGS) $(INTERNAL_LDFLAGS) -o gdbreplay$(EXEEXT) $(GDBREPLAY_OBS) \
+ -	  $(XM_CLIBS)
+ +	${CC-LD} $(INTERNAL_CFLAGS) -o gdbreplay$(EXEEXT) $(GDBREPLAY_OBS) \
+ +	  $(XM_CLIBS) $(INTERNAL_LDFLAGS)
+  
+  # Put the proper machine-specific files first, so M-. on a machine
+  # specific routine gets the one for the correct machine.
+ diff --git a/gdb-7.1.x/gdb/gdbserver/linux-arm-low.c b/gdb-7.1.x/gdb/gdbserver/linux-arm-low.c
+ index 54668f8..7a78cce 100644
+ --- a/gdb-7.1.x/gdb/gdbserver/linux-arm-low.c
+ +++ b/gdb-7.1.x/gdb/gdbserver/linux-arm-low.c
+ @@ -43,10 +43,7 @@ void init_registers_arm_with_neon (void);
+  # define PTRACE_SETWMMXREGS 19
+  #endif
+  
+ -#ifndef PTRACE_GETVFPREGS
+ -# define PTRACE_GETVFPREGS 27
+  # define PTRACE_SETVFPREGS 28
+ -#endif
+  
+  static unsigned long arm_hwcap;
+}}}
+
+=== Build ===
+- To build gdbserver, run the following:
+
+{{{class="brush:bash"
+# gdbserver will be at $HOME/gdb_build/install/gdbserver
+$ sh MYDROID/ndk/build/tools/build-gdbserver.sh $HOME/gdb_build $MYDROID arm-eabi-4.4.3 --verbose --build-out=$HOME/gdb_build/install \
+}}}
+
+- build-gdbserver.sh --help:
+
+{{{class="brush:text"
+Usage: build-gdbserver.sh [options] <src-dir> <ndk-dir> <toolchain>
+ 
+ Rebuild the gdbserver prebuilt binary for the Android NDK toolchain.
+ 
+ Where <src-dir> is the location of the gdbserver sources,
+ <ndk-dir> is the top-level NDK installation path and <toolchain>
+ is the name of the toolchain to use (e.g. arm-eabi-4.4.0).
+ 
+ The final binary is placed under:
+ 
+     <ndk-dir>/toolchains <toolchain>/prebuilt/gdbserver
+ 
+ NOTE: The --platform option is ignored if --sysroot is used.
+ 
+ Valid options (defaults are in brackets):
+ 
+   --help                   Print this help.
+   --verbose                Enable verbose mode.
+   --build-out=<path>       Set temporary build directory [/tmp/<random>]
+   --platform=<name>        Target specific platform [android-3]
+   --sysroot=<path>         Specify sysroot directory directly
+   --disable-threads        Disable threads support [no]
+   -j<number>               Use <number> build jobs in parallel [2]
+   --gdb-version=<name>     Use specific gdb version. [6.6]
+}}}
