@@ -58,6 +58,9 @@ $ git config branch.master.merge refs/heads/master
 	email = Zenki.J.Zha@foxconn.com
 	;name = git@127.0.0.1
     ;signingkey = <gpg-key-id>
+[branch "gh-pages"]
+        remote = origin
+        merge = refs/heads/gh-pages
 [core]
 	editor = vim
 [merge]
