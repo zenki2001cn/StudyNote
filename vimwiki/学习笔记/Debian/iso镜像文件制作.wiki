@@ -5,7 +5,19 @@
 == 使用mkisofs ==
 === mkisofs命令行格式 ===
 {{{class="brush:text"
-mkisofs [-adDfhJlLNrRTvz][-print-size][-quiet][-A <应用程序ID>][-b <开机映像文件>][-c <开机文件名称>][-hide <目录或文件名>][-hide-joliet <文件或目录名>][-m <目录或文件名>][-M <映像文件>][-o <映像文件>][-sysid <系统ID >][-V <volume ID >][-x <目录>][目录或文件]
+mkisofs [-adDfhJlLNrRTvz][-print-size][-quiet]
+        [-A <应用程序ID>]
+        [-b <开机映像文件>]
+        [-c <开机文件名称>]
+        [-hide <目录或文件名>]
+        [-hide-joliet <文件或目录名>]
+        [-m <目录或文件名>]
+        [-M <映像文件>]
+        [-o <映像文件>]
+        [-sysid <系统ID >]
+        [-V <volume ID >]
+        [-x <目录>]
+        [目录或文件]
 }}}
 
 === 基本参数 ===
@@ -14,10 +26,13 @@ mkisofs [-adDfhJlLNrRTvz][-print-size][-quiet][-A <应用程序ID>][-b <开机�
 -V Set Volume ID
 -v verbose
 -m <目录或文件名> or -exclude <目录或文件名>  排除某目录或文件，其将不会放入映像文件中
--M <映像文件> or -prev-session <映像文件> Iso文件合并(与指定的映像文件合并)
+-M <映像文件> or -prev-session <映像文件> ISO文件合并(与指定的映像文件合并)
 }}}
 
 === 启动光盘参数 ===
+- 要做Unix/Linux下的数据盘或者开机启动盘，必须使用“Unix Rock Ridge”格式（mkisofs -r）, 这种格式可以保存文件相关的权限。
+- 要作DOS/WIN下的光盘，用Joliet格式（-J）。
+
 {{{class="brush:text"
 -no-emul-boot
     Boot image is 'no emulation' image
@@ -72,13 +87,11 @@ mkisofs [-adDfhJlLNrRTvz][-print-size][-quiet][-A <应用程序ID>][-b <开机�
     扩展的文件名
     DOS下支持中文
     WIN下支持中文
-
-要做 Unix/Linux 下的数据盘或者开机启动盘，必须使用 Unix Rock Ridge 格式（mkisofs -r）, 这种格式可以保存文件相关的权限
-要所DOS/WIN下的光盘，用Joliet格式（-J）
 }}}
 
 == 使用范例 ==
 {{{class="brush:bash"
 #制作linux启动光盘
-mkisofs -no-emul-boot -r -T -RJ -b isolinux/isolinux.bin -c isolinux/boot.cat -boot-load-size 4 -boot-info-table -o output.iso input_path
+mkisofs -no-emul-boot -r -T -RJ -b isolinux/isolinux.bin -c isolinux/boot.cat \
+        -boot-load-size 4 -boot-info-table -o output.iso input_path
 }}}

@@ -6,6 +6,7 @@
 {{{class="brush:bash"
 # 编辑source.list文件
 $ sudo vim /etc/apt/source.list
+
 # 加入以下源
 deb http://ppa.launchpad.net/gezakovacs/ppa/ubuntu lucid main 
 deb-src http://ppa.launchpad.net/gezakovacs/ppa/ubuntu lucid main
@@ -29,9 +30,9 @@ SVKYjJboojJ/ntFqP0vrr4FIKgzXbKNSVjoOMsHRvpeoaA==
 
 {{{class="brush:bash"
 # apt-get安装
-$sudo apt-key add a.asc
-$sudo apt-get install unetbootin
-$sudo apt-get install squashfs-tools lupin-casper
+$ sudo apt-key add a.asc
+$ sudo apt-get install unetbootin
+$ sudo apt-get install squashfs-tools lupin-casper
 }}}
 
 == lub备份脚本 ==
@@ -42,10 +43,13 @@ $sudo apt-get install squashfs-tools lupin-casper
 
 开始备份
 （1）打开终端，输入sudo lub -b，屏幕会提示你选择英文版还是中文版，我们键入“c"，然后回车即可。
-（2）接着系统会叫你指定一个目录存放备份文件，我们直接回车，这样备份文件就自动放在了你自己的目录下，（/home/用户名//backup-日期）。
-（3）接下来系统会问你是否排除 /home 里所有的用户文件? (y/n)，我们选择y,也就是排除，接下来的几个相同问题都选择 y，这样的好处是备份文件可以比较小，省空间，
-另外就是我们要备份的只是系统，/home下的文件没必要备份（需要备份的文件程序会自动备份，不需要我们操心，呵呵）。
-（4）都选择完了以后系统提示“开始备份?(y/n)“，我们选择 y，回车，lub脚本就开始备份了。现在你可以点根烟，喝口茶，总之没你什么事了，呵呵～
+（2）接着系统会叫你指定一个目录存放备份文件，我们直接回车，这样备份文件就自动放在了你自己的
+目录下：（/home/用户名//backup-日期）。
+（3）接下来系统会问你是否排除/home里所有的用户文件? (y/n)，我们选择y,也就是排除，接下来的几个
+相同问题都选择y，这样的好处是备份文件可以比较小，省空间，另外就是我们要备份的只是系统，/home下
+的文件没必要备份（需要备份的文件程序会自动备份，不需要我们操心，呵呵）。
+（4）都选择完了以后系统提示“开始备份?(y/n)“，我们选择y，回车，lub脚本就开始备份了。现在你可以
+点根烟，喝口茶，总之没你什么事了，呵呵～
 （5）很快的，脚本已经把系统备份到 /home/用户名/ 下了，恭喜你，你成功备份了你的Ubuntu系统！
 （6）备份好的文件夹下面应该有如下4个文件，（文件名只是日期不同，日期代表你备份的日期）
     1. backup2009.11.23.squashfs 
@@ -59,16 +63,16 @@ $sudo apt-get install squashfs-tools lupin-casper
 {{{class="brush:text"
 1、使用unetbootin制作一个U盘启动盘。
 2、使用lub备份的系统文件替换启动盘casper目录下的文件：
-    filesystem.squashfs对应备份的文件backup2009.11.23.squashfs
-    initrd.lz对应备份的文件initrd.img-2.6.31-14-generic
-    vmlinuz对应备份的文件vmlinuz-2.6.31-14-generic
+    filesystem.squashfs ---> backup2009.11.23.squashfs
+    initrd.lz           ---> initrd.img-2.6.31-14-generic
+    vmlinuz             ---> vmlinuz-2.6.31-14-generic
 }}}
 
 === 制作iso ===
-{{{class="brush:text"
-1、准备一个原始iso，并解压。
-2、使用lub备份的系统文件替换启动盘casper目录下的文件：用法如上
-3、使用mkisofs打包该文件
-    mkisofs -no-emul-boot -r -T -RJ -b isolinux/isolinux.bin -c isolinux/boot.cat -boot-load-size 4 -boot-info-table 
-            -o output.iso input_path
+{{{class="brush:bash"
+# 1、准备一个原始iso，并解压。
+# 2、使用lub备份的系统文件替换启动盘casper目录下的文件：用法如上
+# 3、使用mkisofs打包该文件
+$ mkisofs -no-emul-boot -r -T -RJ -b isolinux/isolinux.bin -c isolinux/boot.cat \
+        -boot-load-size 4 -boot-info-table -o output.iso input_path
 }}}
