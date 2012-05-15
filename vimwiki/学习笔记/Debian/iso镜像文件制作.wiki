@@ -65,7 +65,7 @@ mkisofs [-adDfhJlLNrRTvz][-print-size][-quiet]
 
 -hide-rr-moved
     Rename RR_MOVED to .rr_moved in Rock Ridge tree
-    隐藏 Unix RR 目录
+    隐藏Unix RR_MOVED目录
 
 -hide  <目录或文件名>
     使指定的目录或文件在ISO 9660或Rock RidgeExtensions的系统中隐藏
