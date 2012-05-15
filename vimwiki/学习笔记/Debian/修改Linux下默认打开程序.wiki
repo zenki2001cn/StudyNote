@@ -1,0 +1,12 @@
+= 修改Linux下默认打开程序 =
+
+%toc
+
+== 配置文件和路径 ==
+{{{class="brush:bash"
+# 保存了全局的打开方式
+/etc/gnome/defaults.list
+
+# 保存了个人的打开方式 
+~/.local/share/applications/mimeapps.list
+}}}

@@ -117,7 +117,6 @@ compiz，Linux下的3D桌面，直接apt-get安装运行即可。可选择安装
 apt-get install b43-fwcutter
 无线网卡的官方地址
 http://linuxwireless.org/
-
 }}}
 
 == 18、安装模块管理工具 ==
