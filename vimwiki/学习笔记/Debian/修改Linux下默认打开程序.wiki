@@ -7,6 +7,6 @@
 # 保存了全局的打开方式
 /etc/gnome/defaults.list
 
-# 保存了个人的打开方式 
+# 保存了用户的打开方式 
 ~/.local/share/applications/mimeapps.list
 }}}
