@@ -40,7 +40,11 @@ $ ssh-add ~/.ssh/id_rsa
 1.4.5 启用ssh-agent
 $ ssh-agent 
 
-1.5 配置文件示例
+1.5 配置默认的远程分支
+$ git config branch.master.remote origin
+$ git config branch.master.merge refs/heads/master
+
+1.6 配置文件示例
 # 以下是.gitconfig配置文件的示例：
 [color]
 	ui = auto
@@ -93,7 +97,7 @@ $ git merge
 
 2.3.3 更新代码方式的另一种方法
 # “git pull”是“git fetch”和“git merge”命令的一个组合
-$ git pull
+$ git pull origin testing
 
 2.3.4 查看差异的内容
 # 查看当前修改和最近提交的差异
@@ -184,7 +188,7 @@ $ git commit
 
 2.9 恢复修改文件
 2.9.1 从服务器更新文件
-$ git pull origin
+$ git pull origin testing
 
 2.9.2 恢复修改过的文件
 $ git checkout -f file1 file2
@@ -297,12 +301,17 @@ $ git tag -a v1.0 -m "tag v1.0"
 
 3.6.2 分享标签
 $ git push origin v1.0
+$ git push --tags
+$ git push origin refs/tags/*
 
 3.6.3 列出所有标签
 $ git tag -l
 
-3.6.4 上传标签
-$ git push --tags
+3.6.4 删除标签
+# 删除本地标签
+$ git tag -d v1.0
+# 删除远程库的标签
+$ git push origin :v1.0
 
 3.7 自动化脚本
 # 在.git/hooks/目录中可以编写各种脚本，
