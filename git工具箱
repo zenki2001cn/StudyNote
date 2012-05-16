@@ -139,6 +139,7 @@ $ git commit -a -m 'this is memo'
 $ git push
 $ git push origin testing
 $ git push ssh://Zenki@gerrit.ext.ti.com:29418/apps/Foxconn/omap3/framework HEAD:refs/heads/master
+$ git push -u origin gh-pages
 
 2.6 显示日志和仓库信息
 2.6.1 显示commit日志
@@ -192,6 +193,9 @@ $ git pull origin testing
 
 2.9.2 恢复修改过的文件
 $ git checkout -f file1 file2
+
+2.10 清除暂存区
+$ rm .git/index
 
 3. Git 高级应用
 3.1 补丁生成和应用

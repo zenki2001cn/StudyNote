@@ -467,11 +467,11 @@ http://www.solucija.com/
 4.19. deplate文档转换工具
 deplate -m utf8 -d htmldir -f html -t ~/.deplate/template.html --css html-css -X html.viki
 
-    * -m表示使用的模块
-    * -t表示使用的模板文件
-    * --css表示使用的css文件注意不加后缀
-    * -f表示格式
-    * -d表示生成html的目标目录
+* -m表示使用的模块
+* -t表示使用的模板文件
+* --css表示使用的css文件注意不加后缀
+* -f表示格式
+* -d表示生成html的目标目录
 
 4.20. ruby包安装
 gem
@@ -534,5 +534,10 @@ goldendict
 4.36. ack搜索
 下载ack：
 curl http://betterthangrep.com/ack-standalone > /usr/bin/ack && chmod 0755
+
+4.37. sublime_text文本编辑器
+下载地址：
+http://www.sublimetext.com/2
+
 
 % vim:ft=txt
