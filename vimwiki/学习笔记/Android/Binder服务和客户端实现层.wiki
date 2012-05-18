@@ -6,5 +6,7 @@
  [pic/service.png]
  
 == Java层的实现 ==
+- Java层的本地Service实现（`进程内部访问`）请参见[[本地Service]]。
+- Java层的远程Service实现（`进程间访问`）请参见[[远程Service]]。
 
 == Native层的实现 ==

@@ -91,6 +91,7 @@ FoxyProxy Standard          --- 代理服务器
 New Tab King                --- 缓存浏览
 Read It Later               --- 页面保存
 SQLite Manager              --- SQL查看器
+Zotero                      --- 文档、网页标签管理
 
 1.17 暴力破解工具
 medusa
@@ -171,9 +172,11 @@ unetbootin
 gconf-editor
 
 2.16. 打包和解包系统镜像
-mkyaffs2image --- 打包
+# 打包
+mkyaffs2image                   
 mkyaffs2image dir image
-unyaffs --- 解包
+# 解包
+unyaffs                         
 unyaffs image
 
 2.17. 更新软件版本链接

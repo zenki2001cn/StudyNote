@@ -30,14 +30,14 @@ zM 折叠全部
 :set paste
 
 ***窗口切换***
-Ctrl+w w --- 分割窗口间切换
-Ctrl+w q --- 关闭其中一个分割窗口
-Ctrl+w i --- 打开一个水平分割窗口
-Ctrl+w v --- 打开一个垂直分割窗口
-Ctrl+w e --- 全屏显示某个窗口
-Ctrl+w r --- 与下一个窗口交换位置
-Ctrl+w ^ --- 在另一个水平窗口中打开另一个文件
-Ctrl+w v --- 以当前文件内容打开一个垂直窗口
+Ctrl+w w            --- 分割窗口间切换
+Ctrl+w q            --- 关闭其中一个分割窗口
+Ctrl+w i            --- 打开一个水平分割窗口
+Ctrl+w v            --- 打开一个垂直分割窗口
+Ctrl+w e            --- 全屏显示某个窗口
+Ctrl+w r            --- 与下一个窗口交换位置
+Ctrl+w ^            --- 在另一个水平窗口中打开另一个文件
+Ctrl+w v            --- 以当前文件内容打开一个垂直窗口
 
 ***大小写转换***
 gu -- 小写转换
@@ -111,7 +111,7 @@ m，打开菜单项
 10. supertab tab补全
 tab键补全
 tab键python补全
-python pydiction.py [python模块] --- 加入新的python模块
+python pydiction.py [python模块]     --- 加入新的python模块
 
 11. powiki wiki文件
 \wh 打开主题
@@ -146,7 +146,7 @@ d键 删除buffer
 ,cf 为函数添加doxygen格式的注释
 
 18. 列出所有打开文件的函数列表
-快捷键F1 ---- 打开函数列表窗口
+快捷键F1            ---- 打开函数列表窗口
 改变快捷键
 For example to change the <F1> mapping to <F7>
 map  <F7> <Plug>ShowFunc
@@ -164,47 +164,47 @@ t       Change scan type, results will be from either the current file, all open
 按Ctrl+^键，直接输入拼音,就可出现中文。
 
 20. C语言支持
-\hp --- 显示帮助信息
-:A --- 头文件之间切换
-gf --- 跳转到相应的头文件
-gd --- 变量定义
-shift+k --- MAN帮助
-\hm --- MAN帮助,打开另一个文件显示
+\hp             --- 显示帮助信息
+:A              --- 头文件之间切换
+gf              --- 跳转到相应的头文件
+gd              --- 变量定义
+shift+k         --- MAN帮助
+\hm             --- MAN帮助,打开另一个文件显示
 -----------------------------------
-\cfr --- 块注释
-\ccl --- 类注释
-\cme --- 方法注释
-\cd --- 日期
-\ct --- 日期和时间
-\cl --- 在文件尾加入一条注释
+\cfr            --- 块注释
+\ccl            --- 类注释
+\cme            --- 方法注释
+\cd             --- 日期
+\ct             --- 日期和时间
+\cl             --- 在文件尾加入一条注释
 -----------------------------------
-\nr --- 读取代码片断
-\nw --- 写如代码片断
-\ne --- 编辑代码片断
+\nr             --- 读取代码片断
+\nw             --- 写如代码片断
+\ne             --- 编辑代码片断
 -----------------------------------
-\rh --- 保存另一个缓存
+\rh             --- 保存另一个缓存
 
 21. 项目管理
 :Project <filename>
-\c --- 创建一个项目
-\C --- 创建一个项目,并加载其中的子目录
-\r --- 刷新项目
-\L --- 加载全部文件到缓存中
-\w --- 从缓存中移除全部文件
-\g --- 在当前层的文件中查找
-\G --- 在所有层的文件中查找
+\c              --- 创建一个项目
+\C              --- 创建一个项目,并加载其中的子目录
+\r              --- 刷新项目
+\L              --- 加载全部文件到缓存中
+\w              --- 从缓存中移除全部文件
+\g              --- 在当前层的文件中查找
+\G              --- 在所有层的文件中查找
 zm,zn 来回切换窗口可以解决花屏问题
 
 22.1 ctags支持
 Ctrl+F12 对当前目录进行扫描,并生成ctags文件
-Ctrl+] --- 跳转定义的函数
-Ctrl+t --- 跳转返回
-Ctrl+o --- 返回上一次光标位置
-:tn --- 下一个tag位置
-:tp --- 上一个tag位置
-:tag func_name --- 跳到指定方法名的定义处
-:tselect --- 选择ctags缓存中的函数
-:tjump func_name --- 从指定方法名的列表中选择
+Ctrl+]              --- 跳转定义的函数
+Ctrl+t              --- 跳转返回
+Ctrl+o              --- 返回上一次光标位置
+:tn                 --- 下一个tag位置
+:tp                 --- 上一个tag位置
+:tag func_name      --- 跳到指定方法名的定义处
+:tselect            --- 选择ctags缓存中的函数
+:tjump func_name    --- 从指定方法名的列表中选择
 
 22.1.1 查找关键字
 :cd ~/src/                      --- 切换文件夹
@@ -225,8 +225,8 @@ cscope -Rbkq --- 生成索引
  8 或 i    查找包含本文件的文件
 
 23. xml语言支持
-% --- 在<>符号之间切换
-shift+> --- 自动完成tag标示
+%           --- 在<>符号之间切换
+shift+>     --- 自动完成tag标示
 shift+>两次 --- 自动完成tag标示,并换行
 
 24. ShowMarks标记
@@ -243,11 +243,11 @@ m+?         --- 手动指定一个标记符号
 :echo sha1#sha1("hello, world") 
 
 26. tasklist
-<Leader>tl --- 查看TODO,FIXME等信息
+<Leader>tl  --- 查看TODO,FIXME等信息
 
 27. 画图工具
-\di --- 开始画图
-\ds --- 停止画图
+\di         --- 开始画图
+\ds         --- 停止画图
 
 <left>       move and draw left
 <right>      move and draw right, inserting lines/space as needed
@@ -403,8 +403,8 @@ k- 取消背景色
 44. easytags 自动生成tags且文本高亮
 
 45. renamer文件改名插件
-:Renamer --- 进入文件改名模式
-:Ren     --- 完成文件改名 
+:Renamer    --- 进入文件改名模式
+:Ren        --- 完成文件改名 
 
 46. vimcommander
 F3 - view
@@ -420,16 +420,16 @@ Suggested binding is
 noremap <silent> <F11> :cal VimCommanderToggle()<CR>
 
 47. JavaBrowser
-浏览Java类
+# 浏览Java类
 :JavaBrowser
 
 48. filtering
-搜索结果列表
+# 搜索结果列表
 ,f - 查看搜索结果
 ,F - 手动输入搜索关键字
 ,g - 跳转搜索页
 
-在搜索结果界面中
+# 在搜索结果界面中
 o - 跳转结果而不切换窗口
 enter - 跳转到结果
 esc - 退出结果窗口

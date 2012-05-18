@@ -1,5 +1,7 @@
 = 远程Service =
 
+%toc
+
 == Binding Service ==
 
 === client端 ===
@@ -11,7 +13,8 @@
 - 调用unbindService方法解除绑定
 
 === 示例代码 ===
-例程源码(JAVA) --- ServiceConnection
+==== ServiceConnection ====
+
 {{{class="brush:java"
 IRemoteService mService = null;
 
@@ -38,7 +41,7 @@ private ServiceConnection mConnection = new ServiceConnection() {
 };
 }}}
 
-例程源码(JAVA) --- bindService和unbindService
+==== bindService和unbindService ====
 {{{class="brush:java"
 // 方法一
 bindService(new Intent(IRemoteService.class.getName()),
@@ -50,7 +53,7 @@ bindService(new Intent("com.example.android.apis.app.IRemoteService"));
 unbindService(mConnection);
 }}}
 
-例程源码(JAVA) --- 调用service方法
+==== 调用service方法 ====
 {{{class="brush:java"
 private boolean func1(){
     byte val = 0;
@@ -88,7 +91,8 @@ private boolean func1(){
 - 在`onBind`方法中，返回远程调用的接口类
 
 === 示例代码 ===
-例程源码(java) --- AIDL文件
+==== AIDL文件 ====
+
 {{{class="brush:java"
 package com.example.android.apis.app;
 
@@ -109,7 +113,7 @@ interface IRemoteService {
 }
 }}}
 
-例程源码(JAVA) --- Stub接口
+==== Stub接口 ====
 {{{class="brush:java"
 // IDL定义的接口
 private final IRemoteService.Stub mBinder = new IRemoteService.Stub() {
@@ -125,7 +129,7 @@ private final IRemoteService.Stub mBinder = new IRemoteService.Stub() {
 };
 }}}
 
-例程源码(JAVA) --- Service
+==== Services实现 ====
 {{{class="brush:java"
 @Override
 public void onCreate() {
@@ -174,7 +178,8 @@ stopService(new Intent(IRemoteService.class.getName()));
 - 在xml中添加Service服务
 
 === 示例代码 ===
-例程源码(XML) --- 服务端
+==== 服务端XML ====
+
 {{{class="brush:xml"
 <service android:name=".app.RemoteService" android:process=":remote">
     <intent-filter>

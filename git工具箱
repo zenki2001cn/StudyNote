@@ -1,8 +1,8 @@
 1. Git 配置
 
-1.1 配置用户
-$ git config --global user.name “xxx”
-$ git config --global user.email “xxx@xxx”
+1.1 设置用户名与邮箱
+$ git config --global user.name "My Name"
+$ git config --global user.email "my@email.com"
 
 1.2 配置编辑器
 $ git config --global core.editor vim
@@ -18,26 +18,26 @@ $ git config --global http.sslcainfo ~/10.180.34.35.crt
 $ git clone https://username@IP_Address/project_location
 
 1.4 访问SSH服务器
-1.4.1 生成公钥和密钥
+1.4.1   生成公钥和密钥
 $ ssh-keygen -t rsa -C "zenki.j.zha@foxconn.com"
 
-1.4.2 添加公钥到服务器 
+1.4.2   添加公钥到服务器 
 # 将公钥信息添加到服务器，服务器会提供如Web方式，导入你的公钥。
 # 同时修改你的公钥和密钥权限
 $ chmod 700 ~/.ssh/
 $ chmod 600 ~/.ssh/*
 
-1.4.3  添加配置信息
+1.4.3   添加配置信息
 # 添加以下信息到~/.ssh/config，用来管理登录信息
 Host tr
   Hostname gerrit.ext.ti.com
   Port 29418
   User Zenki
 
-1.4.4  添加rsa密钥
+1.4.4   添加rsa密钥
 $ ssh-add ~/.ssh/id_rsa
 
-1.4.5 启用ssh-agent
+1.4.5   启用ssh-agent
 $ ssh-agent 
 
 1.5 配置默认的远程分支
@@ -78,31 +78,21 @@ $ git config branch.master.merge refs/heads/master
     graph = log --oneline --decorate --graph
 
 
-2. Git 一分钟上手
+2. Git 常用命令
 
-2.1 操作流程
-取代码 → 每次工作前更新代码到最新版本 → 修改代码 → 提交代码到服务器
-
-2.2 设置用户名与邮箱
-$ git config --global user.name "My Name"
-$ git config --global user.email "my@email.com"
-
-2.2 提取代码
+2.1 clone   提取代码
 $ git clone git@server:app.git myrepo
 
-2.3 同步代码的操作流程
-2.3.1 更新本地代码到最新版本
 # 需要merge才能合到本地代码中
 $ git fetch
 
-2.3.2 合并更新后的代码到本地
+# 合并更新后的代码到本地
 $ git merge
 
-2.3.3 更新代码方式的另一种方法
 # “git pull”是“git fetch”和“git merge”命令的一个组合
 $ git pull origin testing
 
-2.3.4 查看差异的内容
+2.2 diff    比较差异内容
 # 查看当前修改和最近提交的差异
 $ git diff
 # 查看已经staged内容
@@ -114,21 +104,20 @@ $ git diff 52d9d285077cd26b3a8566cc0ec0f2031129b30e 52d9d285077cd26b3a8566cc0ec0
 # 比较两次提交的差异，并指定特定的文件
 $ git diff HEAD HEAD^ system/vold
 
-2.3.5 跟踪修改的文件
+2.3 add     跟踪修改文件
 # stage好比将文件加入跟踪列表，只有stage的文件才会被提交
 $ git add file1 file2 file3
 $ git add .
 $ git add -u
 $ git add -A
 
-2.4 删除文件
+2.4 rm      删除文件
 $ git rm file1
 $ git rm -r dir1
 
-2.5 提交和上传文件
+2.5 commit  提交和上传文件
 $ git commit -m 'this is memo'
 
-2.5.1 提交文件
 # 如果想省掉提交之前的“git add”命令，可以直接用
 $ git commit -a -m 'this is memo'
 
@@ -137,45 +126,44 @@ $ git commit -a -m 'this is memo'
 * 第二步：自动地删除那些在index file中但不在工作树中的文件
 * 第三步：执行commit命令来提交
 
-2.5.2 上传文件
+2.6 push    上传文件
 # 提交所有修改到远程服务器，这样，其它团队成员才能更新到这些修改
 $ git push
 $ git push origin testing
 $ git push ssh://Zenki@gerrit.ext.ti.com:29418/apps/Foxconn/omap3/framework HEAD:refs/heads/master
 $ git push -u origin gh-pages
 
-2.6 显示日志和仓库信息
-2.6.1 显示commit日志
+2.7 log     显示日志信息
 $ git log
 # 显示简要的版本信息和日志
 $ git log --pretty=oneline --since='2 days ago'
 # 查看路线图
 $ git log --oneline --decorate --graph
 # 显示每个提交者的简要信息
-$ git shortlog -e
+$ git shortlog [-n | -w | -e]
 
-2.6.2 显示commit日志和修改内容
+2.8 show    显示仓库信息
 $ git log -p -2
 $ git show 66118f531f401430bfe1e9a811ff81bede8ada41
 
-2.6.3 显示分支信息
+# 显示分支信息
 $ git show-branch
 
-2.6.4 显示引用信息
+# 显示引用信息
 $ git show-ref
 
-2.7 回滚和还原版本
-2.7.1 还原修改（附加历史comment信息）
+2.9 回滚和还原版本
+2.9.1 revert 还原修改
 # 提供一个版本号，git将还原该版本的修改，而之前的历史版本不会消失
 $ git revert HEAD^
 
-2.7.2 回滚版本（无历史comment信息）
+2.9.2 reset 回滚版本
 # 回滚到给定版本的修改，之前的历史版本会消失
 $ git reset HEAD^^
 $ git reset file1 file2
 $ git reset ded0993b22b7c81d82d17374eb5df9bf6e6f23a2
 
-2.8 解决冲突
+2.10 解决冲突
     当merge命令自身无法解决冲突的时候，它会将工作树置于一种特殊的状态，并且给用户提供冲突信息，
 以期用户可以自己解决这些问题。当然在这个时候，未发生冲突的代码已经被“git merge”登记在了“index file”里了。
 如果你这个时候使用“git diff”，显示出来的只是发生冲突的代码信息。
@@ -190,18 +178,18 @@ $ git add file1
 * 第二步：提交修改代码
 $ git commit
 
-2.9 恢复修改文件
+2.11 恢复修改文件
 2.9.1 从服务器更新文件
 $ git pull origin testing
 
-2.9.2 恢复修改过的文件
+2.11.2 恢复修改过的文件
 $ git checkout -f file1 file2
 
-2.10 清除暂存区
+2.12 清除暂存区
 $ rm .git/index
 
 3. Git 高级应用
-3.1 补丁生成和应用
+3.1 patch   补丁生成和应用
 3.1.1 生成标准patch
 # 查看当前修改和最近提交的差异
 $ git diff
@@ -218,10 +206,17 @@ $ git format-patch -M master -s -99999 system/vold
 3.1.3 应用补丁
 # 应用diff生成的patch
 $ git apply diff.patch
+
 # 应用format-patch生成的patch
 $ git am 0001-some-files.patch
+# 遇到"previous rebase directory"错误或放弃am时，使用命令
+$ git am --abort
+# 跳过某个patch
+$ git am --skip
+# 解决冲突后使用命令
+$ git am --resolved
 
-3.2 分支操作
+3.2 branch  分支操作
 3.2.1 创建分支
 $ git branch testing
 
@@ -236,7 +231,7 @@ $ git checkout testing
 $ git checkout master
 $ git merge testing
 
-3.3 stage文件的几种方法
+3.3 add     文件的几种方法
 3.3.1 without deleted
 # 添加模式，不包含删除模式
 $ git add .
@@ -268,7 +263,7 @@ $ git add -A
 3.3.4 交互式提交
 $ git add -i
 
-3.4 stash当前修改
+3.4 stash   当前修改
 3.4.1 存储修改
 # stash命令将当前的修改存储起来，去作其他的修改，而当前的状态
 # 则是stash之前的状态。当提交了其他的修改后，在恢复存储的修改。
@@ -286,7 +281,7 @@ $ git stash apply stash@{0}
 3.4.4 清除存储仓库
 $ git stash clear
 
-3.5 忽略某些文件
+3.5 gitignore   忽略某些文件
 3.5.1 添加.gitignore
 # 在任何目录下添加.gitignore文件，并加入不需要跟踪的文件名
 # 以'#' 开始的行，被视为注释.
@@ -302,7 +297,7 @@ foo.txt
 3.5.2 编辑.git/info/exclude
 # 将需要忽略的文件加入到exlcude文件中
 
-3.6 标签管理
+3.6 tag     标签管理
 3.6.1 添加标签
 $ git tag -a v1.0 -m "tag v1.0"
 

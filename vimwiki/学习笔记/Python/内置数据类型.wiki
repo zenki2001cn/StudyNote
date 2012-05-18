@@ -111,3 +111,33 @@
 >>> s.split(";", 1) 2
 ['server=mpilgrim', 'uid=sa;database=master;pwd=secret']
 }}}
+
+== Dictionary使用 ==
+- Dictionary类似于Perl中的hash，称为字典。格式为`{key:value...}`。
+
+=== 声明字典变量 ===
+{{{class="brush:python"
+>>> d = {"server":"mpilgrim", "database":"master"}
+>>> d
+{'server': 'mpilgrim', 'database': 'master'}
+}}}
+
+=== 修改字典成员 ===
+{{{class="brush:python"
+>>> d["database"] = "pubs"
+>>> d
+{'server': 'mpilgrim', 'database': 'pubs'}
+}}}
+
+=== 删除字典成员 ===
+{{{class="brush:python"
+>>> del d["database"]
+>>> d
+{'server': 'mpilgrim'}
+}}}
+
+=== 遍历字典 ===
+{{{class="brush:python"
+>>> for k, v in os.environ.items():
+...     print "%s=%s" % (k, v)
+}}}

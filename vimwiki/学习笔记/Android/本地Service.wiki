@@ -1,5 +1,7 @@
 = 本地Service =
 
+%toc
+
 == Binding Service ==
 
 === client端 ===
@@ -8,7 +10,7 @@
 - 通过bindService进行绑定
 - 通过unbindService解除绑定
 
-例程源码(JAVA) --- ServiceConnection
+==== ServiceConnection ====
 {{{class="brush:java"
 private ILocalService mBoundService;
 
@@ -25,7 +27,7 @@ private ServiceConnection mConnection = new ServiceConnection() {
 };
 }}}
 
-例程源码(JAVA) --- bindService和unbindService
+==== bindService和unbindService ====
 {{{class="brush:java"
 bindService(new Intent(LocalServiceBinding.this, 
             LocalService.class), mConnection, Context.BIND_AUTO_CREATE);
@@ -41,13 +43,14 @@ unbindService(mConnection);
 - onDestroy在销毁Service时调用。
 - onBind在onCreate之后调用，将会返回给客户端一个IBinder接口，客户端通过该接口通信。
 
-例程源码(JAVA) --- 自定义接口
+==== 自定义接口 ====
 {{{class="brush:java"
 interface ILocalService {
     int getCount();
 }
 }}}
-例程源码(JAVA) --- Service
+
+==== Service ====
 {{{class="brush:java"
 private NotificationManager mNM;
 
@@ -89,7 +92,7 @@ public boolean onUnbind(Intent intent) {
 - startService用来启动一个Service
 - stopService用来停止一个Service
 
-例程源码(JAVA)
+==== startService ====
 {{{class="brush:java"
 startService(new Intent(LocalServiceController.this, LocalService.class));
 
@@ -101,13 +104,16 @@ stopService(new Intent(LocalServiceController.this, LocalService.class));
 - 旧方法`onStart`和新方法`onStartCommand`将在每次执行startService时调用，而onCreate只调用一次
 - 参见Binding Service
 
-例程源码(JAVA)
+==== onStart ====
 {{{class="brush:java"
 @Override
 public void onStart(Intent intent, int startId) {
     handleCommand(intent);
 }
+}}}
 
+==== onStartCommand ====
+{{{class="brush:java"
 @Override
 public int onStartCommand(Intent intent, int flags, int startId) {
     handleCommand(intent);

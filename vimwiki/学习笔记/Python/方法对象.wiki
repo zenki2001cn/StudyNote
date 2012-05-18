@@ -2,6 +2,29 @@
 
 %toc
 
+== Generator函数和yield ==
+- `yield`用来生成Generator函数，该函数和普通函数有很大区别。一旦声明成Generator函数，需要调用next()方法来控制Generator函数的运行。
+- 每次调用next()方法会返回yield表达式的值。
+- 可通过for循环自动执行一个Generator函数的next()方法。
+- 当循环结束时，next()方法会返回None。
+
+{{{class="brush:python"
+def generator():
+    rtn = yield "here"
+
+# 手动调用next()方法
+>>> func = generator()
+>>> func.next()
+here
+
+# 通过循环调用next()方法
+>>> for i in func:
+...     print i
+
+here
+None
+}}}
+
 == 可选参数和命名参数 ==
 - 在函数定义时可以对该函数的参数赋予默认的值，在调用时没有传递的参数将被赋予默认值。
 
