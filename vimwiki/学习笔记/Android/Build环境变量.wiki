@@ -156,7 +156,7 @@ _比较重要或常用的环境变量定义_
 | LOCAL_CXX                            |                                                                  |                                   |            |
 | LOCAL_CPP_EXTENSION                  | LOCAL_CPP_EXTENSION := .cpp                                      | c++文件扩展名                     |            |
 | LOCAL_CFLAGS                         | LOCAL_CFLAGS := -O0 -g                                           | C/C++编译选项                     |            |
-| LOCAL_CERTIFICATE                    | LOCAL_CERTIFICATE := shared                                      | 签名相关的认证                    |            |
+| LOCAL_CERTIFICATE                    | LOCAL_CERTIFICATE := shared platform presigned                   | 签名相关的权限认证                |            |
 | LOCAL_JNI_SHARED_LIBRARIES           | LOCAL_JNI_SHARED_LIBRARIES := libfmservice                       | 包含jni调用的库                   |            |
 | LOCAL_SDK_VERSION                    | LOCAL_SDK_VERSION := current                                     | 当前SDK版本                       |            |
 | LOCAL_PROGUARD_ENABLED               | LOCAL_PROGUARD_ENABLED := disable                                | 是否开启源码的优化                | package.mk |
