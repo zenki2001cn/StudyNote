@@ -4,7 +4,7 @@
 
 == 条件控制 ==
 === if ===
-语法 ::
+语法 :: `[]`符号与`condition`之间必须用空格隔开。
 {{{class="brush:bash"
 if [ condition ];then 
     COMMAND;
