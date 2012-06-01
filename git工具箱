@@ -1,8 +1,8 @@
 1. Git 配置
 
 1.1 设置用户名与邮箱
-$ git config --global user.name "My Name"
-$ git config --global user.email "my@email.com"
+$ git config --global user.name "Zenki.J.Zha"
+$ git config --global user.email "zenki2001cn@163.com"
 
 1.2 配置编辑器
 $ git config --global core.editor vim
@@ -19,7 +19,7 @@ $ git clone https://username@IP_Address/project_location
 
 1.4 访问SSH服务器
 1.4.1   生成公钥和密钥
-$ ssh-keygen -t rsa -C "zenki.j.zha@foxconn.com"
+$ ssh-keygen -t rsa -C "zenki2001cn@163.com"
 
 1.4.2   添加公钥到服务器 
 # 将公钥信息添加到服务器，服务器会提供如Web方式，导入你的公钥。
@@ -254,6 +254,9 @@ $ git checkout testing
 # 如果合并发生冲突，需要自己解决冲突
 $ git checkout master
 $ git merge testing
+
+3.2.4 查看远程分支
+$ git branch -r
 
 3.3 add     文件的几种方法
 3.3.1 without deleted

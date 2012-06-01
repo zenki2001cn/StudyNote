@@ -242,7 +242,7 @@ m+?         --- 手动指定一个标记符号
 :echo md5#md5("hello, world") 
 :echo sha1#sha1("hello, world") 
 
-26. tasklist
+26. TODO - tasklist
 <Leader>tl  --- 查看TODO,FIXME等信息
 
 27. 画图工具

@@ -112,6 +112,23 @@
 ['server=mpilgrim', 'uid=sa;database=master;pwd=secret']
 }}}
 
+=== 字符矩阵转换 ===
+- 通过string.maketrans方法创建一个对应的转换矩阵对象，`两个参数的长度必须一样`。
+- 再通过string.translate方法根据这个矩阵对象转换任意的字符串。
+
+{{{class="brush:python"
+# 做如下转换矩阵
+# a => 1
+# b => 2
+# c => 3
+>>> t = string.maketrans('abc', '123')
+
+# 转换字符串'abcbabc'
+>>> s = 'abcbabc'
+>>> s.translate(t)
+'1232123'
+}}}
+
 == Dictionary使用 ==
 - Dictionary类似于Perl中的hash，称为字典。格式为`{key:value...}`。
 

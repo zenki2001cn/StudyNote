@@ -2,7 +2,7 @@
 
 %toc
 
-== Generator函数和yield ==
+== 生成器函数和yield表达式 ==
 - `yield`用来生成Generator函数，该函数和普通函数有很大区别。一旦声明成Generator函数，需要调用next()方法来控制Generator函数的运行。
 - 每次调用next()方法会返回yield表达式的值。
 - 可通过for循环自动执行一个Generator函数的next()方法。

@@ -2,12 +2,55 @@
 
 %toc
 
+== 数组 ==
+=== 数组定义 ===
+{{{class="brush:bash"
+$ A=("a" "b" "c")
+}}}
+
+=== 取全部元素 ===
+{{{class="brush:bash"
+$ echo ${A[@]}
+}}}
+
+=== 取单个元素 ===
+{{{class="brush:bash"
+$ echo ${A[0]}
+}}}
+
+=== 取全部元素个数 ===
+{{{class="brush:bash"
+$ echo ${#A[@]}
+}}}
+
+=== 取单个元素长度 ===
+{{{class="brush:bash"
+$ echo ${#A[0]}
+}}}
+
+=== 给单个元素赋值 ===
+{{{class="brush:bash"
+$ A[0]="z"
+}}}
+
+=== 遍历全部元素 ===
+{{{class="brush:bash"
+local len=${#A[@]}
+i=0
+
+while [ $i -lt $len ]
+do
+    git_pull ${A[$i]}
+    let i++
+done
+}}}
+
 == 内部变量 ==
 === $BASH ===
 描述 :: 这个变量将指向Bash的二进制执行文件的位置。
 示例 ::
 {{{class="brush:bash"
-bash$ echo $BASH    #/bin/bash
+$ echo $BASH    #/bin/bash
 }}}
 
 === $BASH_ENV ===
@@ -67,5 +110,3 @@ done
 
 === $IFS ===
 描述 :: 内部域分隔符。这个变量用来决定Bash在解释字符串时如何识别域，或者单词边界。$IFS默认为空白(空格,tab,和新行),但可以修改,比如在分析逗号分隔的数据文件时。
-
-

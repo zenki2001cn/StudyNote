@@ -1,0 +1,122 @@
+= 正则表达式 =
+
+%toc
+
+== 基础概念 ==
+- 使用正则表达式需要导入`re`模块。
+- 一个正则表达式的字符串可以使用`r'pattern'`的形式表示。
+- ^ 匹配字符串的开始。
+- $ 匹配字符串的结尾。
+- \b 匹配一个单词的边界。
+- \d 匹配任意数字。
+- \D 匹配任意非数字字符。
+- x? 匹配一个可选的 x 字符 (换言之，它匹配 1 次或者 0 次 x 字符)。
+- x* 匹配0次或者多次 x 字符。
+- x+ 匹配1次或者多次 x 字符。
+- x{n,m} 匹配 x 字符，至少 n 次，至多 m 次。
+- (a|b|c) 要么匹配 a，要么匹配 b，要么匹配 c。
+- `(x)` 一般情况下表示一个记忆组 (remembered group)。你可以利用 re.search 函数返回对象的 groups() 函数获取它的值。
+
+== sub(替换) ==
+- 第一个参数为需要匹配的正则表达式。
+- 第二个参数为替换的字符串。
+- 第三个参数为需要查找的字符串。
+
+{{{class="brush:python"
+>>> s = '100 BROAD'
+>>> re.sub('ROAD$', 'RD.', s)
+'100 BRD.'
+>>> re.sub('\\bROAD$', 'RD.', s)
+'100 BROAD'
+>>> re.sub(r'\bROAD$', 'RD.', s)
+'100 BROAD'
+}}}
+
+== search(单个匹配查找) ==
+- 判断给定的字符串是否符合正则表达式。
+
+{{{class="brush:python"
+>>> pattern = '^M?M?M?(CM|CD|D?C?C?C?)$' 
+>>> re.search(pattern, 'MCM')
+<SRE_Match object at 01070390>
+>>> re.search(pattern, 'MD')
+<SRE_Match object at 01073A50>
+>>> re.search(pattern, 'MMMCCC')
+<SRE_Match object at 010748A8>
+>>> re.search(pattern, 'MCMC')
+>>> re.search(pattern, '')
+<SRE_Match object at 01071D98>
+}}}
+
+== finditer和findall(全匹配查找) ==
+- findall返回所有匹配正则表达式的结果。
+- finditer返回匹配对象，可以使用for遍历该对象获取匹配结果。
+
+{{{class="brush:python"
+# findall使用
+>>> text = "He was carefully disguised but captured quickly by police."
+>>> re.findall(r"\w+ly", text)
+['carefully', 'quickly']
+
+# finditer使用
+>>> text = "He was carefully disguised but captured quickly by police."
+>>> for m in re.finditer(r"\w+ly", text):
+...     print '%02d-%02d: %s' % (m.start(), m.end(), m.group(0))
+07-16: carefully
+40-47: quickly
+}}}
+
+== compile(编译正则表达式) ==
+- 当一个正则表达式需要多次使用时，通过compile能够产生更好的效率。
+
+{{{class="brush:python"
+>>> phonePattern = re.compile(r'^(\d{3})\D*(\d{3})\D*(\d{4})\D*(\d*)$')
+>>> phonePattern.search('80055512121234').groups()
+('800', '555', '1212', '1234')
+>>> phonePattern.search('800.555.1212 x1234').groups()
+('800', '555', '1212', '1234')
+>>> phonePattern.search('800-555-1212').groups()
+('800', '555', '1212', '')
+}}}
+
+== groups和groupdict(分组匹配) ==
+- 当在正则表达式中使用`(pattern)`的形式匹配时，可使用匹配对象的groups方法将结果分组。
+- 当在正则表达式中使用`(?P<key>pattern)`的形式匹配时，可使用groupdict方法可将分组的形式转换成一个字典。
+
+{{{class="brush:python"
+# 匹配分组模式
+>>> m = re.match(r"(\d+)\.(\d+)", "24.1632")
+>>> m.groups()
+('24', '1632')
+>>> m.group(1)
+'Malcom'
+>>> m.group(2)
+'Reynolds'
+
+# 将分组模式转换成字典形式
+# 注意在正则表达式的写法：(?P<key>pattern)
+>>> m = re.match(r"(?P<first_name>\w+) (?P<last_name>\w+)", "Malcom Reynolds")
+>>> m.groupdict()
+{'first_name': 'Malcom', 'last_name': 'Reynolds'}
+}}}
+
+== split(分割) ==
+- 功能同字符串的split方法一样，不同的是通过匹配的正则表达式作为分隔符。
+
+{{{class="brush:python"
+>>> input = """Ross McFluff: 834.345.1254 155 Elm Street
+...
+... Ronald Heathmore: 892.345.3428 436 Finley Avenue
+... Frank Burger: 925.541.7625 662 South Dogwood Way
+...
+...
+... Heather Albrecht: 548.326.4584 919 Park Place"""
+
+# 将一个或多个\n作为分割符
+>>> entries = re.split("\n+", input)
+>>> entries
+['Ross McFluff: 834.345.1254 155 Elm Street',
+'Ronald Heathmore: 892.345.3428 436 Finley Avenue',
+'Frank Burger: 925.541.7625 662 South Dogwood Way',
+'Heather Albrecht: 548.326.4584 919 Park Place']
+}}}

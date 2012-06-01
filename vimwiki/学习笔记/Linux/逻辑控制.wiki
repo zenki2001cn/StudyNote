@@ -13,6 +13,7 @@ fi
 
 主表达式 ::
 {{{class="brush:text"
+1. 文件
 [ -a 文件 ] 如果文件存在为真。
 [ -b 文件 ] 如果文件存在而且是一个块-特殊文件为真。
 [ -c 文件 ] 为真如果文件存在而且是一个字-特殊文件。
@@ -34,12 +35,25 @@ fi
 [ -L 文件 ] 为真如果文件存在而且是一个符号连接。
 [ -N 文件 ] 为真如果文件存在而且has been mod 如果 ied since it was last read。
 [ -S 文件 ] 为真如果文件存在而且是一个socket。
+[ FILE1 -ef FILE2 ] 为真如果FILE1和FILE2有相同的设备和inode节点
+[ FILE1 -nt FILE2 ] 为真如果FILE1比FILE2的日期新
+[ FILE1 -ot FILE2 ] 为真如果FILE1比FILE2的日期旧
+
+2.字符串
 [ -z STRING ] 为真如果"STRING"的长度是零。
 [ -n STRING ] 或者[ STRING ]为真
 [ STRING1 == STRING2 ] "STRING"的长度是非零值，如果两个字符串相等为真。
 [ STRING1 != STRING2 ] 为真如果两两个字符串不相等。
 [ STRING1 < STRING2 ] 为真如果STRING1小于STRING2。
 [ STRING1 > STRING2 ] 为真如果STRING1大于STRING2。 
+
+3.整型
+[ INTEGER1 -eq INTEGER2 ] 为真如果INTEGER1等于INTEGER2 
+[ INTEGER1 -ge INTEGER2 ] 为真如果INTEGER1大于等于INTEGER2 
+[ INTEGER1 -gt INTEGER2 ] 为真如果INTEGER1大于INTEGER2 
+[ INTEGER1 -le INTEGER2 ] 为真如果INTEGER1小于等于INTEGER2 
+[ INTEGER1 -lt INTEGER2 ] 为真如果INTEGER1小于INTEGER2 
+[ INTEGER1 -ne INTEGER2 ] 为真如果INTEGER1不等于INTEGER2 
 }}}
 
 示例 ::
