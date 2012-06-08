@@ -1,0 +1,98 @@
+= ICS 4.0无法解锁 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:text"
+frameworks/base/services/jni/com_android_server_InputManager.cpp
+frameworks/base/services/input/InputReader.cpp
+}}}
+
+== 原因分析 ==
+{{{class="brush:text"
+    无法解锁是因为ICS中记录了多点触摸按下的记录。当系统休眠时，如果手指仍处于触摸状态，
+那么这个记录状态就不会更新，从而导致系统唤醒时，系统仍然认为屏幕处于多点触摸状态。
+    处理方法是在系统唤醒时，将这个记录状态清除。
+}}}
+
+== 添加清除记录的方法 ==
+=== InputReader::resetTouchSolt ===
+- 在InputReader.cpp中加入InputReader::resetTouchSolt方法，该方法会最终调用MultiTouchMotionAccumulator::Slot::clear方法。
+- 在InputReader.h中也要加入相应的方法声明(InputReader和InputReaderInterface)。
+
+{{{class="brush:c++"
+void InputReader::resetTouchSolt() {
+    for (size_t i = 0; i < mDevices.size(); i++) {
+        InputDevice* device = mDevices.valueAt(i);
+        uint32_t classes = device->getClasses();
+        if (classes & INPUT_DEVICE_CLASS_TOUCH_MT ) {
+            device->reset(0); 
+        }
+    }
+}
+}}}
+
+=== MultiTouchMotionAccumulator::Slot::clear ===
+- 该方法会将mInUse变量置为false，这样在多点触摸的syncTouch方法时，会根据该变量作相应的处理。
+
+{{{class="brush:c++"
+void MultiTouchMotionAccumulator::Slot::clear() {
+    mInUse = false;     // 记录touch的关键标志
+    mHaveAbsMTTouchMinor = false;
+    mHaveAbsMTWidthMinor = false;
+    mHaveAbsMTToolType = false;
+    mAbsMTPositionX = 0;
+    mAbsMTPositionY = 0;
+    mAbsMTTouchMajor = 0;
+    mAbsMTTouchMinor = 0;
+    mAbsMTWidthMajor = 0;
+    mAbsMTWidthMinor = 0;
+    mAbsMTOrientation = 0;
+    mAbsMTTrackingId = -1;
+    mAbsMTPressure = 0;
+    mAbsMTDistance = 0;
+    mAbsMTToolType = 0;
+}
+}}}
+
+=== MultiTouchInputMapper::syncTouch ===
+- syncTouch用来同步Touch事件的处理。
+
+{{{class="brush:c++"
+void MultiTouchInputMapper::syncTouch(nsecs_t when, bool* outHavePointerIds) {
+    ......
+
+    for (size_t inIndex = 0; inIndex < inCount; inIndex++) {
+        const MultiTouchMotionAccumulator::Slot* inSlot =
+                mMultiTouchMotionAccumulator.getSlot(inIndex);
+        // 记录当前的touch pointer是否被使用
+        if (!inSlot->isInUse()) {
+            continue;
+        }
+        ......
+    }
+    ......
+}
+}}}
+
+== 按下Power键时调用清除记录的方法 ==
+
+=== NativeInputManager::interceptKeyBeforeQueueing ===
+{{{class="brush:c++"
+void NativeInputManager::interceptKeyBeforeQueueing(const KeyEvent* keyEvent,
+        uint32_t& policyFlags) {
+    if ((policyFlags & POLICY_FLAG_TRUSTED)) {
+        nsecs_t when = keyEvent->getEventTime();
+        bool isScreenOn = this->isScreenOn();
+        bool isScreenBright = this->isScreenBright();
+
+        ......
+        // isScreenOn为false时，表示唤醒，此时调用清除记录的方法
+        if (!isScreenOn) {
+            mInputManager->getReader()->resetTouchSolt();
+        }
+    } else {
+        policyFlags |= POLICY_FLAG_PASS_TO_USER;
+    }
+}
+}}}

@@ -470,6 +470,10 @@ esc - 退出结果窗口
 dp 将当前文档合并到另一个文档(diff push)
 do 将另一个文档合并到当前文档(diff get)
 
+5.3 autotag
+plugin/autotag.vim
+自动更新ctags，设置ctags文件必须小于10M
+
 #end here}}}
 
 % vim:ft=txt

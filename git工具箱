@@ -150,6 +150,10 @@ $ git log --pretty=oneline --since='2 days ago'
 $ git log --oneline --decorate --graph
 # 显示每个提交者的简要信息
 $ git shortlog [-n | -w | -e]
+# 显示每个版本的改动
+$ git relog
+# 显示事件日期格式
+$ git log --pretty=format:'%h - %an -%ad -%s'
 
 2.8 show    显示仓库信息
 $ git log -p -2
@@ -373,8 +377,17 @@ $ git bisect log
 4. Git 图形界面
 # 查看历史版本的图形化工具
 4.1 gitk
+4.1.1 解决gitk显示抗锯齿问题
+sudo apt-get install tk8.5 
+sudo update-alternatives --config wish
+# 或者修改/usr/bin/gitk
+exec wish8.5 "$0" -- "$@"
 
 # 修改和提交代码的图形化工具
 4.2 git citool
+4.2.1 解决弹出"zh_CN"错误框
+# 在.gitconfig中加入以下配置
+[gui]
+    spellingdictionary = none
 
 % vim:ft=txt
