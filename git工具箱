@@ -139,8 +139,11 @@ $ git commit -a -m 'this is memo'
 * 第三步：执行commit命令来提交
 
 2.5.1 修改最近一次的提交记录
-# 使用默认编辑器修改你的commit信息
+# 可以先"git add"添加遗漏的文件
+# 再使用默认编辑器修改你的commit信息
+$ git add leaked_files
 $ git commit --amend
+$ git commit --amend -m "new message"
 
 2.6 push    上传文件
 # 提交所有修改到远程服务器，这样，其它团队成员才能更新到这些修改
