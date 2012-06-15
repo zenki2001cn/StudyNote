@@ -19,7 +19,7 @@ import java.util.ArrayList;
 - `getItem()`方法需要返回一个对象，以便在处理事件响应时，父类的ListView能够获取到Item对象类型
 - 通过`notifyDataSetChanged()`通知更新列表内容
 
-ArrayAdapter派生类
+== ArrayAdapter派生类 ==
 {{{class="brush:java"
 public class MyArrayAdapter extends BaseAdapter {
 
@@ -78,7 +78,7 @@ public class MyArrayAdapter extends BaseAdapter {
 }
 }}}
 
-自定义Item类
+== 自定义Item类 ==
 {{{class="brush:java"
 public class MyListItem {
     String mItemName;
@@ -93,7 +93,21 @@ public class MyListItem {
 }
 }}}
 
-在Activity中使用自定义ArrayAdapter
+== 添加事件监听 ==
+{{{class="brush:java"
+private OnItemClickListener cRecentFileItemClicked = new OnItemClickListener() {
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position,
+            long id) {
+        ListView listView = (ListView) parent;
+
+        MyListItem item = (MyListItem) listView
+                .getItemAtPosition(position);
+    }
+};
+}}}
+
+== 在Activity中使用自定义ArrayAdapter ==
 {{{class="brush:java"
 public void onCreate(Bundle savedInstanceState)
 {

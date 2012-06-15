@@ -9,7 +9,7 @@ import android.os.SystemClock;
 
 == Flag标识 ==
 | 标识类型 | 标识名称                | 描述                                                   | CPU | Screen | Keyboard |
-|----------+-------------------------+--------------------------------------------------------+-----+--------+----------|
+|----------|-------------------------|--------------------------------------------------------|-----|--------|----------|
 | int      | PARTIAL_WAKE_LOCK       | 可与ACQUIRE_CAUSES_WAKEUP和ON_AFTER_RELEASE组合使用    | On* | Off    | Off      |
 | int      | SCREEN_DIM_WAKE_LOCK    |                                                        | On  | Dim    | Off      |
 | int      | SCREEN_BRIGHT_WAKE_LOCK |                                                        | On  | Bright | Off      |

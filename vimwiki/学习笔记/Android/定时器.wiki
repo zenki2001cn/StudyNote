@@ -20,7 +20,7 @@ import java.util.Calendar;
 - *AlarmManager提供客户端的闹铃注册，其通过Binder机制与AlarmManagerService通信，而AlarmManagerService真正提供服务*
 
 | 返回值 | 方法名称                                                                           | 描述               |
-|--------+------------------------------------------------------------------------------------+--------------------|
+|--------|------------------------------------------------------------------------------------|--------------------|
 | void   | cancel(PendingIntent operation)                                                    | 取消已注册的闹铃   |
 | void   | set(int type, long triggerAtTime, PendingIntent operation)                         | 注册一个新闹铃     |
 | void   | setRepeating(int type, long triggerAtTime, long interval, PendingIntent operation) | 注册一个重复的闹铃 |
@@ -29,7 +29,7 @@ import java.util.Calendar;
 
 == AlarmManager的闹铃类型 ==
 | 类型 | 标识                    | 描述                                                                                                                            |
-|------+-------------------------+---------------------------------------------------------------------------------------------------------------------------------|
+|------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------|
 | int  | ELAPSED_REALTIME        | 当系统进入睡眠状态时，该闹铃不会唤醒系统，直到系统下次被唤醒才传递它。该闹铃使用相对时间，通过SystemClock.elapsedRealtime()获得 |
 | int  | ELAPSED_REALTIME_WAKEUP | 能唤醒系统，用法同ELAPSED_REALTIME                                                                                              |
 | int  | RTC                     | 当系统进入睡眠状态时，该闹铃不会唤醒系统，直到系统下次被唤醒才传递它。该闹铃使用绝对时间，通过System.currentTimeMillis()获得    |
@@ -40,7 +40,7 @@ import java.util.Calendar;
 - *PendingIntent可以说是Intent的进一步封装，它既包含了Intent的描述又包含了Intent行为的执行*
 
 | 返回值               | 方法名称                                                                                             | 描述                      |
-|----------------------+------------------------------------------------------------------------------------------------------+---------------------------|
+|----------------------|------------------------------------------------------------------------------------------------------|---------------------------|
 | static PendingIntent | getActivity(Context context, int requestCode, Intent intent, int flags)                              | 获得一个Activity的Intent  |
 | static PendingIntent | getBroadcast(Context context, int requestCode, Intent intent, int flags)                             | 获得一个Broadcast的Intent |
 | static PendingIntent | getService(Context context, int requestCode, Intent intent, int flags)                               | 获得一个Service的Intent   |

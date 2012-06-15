@@ -96,7 +96,7 @@ private class MountServiceBinderListener extends IMountServiceListener.Stub {
 == MountService服务 ==
 - MountService是运行在SystemServer中的服务，它为StorageManager提供了接口实现，主要提供以下关于设备操作的功能：
 | 方法名                   | 描述                                     |
-|--------------------------+------------------------------------------|
+|--------------------------|------------------------------------------|
 | setUsbMassStorageEnabled | 设置U盘模式                              |
 | isUsbMassStorageEnabled  | 检测当前是否是U盘模式                    |
 | mountVolume              | 挂载磁盘                                 |
@@ -125,7 +125,7 @@ private class MountServiceBinderListener extends IMountServiceListener.Stub {
 === volume操作 ===
 - 实现参考CommandListener::VolumeCmd类
 | 协议字符串                     | 用法描述                 | 备注                                |
-|--------------------------------+--------------------------+-------------------------------------|
+|--------------------------------|--------------------------|-------------------------------------|
 | volume list                    | 返回设备列表             |                                     |
 | volume debug <off/on>          | 开启debug模式            |                                     |
 | volume mount <path>            | 挂载对应指定挂载点的设备 | path表示挂载点                      |
@@ -137,19 +137,19 @@ private class MountServiceBinderListener extends IMountServiceListener.Stub {
 === share操作 ===
 - 实现参考CommandListener::ShareCmd类
 | 协议字符串   | 用法描述      | 备注                                                   |
-|--------------+---------------+--------------------------------------------------------|
+|--------------|---------------|--------------------------------------------------------|
 | share status | 返回ums的信息 | 返回usb状态，true为usb已连接并开启ums模式，否则为false |
 
 === storage操作 ===
 - 实现参考CommandListener::StorageCmd类
 | 协议字符串    | 用法描述               | 备注                          |
-|---------------+------------------------+-------------------------------|
+|---------------|------------------------|-------------------------------|
 | storage users | 获取设备关联的进程信息 | 读取/proc目录下相关进程的信息 |
 
 === asec操作 ===
 - 实现参考CommandListener::AsecCmd类
 | 协议字符串                                                     | 用法描述                            | 备注 |
-|----------------------------------------------------------------+-------------------------------------+------|
+|----------------------------------------------------------------|-------------------------------------|------|
 | asec list                                                      | 扫描asec目录，返回.asec结尾的文件名 |      |
 | asec create <container-id> <size_mb> <fstype> <key> <ownerUid> | 创建asec目录和文件                  |      |
 | asec finalize <container-id>                                   |                                     |      |
@@ -162,7 +162,7 @@ private class MountServiceBinderListener extends IMountServiceListener.Stub {
 === obb操作 ===
 - 实现参考CommandListener::ObbCmd类
 | 协议字符串                            | 用法描述                           | 备注 |
-|---------------------------------------+------------------------------------+------|
+|---------------------------------------|------------------------------------|------|
 | obb list                              | 扫描/proc/mounts目录，返回挂载信息 |      |
 | obb mount <filename> <key> <ownerUid> | 挂载obb镜像                        |      |
 | obb unmount <source file> [force]     | 卸载obb镜像                        |      |
@@ -171,7 +171,7 @@ private class MountServiceBinderListener extends IMountServiceListener.Stub {
 === xwrap操作 ===
 - 实现参考CommandListener::XwrapCmd类
 | 协议字符串    | 用法描述 | 备注 |
-|---------------+----------+------|
+|---------------|----------|------|
 | xwrap enable  |          |      |
 | xwrap disable |          |      |
 | xwrap status  |          |      |

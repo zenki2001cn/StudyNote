@@ -50,5 +50,10 @@
 9.2 \tc - 关闭tab
 9.3 gt、gT、PageUp、PageDown - 切换tab
 
+10. Bs 在当前打开文档中查找和替换
+10.1 ,bs 查找关键字
+10.2 r   在缓存中替换关键字
+10.3 ?   查看帮助
+
 
 % vim:ft=txt

@@ -16,7 +16,7 @@ import android.util.Xml;
 == EventType类型 ==
 getEventType()和next()方法返回读取到的xml数据类型，用户根据该数据的类型进行相应的处理
 | 类型标识       | 值 | 描述         |
-|----------------+----+--------------|
+|----------------|----|--------------|
 | START_DOCUMENT | 0  | 文档起始标识 |
 | END_DOCUMENT   | 1  | 文档结束标识 |
 | START_TAG      | 2  | 标签开始标识 |

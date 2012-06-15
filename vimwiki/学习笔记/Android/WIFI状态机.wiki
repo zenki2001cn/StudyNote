@@ -91,7 +91,7 @@ public WifiStateMachine(Context context, String wlanInterface) {
 
 === 关于驱动的命令 ===
 | 命令表示                  | 描述         | 备注 |
-|---------------------------+--------------+------|
+|---------------------------|--------------|------|
 | CMD_LOAD_DRIVER           | 加载驱动     |      |
 | CMD_UNLOAD_DRIVER         | 卸载驱动     |      |
 | CMD_LOAD_DRIVER_SUCCESS   | 加载驱动成功 |      |
@@ -101,7 +101,7 @@ public WifiStateMachine(Context context, String wlanInterface) {
 
 === 启停wpa_supplicant的命令 ===
 | 命令表示                   | 描述                       | 备注 |
-|----------------------------+----------------------------+------|
+|----------------------------|----------------------------|------|
 | CMD_START_SUPPLICANT       | 开启wpa_supplicant服务     |      |
 | CMD_STOP_SUPPLICANT        | 停止wpa_supplicant服务     |      |
 | CMD_START_DRIVER           | 启用驱动程序               |      |
@@ -113,7 +113,7 @@ public WifiStateMachine(Context context, String wlanInterface) {
 
 === wpa_supplicant功能命令 ===
 | 命令表示                  | 描述                           | 备注 |
-|---------------------------+--------------------------------+------|
+|---------------------------|--------------------------------|------|
 | CMD_PING_SUPPLICANT       | 探测wpa_supplicant服务是否存在 |      |
 | CMD_ADD_OR_UPDATE_NETWORK | 添加获取更新网络节点           |      |
 | CMD_REMOVE_NETWORK        | 移除网络节点                   |      |
@@ -132,7 +132,7 @@ public WifiStateMachine(Context context, String wlanInterface) {
 
 === 关于热点的命令 ===
 | 命令表示                           | 描述               | 备注 |
-|------------------------------------+--------------------+------|
+|------------------------------------|--------------------|------|
 | CMD_START_AP                       | 开启热点           |      |
 | CMD_START_AP_SUCCESS               | 开启热点成功       |      |
 | CMD_START_AP_FAILURE               | 开启热点失败       |      |
@@ -147,7 +147,7 @@ public WifiStateMachine(Context context, String wlanInterface) {
 
 === 关于性能的命令 ===
 | 命令表示                   | 描述                                                                               | 备注 |
-|----------------------------+------------------------------------------------------------------------------------+------|
+|----------------------------|------------------------------------------------------------------------------------|------|
 | CMD_SET_HIGH_PERF_MODE     | 设置高性能模式，禁用休眠优化方案。休眠优化方案包括：包过滤、关闭漫游、DTIM唤醒设定 |      |
 | CMD_SET_COUNTRY_CODE       | 设置国家代码                                                                       |      |
 | CMD_ENABLE_RSSI_POLL       | 启用RSSI(Received Signal Strength Indication)接收强度指标                          |      |
@@ -157,13 +157,13 @@ public WifiStateMachine(Context context, String wlanInterface) {
 
 === 关于P2P的命令 ===
 | 命令表示            | 描述    | 备注 |
-|---------------------+---------+------|
+|---------------------|---------|------|
 | WIFI_ENABLE_PENDING |         |      |
 | P2P_ENABLE_PROCEED  | 启用P2P |      |
 
 === 其他命令 ===
 | 命令表示                   | 描述                   | 备注 |
-|----------------------------+------------------------+------|
+|----------------------------|------------------------|------|
 | CMD_CONNECT_NETWORK        | 连接到一个网络节点     |      |
 | CMD_SAVE_NETWORK           | 保存一个网络节点       |      |
 | CMD_FORGET_NETWORK         | 丢弃一个网络节点       |      |

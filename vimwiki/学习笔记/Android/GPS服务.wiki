@@ -425,7 +425,7 @@ private class LocationWorkerHandler extends Handler {
 
 === 命令格式 ===
 | command              | 描述                                  | 备注 |
-|----------------------+---------------------------------------+------|
+|----------------------|---------------------------------------|------|
 | delete_aiding_data   | 删除GPS数据，可根据参数选择删除的类型 |      |
 | force_time_injection | 强制时间同步                          |      |
 | force_xtra_injection | 强制数据同步                          |      |

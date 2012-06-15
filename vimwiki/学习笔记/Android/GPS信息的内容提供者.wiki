@@ -108,7 +108,7 @@ private final class GpsLocationProviderThread extends Thread {
 
 === 全局设定 ===
 | 属性             | 默认值                               | 描述                 |
-|------------------+--------------------------------------+----------------------|
+|------------------|--------------------------------------|----------------------|
 | NTP_SERVER       | xtra1.gpsonextra.net                 | NTP服务器地址        |
 | XTRA_SERVER_1    | http://xtra1.gpsonextra.net/xtra.bin | 辅助数据的下载地址1  |
 | XTRA_SERVER_2    | http://xtra2.gpsonextra.net/xtra.bin | 辅助数据的下载地址2  |
@@ -119,7 +119,7 @@ private final class GpsLocationProviderThread extends Thread {
     
 === AGPS服务器设定： ===
 | 属性      | 默认值          | 描述           |
-|-----------+-----------------+----------------|
+|-----------|-----------------|----------------|
 | SUPL_HOST | supl.google.com | SUPL服务器地址 |
 | SUPL_PORT | 7275            | SUPL服务器端口 |
 | APN_NAME  | 3gwap           | APN名称        |
@@ -167,7 +167,7 @@ C2K_PORT=1234
 
 === GPS类型 ===
 | 类型标识                      | 辅助支持(AGPS) |
-|-------------------------------+----------------|
+|-------------------------------|----------------|
 | GPS_POSITION_MODE_STANDALONE  | 否             |
 | GPS_POSITION_MODE_MS_ASSISTED | 是             |
 | GPS_POSITION_MODE_MS_BASED    | 是             |
@@ -449,7 +449,7 @@ private final class ProviderHandler extends Handler {
 
 === 类型信息表 ===
 | 类型标识               | 字符串        | 描述         |
-|------------------------+---------------+--------------|
+|------------------------|---------------|--------------|
 | GPS_DELETE_EPHEMERIS   | "ephemeris"   | 删除星历数据 |
 | GPS_DELETE_ALMANAC     | "almanac"     | 删除历书数据 |
 | GPS_DELETE_POSITION    | "position"    | 删除位置数据 |
@@ -466,7 +466,7 @@ private final class ProviderHandler extends Handler {
 
 === GPS启动方式 ===
 | 启动方式   | 数据有效性                    | 描述 |
-|------------+-------------------------------+------|
+|------------|-------------------------------|------|
 | cold start | 删除ephemeris、position、time |      |
 | warm start | 删除ephemeris                 |      |
 | hot start  | 不删除任何数据                |      |

@@ -90,7 +90,7 @@ void sendMsgToServer()
 
 === 本地socket名字空间 ===
 | 标识                                    | 描述                | 备注 |
-|-----------------------------------------+---------------------+------|
+|-----------------------------------------|---------------------|------|
 | LocalSocketAddress.Namespace.ABSTRACT   | abstract名字空间    |      |
 | LocalSocketAddress.Namespace.FILESYSTEM | filesystem名字空间  |      |
 | LocalSocketAddress.Namespace.RESERVED   | /dev/socket名字空间 |      |

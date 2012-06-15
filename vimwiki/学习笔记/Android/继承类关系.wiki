@@ -1,7 +1,7 @@
 = 继承类关系 =
 
 | 直接子类     | 间接子类                       | 间接子类           | 间接子类        | 间接子类          |
-|--------------+--------------------------------+--------------------+-----------------+-------------------|
+|--------------|--------------------------------|--------------------|-----------------|-------------------|
 | AnalogClock  | AbsListView                    | Button             | ViewFlipper     | ViewAnimator      |
 | ImageView    | AbsSeekBar                     | CheckedTextView    | TwoLineListItem | VideoView         |
 | KeyboardView | AbsSpinner                     | CheckBox           | ToggleButton    | WebView           |

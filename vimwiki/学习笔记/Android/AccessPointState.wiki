@@ -18,7 +18,7 @@ import android.net.NetworkInfo.DetailedState;
 
 === AccessPointState ===
 | 标识      | 描述           |
-|-----------+----------------|
+|-----------|----------------|
 | networkId | Wifi连接网络ID |
 | ssid      | ssid名         |
 | bssid     | bssid名        |

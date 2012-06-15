@@ -21,7 +21,6 @@ Intent intent = new Intent(
     Uri.parse("<a href="http://www.adakoda.com/adakoda/">http://www.adakoda.com/adakoda/</a>"));
  
 startActivity(intent);
-
 }}}
  
  

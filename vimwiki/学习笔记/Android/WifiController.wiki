@@ -25,7 +25,7 @@ import android.net.DhcpInfo;
 == 主要类说明 ==
 === ScanResult --- 扫描结果 ===
 | 类型   | 标识         | 描述                       |
-|--------+--------------+----------------------------|
+|--------|--------------|----------------------------|
 | String | BSSID        | 进入点的地址               |
 | String | SSID         | 网络名称                   |
 | String | capabilities | 描述进入点的权限、安全类型 |
@@ -34,7 +34,7 @@ import android.net.DhcpInfo;
 
 === WifiConfiguration --- 连接配置 ===
 | 类型     | 标识                   | 描述                  |
-|----------+------------------------+-----------------------|
+|----------|------------------------|-----------------------|
 | String   | BSSID                  | 根据特定的AP地址      |
 | String   | SSID                   | 网络名称              |
 | BitSet   | allowedAuthAlgorithms  | IEEE 802.11认证支持   |
@@ -51,7 +51,7 @@ import android.net.DhcpInfo;
 
 === SupplicantState --- Supplicant状态 ===
 | 类型            | 标识               | 描述         |
-|-----------------+--------------------+--------------|
+|-----------------|--------------------|--------------|
 | SupplicantState | ASSOCIATED         | 关联完成     |
 | SupplicantState | ASSOCIATING        |              |
 | SupplicantState | COMPLETED          | 验证完成     |

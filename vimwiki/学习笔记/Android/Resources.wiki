@@ -19,7 +19,7 @@ Resources resources = Context.getResources();
 
 == 主要方法集合 ==
 | 返回值            | 方法名                  | 功能描述                    |
-|-------------------+-------------------------+-----------------------------|
+|-------------------|-------------------------|-----------------------------|
 | XmlResourceParser | getAnimation(int id)    | 获取动画资源                |
 | AssetManager      | getAssets()             | 获取Asset资源管理器         |
 | boolean           | getBoolean(int id)      | 获取boolean类型的值         |

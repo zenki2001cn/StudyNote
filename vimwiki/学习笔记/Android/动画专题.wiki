@@ -16,7 +16,7 @@ import android.graphics.drawable.AnimationDrawable;
 
 == 动画类型 ==
 | XML标签   | JAVA类             | 模式         | 描述                   |
-|-----------+--------------------+--------------+------------------------|
+|-----------|--------------------|--------------|------------------------|
 | alpha     | AlphaAnimation     | 渐变效果     | 渐变透明度效果的动画   |
 | scale     | ScaleAnimation     | 渐变效果     | 渐变尺寸伸缩效果的动画 |
 | translate | TranslateAnimation | 画面转动效果 | 画面位置移动效果的动画 |

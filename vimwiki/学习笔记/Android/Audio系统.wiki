@@ -59,7 +59,7 @@ hardware/libhardware_legacy/include/hardware_legacy/AudioPolicyManagerBase.h
 
 == Audio各个层次的对应关系 ==
 |              | Audio管理环节             | Audio输出                    | Audio输入                      |
-|--------------+---------------------------+------------------------------+--------------------------------|
+|--------------|---------------------------|------------------------------|--------------------------------|
 | Java层       | android.media.AudioSystem | android.media.AudioTrack     | android.media.AudioRecord      |
 | 本地框架层   | AudioSystem               | AudioTrack                   | AudioRecord                    |
 | AudioFlinger | AudioFlinger              | TrackHandle(实现IAudioTrack) | RecordHandle(实现IAudioRecord) |
@@ -75,7 +75,7 @@ hardware/libhardware_legacy/include/hardware_legacy/AudioPolicyManagerBase.h
 }}}
 
 | 方法名             | 描述 | 备注 |
-|--------------------+------+------|
+|--------------------|------|------|
 | adjustVolume       |      |      |
 | adjustStreamVolume |      |      |
 | getStreamMaxVolume |      |      |
@@ -198,7 +198,7 @@ private class FocusEventHandlerDelegate {
 - 相关方法如下：
 
 | 方法名                             | 描述 | 备注 |
-|------------------------------------+------+------|
+|------------------------------------|------|------|
 | registerMediaButtonEventReceiver   |      |      |
 | unregisterMediaButtonEventReceiver |      |      |
 

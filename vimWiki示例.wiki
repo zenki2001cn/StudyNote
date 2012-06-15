@@ -23,13 +23,12 @@
 | 1940     | -2                | 40                 |
 
 
-| zenki  | jasdjf | adjfa | asdfaf | asdfadf |
-|--------+--------+-------+--------+---------|
-|        | adsf   | sdfaf | dsafsf | asdfaf  |
-| asdfaf |        |       |        |         |
-|        | asdf   | adsfa | adsfa  | adfa    |
-|        |        |       |        |         |
-|        |        |       |        |         |
+| zenki                                        | jasdjf | adjfa | asdfaf | asdfadf |
+| --------+--------+-------+--------+--------- |        |       |        |         |
+|                                              | adsf   | sdfaf | dsafsf | asdfaf  |
+| asdfaf                                       |        |       |        |         |
+| \/                                           | asdf   | >     | >      | adfa    |
+| \/                                           |        |       |        |         |
 
 === My knowledge base ===
 # 10
@@ -66,6 +65,7 @@ WikiWords
 [http://habamax.ru/blog habamax 的主页]
 图片及图片链接
 [[images/pabloymoira.jpg]]
+[[index.html|images/pabloymoira.jpg]]
 
 标题
 = 1 级标题 =
@@ -98,6 +98,9 @@ WikiWords
 
 块级引用
 四个以上空格开始的文本，就是一个应用块
+
+分割线
+4个----表示一个道分割线
 
 %toc 占位符
 添加目录到wiki页面 %toc 

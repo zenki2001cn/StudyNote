@@ -11,7 +11,7 @@ import android.graphics.Paint;
 
 == 主要方法列表 ==
 | 返回值 | 方法                                    | 描述           |
-|--------+-----------------------------------------+----------------|
+|--------|-----------------------------------------|----------------|
 | void   | setARGB(int a, int r, int g, int b)     | 设置ARGB值     |
 | void   | setColor(int color)                     | 设置颜色       |
 | Shader | setShader(Shader  shader)               | 设置阴影       |

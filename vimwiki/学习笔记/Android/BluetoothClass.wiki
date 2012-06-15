@@ -13,13 +13,13 @@ listenUsingRfcommWithServiceRecord(String,UUID)来创建RFCOMM端口的时候，
 == 相关方法说明 ==
 === 内部类 ===
 | 类名                   | 描述                   |
-|------------------------+------------------------|
+|------------------------|------------------------|
 | BluetoothClass.Device  | 定义所有设备类的常量。 |
 | BluetoothClass.Service | 定义所有服务类的常量。 |
 
 === 方法说明 ===
 | 返回类型 | 方法名                  | 描述                                                  |
-|----------+-------------------------+-------------------------------------------------------|
+|----------|-------------------------|-------------------------------------------------------|
 | int      | getDeviceClass()        | 返回BluetoothClass.中的设备类部分。                   |
 | int      | getMajorDeviceClass()   | 返回BluetoothClass.中设备类的主要部分。               |
 | boolean  | hasService(int service) | 如果该指定服务类被BluetoothClass.所支持，则返回true。 |

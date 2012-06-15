@@ -26,7 +26,7 @@ _String getStringExtra(String name)_ :: 获取字符串数据
 
 === Intent分类 ===
 | 标准Actions            | 标准Broadcast                 | 标准categories                  | 标准extra data         |
-|----------------------+-----------------------------+-------------------------------+------------------------------|
+|----------------------|-----------------------------|-------------------------------|------------------------------|
 | ACTION_MAIN          | ACTION_TIME_TICK            | CATEGORY_DEFAULT              | EXTRA_ALARM_COUNT            | 
 | ACTION_VIEW          | ACTION_TIME_CHANGED         | CATEGORY_BROWSABLE            | EXTRA_BCC                    |   
 | ACTION_ATTACH_DATA   | ACTION_TIMEZONE_CHANGED     | CATEGORY_CAR_MODE             | EXTRA_CC                     |
@@ -83,8 +83,9 @@ _String getStringExtra(String name)_ :: 获取字符串数据
 
 === 添加标识符 ===
 - 通过`getFlags`, `setFlags`和`addFlags`添加标识符
+
 | 类型 | 标识                                | 描述                                                                                               |
-|------+-------------------------------------+----------------------------------------------------------------------------------------------------|
+|------|-------------------------------------|----------------------------------------------------------------------------------------------------|
 | int  | FLAG_ACTIVITY_BROUGHT_TO_FRONT      | 和singleTask模式相同                                                                               |
 | int  | FLAG_ACTIVITY_CLEAR_TOP             | 清除任务栈中被调用的Activity之上的所有Activity                                                     |
 | int  | FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET | 当下次重置时清除被调用的Activity。例如从Home返回时，清除该标志的Activity                           |
@@ -118,3 +119,4 @@ _String getStringExtra(String name)_ :: 获取字符串数据
 - [[播放多媒体]]
 - [[启动多个Broadcast]]
 - [[Intent传递对象]]
+- [[应用程序的mimeType]]

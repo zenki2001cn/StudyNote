@@ -18,7 +18,7 @@ import org.json.JSONException;
 
 == 类列表 ==
 | 类           | 描述                         |
-|--------------+------------------------------|
+|--------------|------------------------------|
 | JSONArray    | JSON数组                     |
 | JSONObject   | JSON的一组Map对象            |
 | JSONStringer | 生成JSON字符串               |
@@ -28,7 +28,7 @@ import org.json.JSONException;
 
 === 常用方法 ===
 | 返回值     | 方法名                              | 描述 |
-|------------+-------------------------------------+------|
+|------------|-------------------------------------|------|
 | JSONObject | put(String  name, boolean value)    |      |
 | JSONObject | put(String  name, double value)     |      |
 | JSONObject | put(String  name, Object  value)    |      |
@@ -71,7 +71,7 @@ catch(JSONException e) {
 
 === 常用方法 ===
 | 返回值     | 方法名                         | 描述 |
-|------------+--------------------------------+------|
+|------------|--------------------------------|------|
 | JSONArray  | put(int index, boolean value)  |      |
 | JSONArray  | put(int index, long value)     |      |
 | JSONArray  | put(boolean value)             |      |
@@ -109,7 +109,7 @@ catch(JSONException e) {
 
 === 常用方法 ===
 | 返回值       | 方法名               | 描述 |
-|--------------+----------------------+------|
+|--------------|----------------------|------|
 | JSONStringer | object()             |      |
 | JSONStringer | endObject()          |      |
 | JSONStringer | array()              |      |

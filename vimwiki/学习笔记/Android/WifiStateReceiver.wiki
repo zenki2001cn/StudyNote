@@ -23,7 +23,7 @@ import android.net.NetworkInfo.DetailedState;
 
 == Wifi状态Action ==
 | 类型   | 标识                                | 描述                     | 自定义接口方法        |
-|--------+-------------------------------------+--------------------------+-----------------------|
+|--------|-------------------------------------|--------------------------|-----------------------|
 | String | WIFI_STATE_CHANGED_ACTION           | WIFI状态改变消息         | updateWifiState       |
 | String | SCAN_RESULTS_AVAILABLE_ACTION       | 扫描完成，Supplicant可用 | updateWifiState       |
 | String | NETWORK_IDS_CHANGED_ACTION          | 网络IDS改变消息          | updateWifiState       |

@@ -7,7 +7,7 @@
 == 基类和子类可获取的全局资源表 ==
 
 | 类型   | 标识                    | 方法                                        | 相关类                                          | 描述                                |
-|--------+-------------------------+---------------------------------------------+-------------------------------------------------+-------------------------------------|
+|--------|-------------------------|---------------------------------------------|-------------------------------------------------|-------------------------------------|
 | String | ACCESSIBILITY_SERVICE   | getSystemService(String)                    | android.view.accessibility.AccessibilityManager | UI事件管理                          |
 | String | ACCOUNT_SERVICE         | getSystemService(String)                    | android.accounts.AccountManager                 | 账户管理                            |
 | String | ACTIVITY_SERVICE        | getSystemService(String)                    | android.app.ActivityManager                     | Activity管理                        |
@@ -44,7 +44,7 @@
 
 == 主要方法 ==
 | 方法                                                                              | 描述                               |
-|-----------------------------------------------------------------------------------+------------------------------------|
+|-----------------------------------------------------------------------------------|------------------------------------|
 | bindService(Intent service, ServiceConnection conn, int flags)                    | 绑定服务                           |
 | checkCallingOrSelfPermission(String  permission)                                  | 检查IPC权限                        |
 | createPackageContext(String packageName, int flags)                               | 根据package名，创建一个新的Context |
@@ -80,7 +80,7 @@
 == 相关子类 ==
 
 | 子类                         | 描述                            |
-|------------------------------+---------------------------------|
+|------------------------------|---------------------------------|
 | AbstractInputMethodService   | 输入法的抽象类                  |
 | AccessibilityService         | AccessibilityEvents事件的服务类 |
 | AccountAuthenticatorActivity |                                 |

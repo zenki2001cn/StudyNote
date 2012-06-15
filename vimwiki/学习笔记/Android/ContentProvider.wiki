@@ -75,7 +75,7 @@ static Uri withAppendedId(Uri contentUri, long id)
 === Uri ===
 ==== 主要方法说明 ====
 | 返回值       | 方法名                                              | 描述                |
-|--------------+-----------------------------------------------------+---------------------|
+|--------------|-----------------------------------------------------|---------------------|
 | Uri          | fromFile(File file)                                 | 从文件返回Uri       |
 | String       | getLastPathSegment()                                | 获取Uri最后一个片断 |
 | List<String> | getPathSegment()                                    | 获取Uri片断列表     |

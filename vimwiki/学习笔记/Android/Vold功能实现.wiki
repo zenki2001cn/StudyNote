@@ -625,7 +625,7 @@ public:
 ==== 磁盘操作的通信协议 ====
 
 | 字符串消息                                                   | 协议代码                              | 描述                      | 实现方法                             |
-|--------------------------------------------------------------+---------------------------------------+---------------------------+--------------------------------------|
+|--------------------------------------------------------------|---------------------------------------|---------------------------|--------------------------------------|
 | Share method ums now <available / unavailable>               | ResponseCode::ShareAvailabilityChange | 通知Host端U盘模式是否可用 | VolumeManager::notifyUmsAvailable    |
 | Volume <label> <mount point> disk inserted (<major>:<minor>) | ResponseCode::VolumeDiskInserted      | 通知Framework加入新的磁盘 | DirectVolume::handleDiskAdded        |
 | Volume <label> <mount point> disk inserted (<major>:<minor>) | ResponseCode::VolumeDiskInserted      | 通知Framework加入新的分区 | DirectVolume::handlePartitionAdded   |

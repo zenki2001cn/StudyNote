@@ -37,7 +37,7 @@ KeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of i
 }}}
 ==== 相关方法列表 ====
 | 方法名            | 描述 | 备注 |
-|-------------------+------+------|
+|-------------------|------|------|
 | setPhoneState     |      |      |
 | setRingerMode     |      |      |
 | setForceUse       |      |      |
@@ -89,7 +89,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 == 音量管理 ==
 - AudioPolicyManagerBase提供了以下几个与音量相关的函数：
 | 方法名               | 描述 | 备注 |
-|----------------------+------+------|
+|----------------------|------|------|
 | initStreamVolume     |      |      |
 | setStreamVolumeIndex |      |      |
 | getStreamVolumeIndex |      |      |
@@ -248,7 +248,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
 
 === 命令标识 ===
 | 命令标识         | 描述                                                           | 备注                                           |
-|------------------+----------------------------------------------------------------+------------------------------------------------|
+|------------------|----------------------------------------------------------------|------------------------------------------------|
 | START_TONE       | 播放电话系统中常用的特殊音调，如：TONE_DTMF_0，TONE_SUP_BUSY   |                                                |
 | STOP_TONE        | 播放电话系统中常用的特殊音调，如：TONE_DTMF_0，TONE_SUP_BUSY   |                                                |
 | SET_VOLUME       | 最终会调用AudioFlinger进行音量设置                             |                                                |
@@ -257,7 +257,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
 
 === 命令对应的数据结构 ===
 | 命令标识         | 数据结构        |
-|------------------+-----------------|
+|------------------|-----------------|
 | START_TONE       | ToneData        |
 | STOP_TONE        | ToneData        |
 | SET_VOLUME       | VolumeData      |

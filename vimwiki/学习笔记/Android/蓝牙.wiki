@@ -12,7 +12,7 @@ import android.bluetooth.BluetoothSocket;
 }}}
 
 | 类名称                      | 功能描述                     |
-|-----------------------------+------------------------------|
+|-----------------------------|------------------------------|
 | BluetoothAdapter            | 本地的蓝牙适配器设备类       |
 | BluetoothClass              | 描述设备通用特性和功能       |
 | BluetoothClass.Device       | 定义所有设备类的常量         |

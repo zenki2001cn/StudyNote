@@ -18,7 +18,7 @@ import android.view.animation.AnimationUtils;
 
 == 动画插入器列表 ==
 | XML标签                            | 类                               | 描述         |
-|------------------------------------+----------------------------------+--------------|
+|------------------------------------|----------------------------------|--------------|
 | accelerate_decelerate_interpolator | AccelerateDecelerateInterpolator | 加速-减速    |
 | accelerate_interpolator            | AccelerateInterpolator           | 加速         |
 | decelerate_interpolator            | DecelerateInterpolator           | 减速         |
