@@ -246,9 +246,12 @@ m+?         --- 手动指定一个标记符号
 <Leader>tl  --- 查看TODO,FIXME等信息
 
 27. 画图工具
-\di         --- 开始画图
-\ds         --- 停止画图
+\di             --- 开始画图
+\ds             --- 停止画图
+<leftmouse>     --- 块模式
+<s-leftmouse>   --- 刷子模式
 
+27.1 普通画图模式
 <left>       move and draw left
 <right>      move and draw right, inserting lines/space as needed
 <up>         move and draw up, inserting lines/space as needed
@@ -266,6 +269,8 @@ v            draw v  arrow
 <end>        replace with a /, move down and left,  and insert a /
 <pgup>       replace with a /, move up   and right, and insert a /
 <home>       replace with a \, move up   and left,  and insert a \
+
+27.2 块模式
 \>           draw fat -> arrow
 \<           draw fat <- arrow
 \^           draw fat ^  arrow
@@ -277,8 +282,6 @@ v            draw v  arrow
 \h           create a canvas for \a \b \e \l
 \l           draw line based on corners of visual block
 \s           adds spaces to canvas
-<leftmouse>  select visual block
-<s-leftmouse>  drag and draw with current brush (register)
 \ra ... \rz  replace text with given brush/register
 \pa ...      like \ra ... \rz, except that blanks are considered to be transparent 
 
@@ -443,7 +446,7 @@ esc - 退出结果窗口
 在NERDTree浏览器中输入ms，可以进行搜索
 
 51. listfile
-文本记录
+# 文本记录
 命令：
 :Lcreate    创建list类型文件
 :Lmark arg  标记
@@ -470,9 +473,44 @@ esc - 退出结果窗口
 dp 将当前文档合并到另一个文档(diff push)
 do 将另一个文档合并到当前文档(diff get)
 
-5.3 autotag
+53. autotag
 plugin/autotag.vim
 自动更新ctags，设置ctags文件必须小于10M
+
+54. autoclose
+plugin/autoclose.vim
+自动补全指定的字符
+
+55. gitv
+# gitk的vim版本
+:Gitv进入显示界面
+\gv     查看历史
+\gt     进入git编辑模式
+\gb     查看责任人
+
+# 在历史记录界面
+<Shift>s   查看更新文件列表
+
+56. Conqueterm
+# 在vim中执行程序，并将输出到vim中
+:ConqueTermSplit <command>
+:ConqueTermVSplit <command>
+:ConqueTermTab <command>
+
+57. gtags支持
+# 和cscope一样，可以查询代码，需要安装gnu-global工具
+# 下载地址
+http://www.gnu.org/software/global/download.html
+
+# 生成数据库文件
+$ gtags
+
+# 在vimrc中设置默认cscopeprg
+set cscopeprg=gtags-cscope
+set cscopequickfix=c-,d-,e-,f-,g0,i-,s-,t-
+
+# 使用方法和cscope一样，文件参数不同
+:cs add GTAGS
 
 #end here}}}
 

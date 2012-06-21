@@ -40,8 +40,8 @@
 
 8. Dirdiff 文件比较
 8.1 :Dirdiff dir1 dir2
-8.2 [[ - 跳到前一个不同点
-8.3 ]] - 跳到后一个不同点
+8.2 [c - 跳到前一个不同点
+8.3 ]c - 跳到后一个不同点
 8.4 dp - diff push
 8.5 do - diff get
 
@@ -54,6 +54,37 @@
 10.1 ,bs 查找关键字
 10.2 r   在缓存中替换关键字
 10.3 ?   查看帮助
+
+11. Gitv gitk的vim clone
+11.1 打开历史记录
+# 进入git项目文件夹目录，打开vim，输入以下快捷键
+\gv     查看历史
+\gt     进入git编辑模式
+\gb     查看责任人
+
+11.2 查看更新列表
+# 在历史记录界面
+<Shift>s   查看更新文件列表
+
+12. ConqueTerm 在vim执行命令，并显示输出
+:ConqueTermSplit <command>
+:ConqueTermVSplit <command>
+:ConqueTermTab <command>
+
+13. gtags支持
+13.1 下载地址
+# 和cscope一样，可以查询代码，需要安装gnu-global工具
+http://www.gnu.org/software/global/download.html
+
+13.2 生成数据库文件
+$ gtags
+
+13.3 在vimrc中设置默认cscopeprg
+set cscopeprg=gtags-cscope
+set cscopequickfix=c-,d-,e-,f-,g0,i-,s-,t-
+
+13.4 使用方法
+:cs add GTAGS
 
 
 % vim:ft=txt

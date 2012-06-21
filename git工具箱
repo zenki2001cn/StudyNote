@@ -115,6 +115,7 @@ $ git diff 52d9d285077cd26b3a8566cc0ec0f2031129b30e 52d9d285077cd26b3a8566cc0ec0
 $ git diff HEAD HEAD^ system/vold
 # 通过比较工具进行比较
 $ git difftool HEAD HEAD^ system/vold
+$ git difftool --cached system/vold
 
 2.3 add     跟踪修改文件
 # stage好比将文件加入跟踪列表，只有stage的文件才会被提交

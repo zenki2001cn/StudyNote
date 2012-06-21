@@ -146,4 +146,7 @@ autocmd BufReadPost *
 \ endif
 endif
 
+5. 生成vim文档缓存
+:helptags ~/.vim/doc
+
 % vim:ft=txt
