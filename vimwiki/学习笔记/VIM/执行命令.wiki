@@ -1,0 +1,39 @@
+= 执行命令 =
+
+%toc
+
+== 执行命令 ==
+- `exec`："命令" —— 用于在vim脚本中执行一系列vim命令
+- `:!`：外部命令 —— 这是一个vim命令行命令，功能是调用外部程序
+
+== 键盘绑定 :help map-overview ==
+- 一般格式：映射命令 按键组合 命令组合
+
+{{{class="brush:bash"
+# vim最大的特点在于可以把所有的操作能够用一个命令字符串表达出来，因此这带来了
+# 编写脚本的最大的便利。键盘绑定就是一个例子，这个功能允许把一个命令字符串绑定
+# 到一个按键/按键组合。
+# 例子：映射normal模式下的按键c为：^i#<Esc>j，就是在该行开头加上#号，然后下移一行
+nmap c ^i#<Esc>j
+}}}
+
+=== 常用映射命令 ===
+- `map`：全模式映射
+- `nmap`：normal模式映射
+- `vmap`：visual模式映射
+- `imap`：insert模式映射
+
+== 命令行命令 ==
+- vim支持在启动的时候使用`-c`开关执行命令字符串，例如：
+
+{{{class="brush:bash"
+vim -c "set filetype=$PERL" -c "s.$.#!/usr/bin/$PERL -w"r"r." -c
+}}}
+
+== 自动命令 ==
+- 一般格式：autocmd 事件 文件类型 命令
+
+{{{class="brush:bash"
+# 例子：当事件 BufNewFile 和 BufRead 发生在 *.pl 文件上的时候，执行命令：setf perl
+au BufNewFile,BufRead *.pl setf perl
+}}}

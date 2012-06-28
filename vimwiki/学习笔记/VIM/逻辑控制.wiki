@@ -1,0 +1,22 @@
+= 逻辑控制 =
+
+%toc
+
+== if == 
+{{{class="brush:bash"
+if condition
+    statement
+elseif condition
+    statement
+else
+    statement
+endif
+}}}
+
+== while == 
+{{{class="brush:bash"
+while condition
+    code block
+    [break/continue]
+endwhile
+}}}

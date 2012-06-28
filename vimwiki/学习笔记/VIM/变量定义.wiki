@@ -1,0 +1,51 @@
+= 变量定义 =
+
+%toc
+
+== 标量变量 ==
+- 可以是数字或字符串，基本与perl相同。
+- 命名方式为：`作用域:变量名`，常用的有如下几种：
+
+{{{class="brush:bash"
+# 注意：引用标量变量的时候请包含作用域和冒号
+b:name —— 只对当前buffer有效的变量
+w:name —— 只对当前窗口有效的变量
+g:name —— 全局变量
+v:name —— vim预定义变量
+a:name —— 函数的参变量
+}}}
+
+== 有特殊含义的变量 ==
+- 命名方式：
+    - $NAME:环境变量（一般变量名都是大写）
+    - &name:选项（vim处理某些事情的时候的默认设置）
+    - @r:register（寄存器，不是汇编的EAX,EBX，看第2部分vim tips）
+
+{{{class="brush:bash"
+# 常见环境变量例子:
+$VIMRUNTIME —— vim运行路径
+# 常见选项例子：
+&ic —— ignorecase
+# 注：使用set命令可以改变选项设置，例如：
+# 使用一个set命令可以看到当前所有的选项及其设置。
+:set ignorecase
+}}}
+
+== 变量赋值 ==
+- 语法：let 变量名 = 值
+
+{{{class="brush:bash"
+let dir = g:NERDTreeDirNode.GetSelected().path.str()
+}}}
+
+== 释放变量 ==
+- 语法：unlet 变量名
+
+{{{class="brush:bash"
+unlet dir
+}}}
+
+== 运算符 ==
+- 数学运算：+ - * / % .
+- 逻辑运算：== != > >= < <= ?:
+- 正则匹配运算符：=~ !~
