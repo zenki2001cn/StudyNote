@@ -512,6 +512,9 @@ set cscopequickfix=c-,d-,e-,f-,g0,i-,s-,t-
 # 使用方法和cscope一样，文件参数不同
 :cs add GTAGS
 
+58. xterm-color-table
+:XtermColorTable
+
 #end here}}}
 
 % vim:ft=txt

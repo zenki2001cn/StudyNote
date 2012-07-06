@@ -401,7 +401,7 @@ exec wish8.5 "$0" -- "$@"
 [gui]
     spellingdictionary = none
 
-4.3 gitg
+4.3 qgit
 
 4.4 git信息统计数据
 gitstats

@@ -8,7 +8,6 @@
 
 === VPATH ===
 - VPATH”变量所指定的是Makefile中所有文件的搜索路径,包括了规则的依赖文件和目标文件。
-
 {{{class="brush:bash"
 VPATH = src:../headers
 }}}
@@ -18,7 +17,6 @@ VPATH = src:../headers
 
 === $% ===
 - 当规则的目标文件是一个静态库文件时,代表静态库的一个成员名。如果目标不是静态库文件,其值为空。
-
 {{{class="brush:bash"
 # $%代表bar.o
 foo.a:bar.o
@@ -39,7 +37,6 @@ foo.a:bar.o
 
 === $* ===
 - 在静态模式中匹配TARGET-PATTERN的模式匹配部分。
-
 {{{class="brush:bash"
 # $*匹配big和little
 bigoutput littleoutput : %output : text.g
@@ -56,7 +53,7 @@ bigoutput littleoutput : %output : text.g
 - 代表目标“茎”中的目录部分
 
 === $(*F) ===
-代表目标“茎”中的文件名部分
+- 代表目标“茎”中的文件名部分
 
 === $(%D) ===
 - 表示库文件成员“member”名中的目录部分。
@@ -93,7 +90,6 @@ bigoutput littleoutput : %output : text.g
 
 === FORCE ===
 - 表示该目标总是被执行，而不论其有没有命令或是依赖。
-
 {{{class="brush:bash"
 clean: FORCE
     rm $(objects)

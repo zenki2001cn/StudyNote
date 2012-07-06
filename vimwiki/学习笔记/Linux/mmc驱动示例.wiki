@@ -7,7 +7,6 @@ _该示例以mmc驱动的实现为线索，描述了如何支持sysfs特性。_
 === struct mmc_card ===
 - 定义mmc的抽象数据结构，并包含一个struct device结构指针，该指针会在注册时初始化。
 - 在device结构中会包含device_type的指针，实际上我们通过初始化device作为入口，最终初始化*_attribute的属性。
-
 {{{class="brush:c"
 struct mmc_card {
     ......
@@ -18,7 +17,6 @@ struct mmc_card {
 == 初始化device_type ==
 === MMC_DEV_ATTR定义 ===
 - 该宏是对DEVICE_ATTR的进一步封装，目的是通过sysfs为用户层提供读方法来获取mmc的属性。
-
 {{{class="brush:c"
 #define MMC_DEV_ATTR(name, fmt, args...)					                \
 static ssize_t mmc_##name##_show (struct device *dev,                       \
@@ -32,7 +30,6 @@ static DEVICE_ATTR(name, S_IRUGO, mmc_##name##_show, NULL)
 
 === MMC_DEV_ATTR实现 ===
 - 这组宏的使用实际上是声明了一组device_attribute的变量。
-
 {{{class="brush:c"
 MMC_DEV_ATTR(cid, "%08x%08x%08x%08x\n", card->raw_cid[0], card->raw_cid[1],
 	card->raw_cid[2], card->raw_cid[3]);
@@ -50,7 +47,6 @@ MMC_DEV_ATTR(serial, "0x%08x\n", card->cid.serial);
 === 初始化attribute和attribute_group ===
 - 创建一组attribute的结构指针，而这些指针是通过上面的MMC_DEV_ATTR宏所定义的。
 - 之后将这组attribute指针再封装进attribute_group结构中，最终用来初始化device_type结构。
-
 {{{class="brush:c"
 // 将DEVICE_ATTR宏分解后得到以下的结构体变量
 static struct attribute *mmc_std_attrs[] = {

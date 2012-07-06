@@ -6,7 +6,7 @@
 {{{class="brush:bash"
 function name(arg)
     code block
-endfunc
+endfunction
 }}}
 
 == 函数调用 ==
