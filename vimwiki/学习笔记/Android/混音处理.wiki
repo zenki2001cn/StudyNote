@@ -13,7 +13,7 @@
     - AudioMixer::process__validate：根据Track的格式信息动态选择其他的处理函数。
 - 当所有参数设置好后，真正的混音操作是在处理线程中调用`AudioMixer::process`。
 
-[[pic/thread_track.png]]
+{{http:pic/thread_track.png}}
 
 === AudioMixer::AudioMixer ===
 {{{class="brush:c++"

@@ -1,7 +1,7 @@
 = 类的初始化 =
 
 == 类的生命周期 ==
-[[pic/class_init.jpg]]
+{{http:pic/class_init.jpg}}
 
 == 类初始化 ==
 {{{class="brush:text"

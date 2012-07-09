@@ -1,7 +1,7 @@
 = iptables数据包流程分析 =
 
 == 图例 ==
-[pic/iptables_flow.png]
+{{http:pic/iptables_flow.png}}
 
 == 分析 ==
 {{{class="brush:text"

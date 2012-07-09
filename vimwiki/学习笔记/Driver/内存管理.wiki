@@ -3,4 +3,4 @@
 %toc
 
 == Linux内存管理布局 ==
-[[pic/memory_manager.png]]
+{{http:pic/memory_manager.png}}

@@ -15,7 +15,7 @@ frameworks/base/libs/binde/BpBinder.cpp
 }}}
 
 == 框架图 ==
-[pic/Binder_frame.png]
+{{http:pic/Binder_frame.png}}
 
 == 要点分析 ==
 - 之所以分离这一部分内容，是因为Android存在一个特殊的，也是基于Binder实现的一个守护进程ServiceManager。服务端如何注册？客户端又如何去查询？这是本章要解决的问题。Android提供了与进程ServiceManager交互的机制，它是ServiceManager的驱动者，服务端通过它来注册服务，客户端又通过它来查询服务。

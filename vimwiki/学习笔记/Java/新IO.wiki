@@ -74,7 +74,7 @@ abstract ShortBuffer asShortBuffer()
 }}}
 
 - ByteBUffer是一个被包装过的“8字节”数组，数据在不同类型的缓冲器中，显示方式也不同
-[pic/buffer_map.png]
+{{http:pic/buffer_map.png}}
 
 = 通道Channels =
 - Channels派生类
@@ -117,7 +117,7 @@ abstract long position()
 - 通常默认为BIG_ENDIAN，即下图以(00000000 01100001)的形式读取
 - LITTLE_ENDIAN以(01100001 00000000)的形式读取
 
-[pic/endians.png]
+{{http:pic/endians.png}}
 
 {{{class="brush:java"
 ByteBuffer bb = ByteBuffer.wrap(new byte[12]);
@@ -130,7 +130,7 @@ bb.order(ByteOrder.LITTLE_ENDIAN);
 == 基于缓冲器的处理流程 ==
 - ByteBuffer是数据进出缓冲器的唯一方式
 
-[pic/nio_handle.png]
+{{http:pic/nio_handle.png}}
 
 == 文件映射 ==
 - 通过channel的map方法，可以将文件映射为一个很大的数组

@@ -1,7 +1,7 @@
 = 外观模式-Facade Pattern =
 _*提供一个统一的接口，用来访问子系统中的一群接口。外观定义了一个高层接口，让子系统更容易使用。*_
 
-[pic/facade.png]
+{{http:pic/facade.png}}
 
 *OO基础*
 - 抽象

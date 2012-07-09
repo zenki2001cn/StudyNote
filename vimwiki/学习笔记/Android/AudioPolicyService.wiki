@@ -15,7 +15,7 @@
 - AudioPolicyManagerBase类继承了AudioPolicyInterface类以便向AudioPolicyService提供服务，反过来同时还有一个AudioPolicyClientInterface指针，该指针在构造函数中被初始化，指向了AudioPolicyService，实际上，AudioPolicyService是通过成员指针mpPolicyManager访问AudioPolicyManagerBase，而 AudioPolicyManagerBase则通过AudioPolicyClientInterface（mpClientInterface）访问 AudioPolicyService；
 - AudioPolicyService有一个内部线程类AudioCommandThread，顾名思义，所有的命令（音量控制，输入、输出的切换等）最终都会在该线程中排队执行；
 
-[[pic/audio_policy_service.png]]
+{{http:pic/audio_policy_service.png}}
 
 == 实现AudioPolicyInterface ==
 - AudioPolicyService的很大一部分管理工作都是通过AudioPolicyInterface完成的。包括音量管理，音频策略(strategy)管理，输入输出设备管理。而默认实现该接口的类是AudioPolicyManagerBase。对于特定的硬件，只要重新实现这个接口就可以类。
@@ -183,7 +183,7 @@ enum routing_strategy {
 
 - AudioPolicyManagerBase.getStrategy根据stream type，返回对应的routing strategy值，AudioPolicyManagerBase.getDeviceForStrategy()则是根据routing strategy，返回可用的device。Android把10种stream type归纳为4种路由策略，然后根据路由策略决定具体的输出设备。
 
-[[pic/audio_strategy.png]]
+{{http:pic/audio_strategy.png}}
 
 === AudioPolicyManagerBase::getStrategy ===
 {{{class="brush:c++"

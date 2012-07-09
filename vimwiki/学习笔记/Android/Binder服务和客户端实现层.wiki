@@ -3,7 +3,7 @@
 %toc
 
 == Service本质结构 ==
- [pic/service.png]
+ {{http:pic/service.png}}
  
 == Java层的实现 ==
 - Java层的本地Service实现（`进程内部访问`）请参见[[本地Service]]。

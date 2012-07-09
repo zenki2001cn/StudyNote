@@ -3,7 +3,7 @@
 %toc
 
 == Binder框架 ==
-[pic/Binder_framework.png]
+{{http:pic/Binder_framework.png}}
 
 - 驱动层
 

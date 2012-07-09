@@ -64,6 +64,6 @@ CPU，是进程管理的一部分。更通常地，内核的进程管理活动�
 的网络活动来控制程序的执行。另外，所有的路由和地址解析问题都在内核中实现。
 }}}
 
-[[pic/kernel_module.png]]
+{{http:pic/kernel_module.png}}
 
 

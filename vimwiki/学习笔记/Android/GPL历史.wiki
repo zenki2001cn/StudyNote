@@ -18,7 +18,7 @@
 - ......
 
 == GPL关系图 ==
-[[pic/copyleft.png]]
+{{http:pic/copyleft.png}}
 
 == Android包含的License ==
 === Apache 2.0 License ===

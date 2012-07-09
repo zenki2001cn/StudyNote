@@ -1,7 +1,7 @@
 = 怎样绘制View =
 
 == 关系图 ==
-[pic/surface.png]
+{{http:pic/surface.png}}
 
 == 相关方法和变量 ==
 _void draw (Canvas  canvas)_ :: 更新视图的方法,调用onDraw

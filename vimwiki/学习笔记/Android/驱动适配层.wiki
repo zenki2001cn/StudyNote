@@ -12,7 +12,7 @@ frameworks/base/media/mediaserver/main_mediaserver.cpp
 }}}
 
 == 适配层模型 ==
-[pic/IPCThreadState.jpg]
+{{http:pic/IPCThreadState.jpg}}
 
 *适配层本质上实现了如何与驱动通信的方法，ProcessState用来打开Binder，所有数据传递操作放在IPCThreadState处理。*
 

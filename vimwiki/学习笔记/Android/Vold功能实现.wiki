@@ -77,7 +77,7 @@ int main() {
 - DirectVolume是Volume的子类，从vold.fstab中读取的每个需要挂载的设备都被实例化为`DirectVolume`对象，该对象提供一系列handle操作，`主要是实现了与Framework的交互`。而对于磁盘的操作则由基类基完成。
 - VolumeManager是Volume的管理类，它包含Volume对象列表，在必要时会遍历这个列表对指定的Volume对象做操作。它包含一个CommandListener对象，为与Framework通讯提供了方法。
 
-[[pic/volume.png]]
+{{http:pic/volume.png}}
 
 === socket连接及其管理 ===
 - Vold与framework层及内核通讯的机制是使用socket。SocketListener是对socket封装的抽象类。
@@ -93,18 +93,19 @@ int main() {
     - 该句柄被封装成SocketClient对象，并将该对象会作为参数传递给FrameworkCommand->runCommand()方法，从而实现Socket通信过程。
     - SocketListener会维护一个SocketClient对象的集合，从而处理多个客户端请求。
 
-[[pic/socketlistener.png]]
+{{http:pic/socketlistener.png}}
 
 === 命令抽象 ===
 - Framework层的命令通道被抽象成FrameworkCommand类。该类为抽象类，它有个中间子类VolumeCommand，由这个子类派生的实现类分别完成不同的功能。
 - 具体子类完成的功能是解析来自Framework层的字符串命令，然后再通过VolumeManager实现相应的功能。
 
-[[pic/command.png]]
+{{http:pic/command.png}}
+
 
 === 内核事件抽象 ===
 - 内核层的uevent事件被抽象成NetlinkEvent类，该类主要用来解析uevent文件中的add、remove、change等事件信息。
 
-[[pic/netlinkevent.png]]
+{{http:pic/netlinkevent.png}}
 
 = 要点解析 =
 == 接收framework指令 ==

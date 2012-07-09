@@ -154,7 +154,7 @@ static <T> int
 
 _容器集合示例图_
 
-[pic/容器集合.png]
+{{http:pic/容器集合.png}}
 
 === List ===
 | 类              | 说    明                                                               |

@@ -7,7 +7,7 @@
     - 边界对象对模拟外部环境和未来系统之间的交互进行建模。边界对象负责接收外部输入,处理内部内容的解释,并表达或传递相应的结果。
     - 控制对象对行为进行封装,描述用例中事件流的控制行为。
     - 实体对象对信息进行描述,它往往来自领域概念,和领域模型中的对象有良好的对应关系。
-[[pic/lubangtu.png]]
+{{http:pic/lubangtu.png}}
 
 == 鲁棒图和MVC的比较 ==
 {{{class="brush:text"
@@ -17,11 +17,11 @@
     并不像有的实践者理解的那样直接就等同于持久化对象。
 }}}
 
-[[pic/lubang_mvc.png]]
+{{http:pic/lubang_mvc.png}}
 
 == 鲁棒图范例 ==
 - 银行储蓄系统的“销户”功能的鲁棒图
-[[pic/lubang_xiaohu.png]]
+{{http:pic/lubang_xiaohu.png}}
 
 == 鲁棒图的作用 ==
 {{{class="brush:text"
@@ -34,7 +34,7 @@
 }}}
 
 == 鲁棒图的10条经验 ==
-[[pic/lubang_10exp.png]]
+{{http:pic/lubang_10exp.png}}
 
 === 建模规则 ===
 {{{class="brush:text"
@@ -43,13 +43,13 @@
 3.  实体对象也只能与控制对象交谈。
 4.  控制对象既能与边界对象交谈,也能与控制对象交谈,但不能与参与者交谈。
 }}}
-[[pic/lubang_guize.png]]
+{{http:pic/lubang_guize.png}}
 
 === 鲁棒图语法 ===
-[[pic/lubang_yufa.png]]
+{{http:pic/lubang_yufa.png}}
 
 === 鲁棒图思维方式 ===
-[[pic/lubang_siwei.png]]
+{{http:pic/lubang_siwei.png}}
 
 === 增量建模 ===
 - 增量建模能解决鲁棒图建模卡壳的问题;从大处讲,这种方式适用于所有种类的UML图建模实践。

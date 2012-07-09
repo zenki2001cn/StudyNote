@@ -14,7 +14,7 @@
 - 导出符号表可以将模块自身的符号表提供给其他模块。
 - 各种MODULE_声明可以出现在源码文件的任何函数之外的地方。但是惯例是把这些声明放在文件末尾。
 
-[[pic/export_module.png]]
+{{http:pic/export_module.png}}
 
 === 模块的自身引用 ===
 {{{class="brush:c"

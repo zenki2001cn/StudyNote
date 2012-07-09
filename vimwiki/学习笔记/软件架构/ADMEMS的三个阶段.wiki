@@ -15,7 +15,7 @@
     - 思维工具:包图、包-接口图、灰盒包图、序列图、目标-场景-决策表等
 - 对非功能性目标的考虑
 
-[[pic/ADMEMS_jieduan.png]]
+{{http:pic/ADMEMS_jieduan.png}}
 
 == Pre-architecture ==
 |          | 功能     | 质量       | 约束                                                 |
@@ -26,8 +26,8 @@
 
 == Conceptual Architecture ==
 - 概念架构 ≠ 理想化架构
-[[pic/Conceptual_Architecture.png]]
+{{http:pic/Conceptual_Architecture.png}}
 
 == Refined Architecture ==
 - 五视图法
-[[pic/Refined_Architecture.png]]
+{{http:pic/Refined_Architecture.png}}

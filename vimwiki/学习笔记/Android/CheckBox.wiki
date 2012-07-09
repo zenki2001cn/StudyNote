@@ -1,6 +1,6 @@
 = CheckBox使用方法 =
 
-[pic/checkbox.png]
+{{http:pic/checkbox.png}}
 
 - 设置复选框的Check状态的时候，调用setChecked()方法
 - 追加复选框被选择时处理的时候，

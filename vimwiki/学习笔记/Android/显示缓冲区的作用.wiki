@@ -14,7 +14,7 @@
     - lock()返回了该Surface的信息，其中包括了可用缓冲区的首地址vaddr，该vaddr在Android的2D图形库Skia中，创建了一个bitmap，然后通过Skia库中Canvas的 API：Canvas.setBitmapDevice(bitmap)，把该bitmap绑定到Canvas中。
     - 最后把这个Canvas返回给Java 层，这样JAVA层就可以在该Canvas上进行画图操作，而这些画图操作最终都会画在以vaddr为首地址的缓冲区中。
 
-[[pic/lock_surface.png]]
+{{http:pic/lock_surface.png}}
 
 === lockCanvas(Surface.java) ===
 {{{class="brush:java"
@@ -188,7 +188,7 @@ int Surface::dequeueBuffer(android_native_buffer_t** buffer)
         - 在queueBuffer()调用了SharedBufferClient的queue()，把该缓冲区更新为可投递状态
 - SurfaceFlinger的渲染线程looper在条件信号上等待事件触发，如果需要更新，则会通过Framebuffer驱动做更新动作。
 
-[[pic/free_surface.png]]
+{{http:pic/free_surface.png}}
 
 === unlockCanvasAndPost(Java层) ===
 {{{class="brush:java"

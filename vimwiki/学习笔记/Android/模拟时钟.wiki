@@ -1,6 +1,6 @@
 = 模拟时钟 =
 
-[pic/analogclock.png]
+{{http:pic/analogclock.png}}
 
 例程源码(Resource)
 {{{class="brush: xml"

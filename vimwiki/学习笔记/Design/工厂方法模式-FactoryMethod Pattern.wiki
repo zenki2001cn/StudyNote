@@ -1,7 +1,7 @@
 = 工厂方法模式(FactoryMethod Pattern) =
 _*定义了一个创建对象的接口，由子类进行实例化。工厂方法让类把实例化推迟到子类。*_
 
-[pic/factorymethod.png]
+{{http:pic/factorymethod.png}}
 
 *OO基础*
 - 抽象

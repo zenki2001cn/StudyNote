@@ -1,6 +1,6 @@
 = EditText使用方法 =
 
-[pic/edittext.png]
+{{http:pic/edittext.png}}
 
 - 设置文字列到EditText的时候，调用setText()方法
 - 取得EditText的文字列的时候，调用getText()方法

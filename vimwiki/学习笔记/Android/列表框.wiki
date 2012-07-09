@@ -1,6 +1,6 @@
 = ListView使用 =
 
-[pic/listview.png]
+{{http:pic/listview.png}}
 
 - 创建适配器，有几种常用适配器ArrayAdapter,SimpleAdapter,SimpleCursorAdapter
 - 设置Adapter，将数据与各种类型的Adapter绑定。

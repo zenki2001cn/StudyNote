@@ -135,7 +135,7 @@ build/core/Makefile处理。build/core/Makefile为这些module产生rule，并�
     Makefile根据之前的product设定和一些默认设定生成prop的属性列表。并将生成的目标文件打包成相应的ramdisk.img，system.img，userdata.img。
 }}}
 
-[[pic/build_system_main.png]]
+{{http:pic/build_system_main.png}}
 
 == 各组件编译详解 ==
 === 系统属性prop文件设置 ===
@@ -150,7 +150,7 @@ build/core/Makefile处理。build/core/Makefile为这些module产生rule，并�
 === 怎样制作update升级包 ===
 - [[制作update升级包]]
 
-[[pic/build_system_sub.png]]
+{{http:pic/build_system_sub.png}}
 
 == build/core下的参考文件 ==
 - [[示例文件]]

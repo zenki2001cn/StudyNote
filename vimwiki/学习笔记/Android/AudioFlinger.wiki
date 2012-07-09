@@ -20,7 +20,7 @@ AudioFlinger向上通过IAudioFinger接口提供服务。所以，AudioFlinger�
     - `RecordThread`：音频采集线程。它有一个mInput变量，类型为AudioStreamInput*，因此它与HAL层的音频采集相关联。
 
 - 旧的pic/audio_flinger.jpg
-[[pic/Audio_Thread.png]]
+{{http:pic/Audio_Thread.png}}
 
 == AudioFlinger初始化 ==
 - 初始化最主要的功能是创建HAL层的模块对象，并初始化默认音频设置。
@@ -55,7 +55,7 @@ AudioFlinger::AudioFlinger() : BnAudioFlinger(),
     - PlaybackThread::OutputTrack：用于多重设备输出，当蓝牙播放开启时使用。
     - RecordThread::RecordTrack：用于录音，对应于应用层的AudioRecord。
 
-[[pic/Audio_Track.png]]
+{{http:pic/Audio_Track.png}}
 
 === AudioFlinger::ThreadBase::TrackBase::TrackBase ===
 {{{class="brush:c++"
@@ -332,7 +332,7 @@ Exit:
 
 === 播放线程堆栈图 ===
 - 旧的pic/playthread.png
-[[pic/AudioPlaybackThread.png]]
+{{http:pic/AudioPlaybackThread.png}}
 
 == 音频采集流程 ==
 - 录音的流程和放音差不多，只不过数据流动的方向相反，录音线程变成RecordThread，Track变成了RecordTrack，openRecord返回RecordHandle。

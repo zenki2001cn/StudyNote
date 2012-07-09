@@ -1,6 +1,6 @@
 = 吐司消息 =
 
-[pic/toast.png]
+{{http:pic/toast.png}}
 
 == 相关类 ==
 {{{class="brush:java"

@@ -2,7 +2,7 @@
 
 == 继承关系 ==
 
-[pic/view_her.jpg]
+{{http:pic/view_her.jpg}}
 
 == 布局类型 ==
 === FrameLayout ===
@@ -17,7 +17,7 @@
 === RelativeLayout ===
 关联布局,该布局将一组相关视图关联起来,且任意设置位置
 
-[pic/layoutparams.png]
+{{http:pic/layoutparams.png}}
 
 == 生成布局 ==
 

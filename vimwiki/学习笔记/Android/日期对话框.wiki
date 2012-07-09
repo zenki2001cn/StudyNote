@@ -1,6 +1,6 @@
 = Calendar使用 =
 
-[pic/datedialog.png]
+{{http:pic/datedialog.png}}
 
 - 按下设置（Set）按钮的时候，调用DatePickerDialog.OnDateSetListener()处理。
 

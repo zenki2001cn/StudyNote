@@ -1,6 +1,6 @@
 = RadioButton使用 =
 
-[pic/radiobtn.png]
+{{http:pic/radiobtn.png}}
 
 - 使用单选框的时候，要用RadioGroup来分组
 - 选择RadioGroup里的单选框的时候，将调用RadioGroup的Check·()方法

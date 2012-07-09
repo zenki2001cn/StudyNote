@@ -267,7 +267,7 @@ public:
     - 每次获取Surface时，会通过UserClient::getTokenForSurface方法查找对应的索引，如果没有找到，就会递增这个索引值并保证不会超过SharedBufferStack::NUM_LAYERS_MAX定义的大小，最后通过Layer::setToken方法创建SharedBufferServer对象。
     - 而这个索引值通过ClientRef::setToken保存在ClientRef对象中，当下一次再访问这个Layer对象时便会通过ClientRef::getToken获取。Client端便是通过该索引构造一个SharedBufferClient对象与Server端对应。
 
-[[pic/shared_buffer_stack.png]]
+{{http:pic/shared_buffer_stack.png}}
 
 === SharedBufferStack ===
 {{{class="brush:c++"

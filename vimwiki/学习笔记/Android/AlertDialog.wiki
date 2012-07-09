@@ -1,6 +1,6 @@
 = AlertDialog =
 
-[pic/alertdialog.png]
+{{http:pic/alertdialog.png}}
 
 - AlertDialog实例的生成，
     # 生成AlertDialog.Builder类的实例，并且设置属性。

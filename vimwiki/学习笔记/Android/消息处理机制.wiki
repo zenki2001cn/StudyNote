@@ -30,7 +30,7 @@ MessageQueue :: 消息机制的队列——规则。
 Handler :: 消息处理的方法——生产者和消费者。
 
 === 消息处理的图例 ===
-[[pic/framework_handler.png]]
+{{http:pic/framework_handler.png}}
 
 === 消息处理的示例代码 ===
 {{{class="brush:java"
