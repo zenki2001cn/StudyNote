@@ -1,5 +1,7 @@
 = 字符编码 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import java.util.Iterator;

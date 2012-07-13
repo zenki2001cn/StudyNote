@@ -1,5 +1,7 @@
 = 拷贝文件的方法 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import java.io.File;
