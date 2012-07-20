@@ -1,0 +1,112 @@
+= 压缩和解压文件 =
+
+%toc
+
+== 示例代码 ==
+{{{class="brush:java"
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
+
+/**
+ * Usage:
+ *  	new ZipHelper().zip("/sdcard/test_dir", "/sdcard/mytest.zip");
+ *  	new ZipHelper().unZip("/sdcard/mytest.zip", "/sdcard/");
+ */
+public class ZipHelper {
+
+	public ZipHelper() {
+	}
+
+	public void zip(String inputFileName, String zipFileName) throws Exception {
+		zip(zipFileName, new File(inputFileName));
+	}
+
+	private void zip(String zipFileName, File inputFile) throws Exception {
+		ZipOutputStream out = new ZipOutputStream(new FileOutputStream(
+				zipFileName));
+
+        // 根据zip文件名创建zip包中根目录的名称
+		String base = "";
+		String fileName = new File(zipFileName).getName();
+		int index = fileName.lastIndexOf(".");
+		if (index == -1) {
+			base = fileName;
+		} else {
+			base = fileName.substring(0, index);
+		}
+
+		zip(out, inputFile, base);
+		out.close();
+	}
+
+    // 对文件夹和文件做递归处理
+	private void zip(ZipOutputStream out, File f, String base) throws Exception {
+		if (f.isDirectory()) {
+			File[] fl = f.listFiles();
+			// 创建zip包中的文件夹，加上"/"
+			out.putNextEntry(new ZipEntry(base + "/"));
+			base = base.length() == 0 ? "" : base + "/";
+			for (int i = 0; i < fl.length; i++) {
+				zip(out, fl[i], base + fl[i].getName());
+			}
+		} else {
+		    // 创建zip包中的文件
+		    out.putNextEntry(new ZipEntry(base));
+			FileInputStream in = new FileInputStream(f);
+			int len = 0;
+			byte[] buf = new byte[1024];
+			while ((len = in.read(buf)) != -1) {
+				out.write(buf, 0, len);
+			}
+			in.close();
+		}
+	}
+
+    // 解压zip文件到指定的目录
+	public void unZip(String zipfile, String destDir) {
+		destDir = destDir.endsWith(File.separator) ? destDir : destDir
+				+ File.separator;
+		byte b[] = new byte[1024];
+		int length;
+		ZipFile zipFile;
+
+		try {
+			zipFile = new ZipFile(new File(zipfile));
+			// 获取zip包中的所有目录项
+			Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+			ZipEntry zipEntry = null;
+			
+			// 遍历每个目录项
+			while (enumeration.hasMoreElements()) {
+				zipEntry = (ZipEntry) enumeration.nextElement();
+				File loadFile = new File(destDir + zipEntry.getName());
+				
+				// 如果是目录，则创建目录，文件则通过读写方式复制数据
+				if (zipEntry.isDirectory()) {
+					loadFile.mkdirs();
+				} else {
+					if (!loadFile.getParentFile().exists()) {
+						loadFile.getParentFile().mkdirs();
+					}
+					
+					OutputStream outputStream = new FileOutputStream(loadFile);
+					InputStream inputStream = zipFile.getInputStream(zipEntry);
+					while ((length = inputStream.read(b)) > 0) {
+						outputStream.write(b, 0, length);
+					}
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+}}}

@@ -96,6 +96,8 @@ void sendMsgToServer()
 | LocalSocketAddress.Namespace.RESERVED   | /dev/socket名字空间 |      |
 
 == 代码示例(Java) ==
+- Java的Socket处理可以参考[[../Java/Socket通讯|Java如何处理Socket]]。
+
 {{{class="brush:c"
 private void listenToSocket() throws IOException {
     LocalSocket socket = null;
