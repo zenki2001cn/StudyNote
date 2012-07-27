@@ -6,7 +6,230 @@
  {{http:pic/service.png}}
  
 == Java层的实现 ==
+=== 利用aidl实现Binder ===
 - Java层的本地Service实现（`进程内部访问`）请参见[[本地Service]]。
 - Java层的远程Service实现（`进程间访问`）请参见[[远程Service]]。
+- aidl原理与实现可参考[[Binder核心框架层_Java]]。
 
 == Native层的实现 ==
+- Native层的服务可按照以下步骤实现(以SurfaceFlinger为例)：
+
+=== 1.声明接口 ===
+- 定义一个接口类，该类必须继承自`IInterface`。
+- 将所有接口的方法声明成纯虚函数（C++中接口的声明方法）。
+- 注意`DECLARE_META_INTERFACE`宏定义，可参考[[IBinder接口]]。
+{{{class="brush:c++"
+// ISurfaceComposer.h
+class ISurfaceComposer : public IInterface
+{
+public:
+    // 声明接口
+    DECLARE_META_INTERFACE(SurfaceComposer);
+
+    // ......
+    
+    // 声明纯虚函数，作为C++的接口
+    virtual status_t captureScreen(DisplayID dpy,
+            sp<IMemoryHeap>* heap,
+            uint32_t* width, uint32_t* height, PixelFormat* format,
+            uint32_t reqWidth, uint32_t reqHeight) = 0;
+};
+}}}
+
+=== 2.定义本地服务基类 ===
+- 通过`BnInterface`模板定义一个本地服务的基类。
+- 定义一个枚举类型，来描述每个方法对应的编号。
+- 定义一个onTransact方法，当服务被调用时，`即先通过该方法筛选编号，再调用对应的方法`。
+{{{class="brush:c++"
+// ISurfaceComposer.h
+class BnSurfaceComposer : public BnInterface<ISurfaceComposer>
+{
+public:
+    enum {
+        // 这里定义的对应于每个方法的编号，
+        // 以IBinder::FIRST_CALL_TRANSACTION开始
+        BOOT_FINISHED = IBinder::FIRST_CALL_TRANSACTION,
+        CREATE_CONNECTION,
+        CREATE_CLIENT_CONNECTION,
+        GET_CBLK,
+        OPEN_GLOBAL_TRANSACTION,
+        CLOSE_GLOBAL_TRANSACTION,
+        SET_ORIENTATION,
+        FREEZE_DISPLAY,
+        UNFREEZE_DISPLAY,
+        SIGNAL,
+        CAPTURE_SCREEN,
+        TURN_ELECTRON_BEAM_OFF,
+        TURN_ELECTRON_BEAM_ON,
+    };
+
+    virtual status_t    onTransact( uint32_t code,
+                                    const Parcel& data,
+                                    Parcel* reply,
+                                    uint32_t flags = 0);
+};
+}}}
+
+=== 3.实现代理服务的Proxy ===
+- 通过`BpInterface`模板定义一个代理类，并实现代理类的方法。
+- Proxy需要实现每个同名的接口方法，该方法通过Binder机制调用远程的方法，从而起到代理作用。
+- 注意调用远程方法时，实际传递的是方法的编号，因此需要注意`编号和方法的对应关系`。
+- 注意`IMPLEMENT_META_INTERFACE`宏定义，可参考[[IBinder接口]]。
+- Binder工作机制可参考[[Binder核心框架层_C]]。
+{{{class="brush:c++"
+// ISurfaceComposer.cpp
+class BpSurfaceComposer : public BpInterface<ISurfaceComposer>
+{
+public:
+    BpSurfaceComposer(const sp<IBinder>& impl)
+        : BpInterface<ISurfaceComposer>(impl)
+    {
+    }
+    
+    // ...... 
+	
+    virtual status_t captureScreen(DisplayID dpy,
+            sp<IMemoryHeap>* heap,
+            uint32_t* width, uint32_t* height, PixelFormat* format,
+            uint32_t reqWidth, uint32_t reqHeight)
+    {
+        Parcel data, reply;
+        // 写入ISurfaceComposer::getInterfaceDescriptor()，
+        // 即IMPLEMENT_META_INTERFACE宏所注册的接口名称，
+        // 从而向ServiceManager申请访问权限，
+        data.writeInterfaceToken(ISurfaceComposer::getInterfaceDescriptor());
+        data.writeInt32(dpy);
+        data.writeInt32(reqWidth);
+        data.writeInt32(reqHeight);
+	    // 这里是通过remote()和远程对象通信，
+        // 调用方法是通过传递编号来实现，如BnSurfaceComposer::CAPTURE_SCREEN。
+        remote()->transact(BnSurfaceComposer::CAPTURE_SCREEN, data, &reply);
+        *heap = interface_cast<IMemoryHeap>(reply.readStrongBinder());
+        *width = reply.readInt32();
+        *height = reply.readInt32();
+        *format = reply.readInt32();
+        // 返回结果
+        return reply.readInt32();
+    }
+};
+
+// 对应于DECLARE_META_INTERFACE
+IMPLEMENT_META_INTERFACE(SurfaceComposer, "android.ui.ISurfaceComposer");
+}}}
+
+=== 4.实现本地服务的基类 ===
+- 本地服务的基类主要实现`onTransact`方法，参考头文件的定义。
+- 基类为本地服务实现了复杂的逻辑，包括数据传输等。因此子类不需要关心如何与ServiceManager通信、如何包装数据，只要实现具体的方法供基类调用即可。
+{{{class="brush:c++"
+// ISurfaceComposer.cpp
+status_t BnSurfaceComposer::onTransact(
+    uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
+{
+    // 根据编号筛选
+    switch(code) {
+        // ......
+        // 这里的CAPTURE_SCREEN == FIRST_CALL_TRANSACTION + 10
+        case CAPTURE_SCREEN: {
+            // 这里的CHECK_INTERFACE是为了检查代理端传递过来的
+            // 接口描述是否符合本地的接口描述。
+            CHECK_INTERFACE(ISurfaceComposer, data, reply);
+            DisplayID dpy = data.readInt32();
+            uint32_t reqWidth = data.readInt32();
+            uint32_t reqHeight = data.readInt32();
+            sp<IMemoryHeap> heap;
+            uint32_t w, h;
+            PixelFormat f;
+            // 这里调用的captureScreen方法是子类的具体实现
+            status_t res = captureScreen(dpy, &heap, &w, &h, &f,
+                    reqWidth, reqHeight);
+            reply->writeStrongBinder(heap->asBinder());
+            reply->writeInt32(w);
+            reply->writeInt32(h);
+            reply->writeInt32(f);
+            reply->writeInt32(res);
+        } break;
+        default:
+            return BBinder::onTransact(code, data, reply, flags);
+    }
+    return NO_ERROR;
+}
+}}}
+
+=== 5.完成本地服务的功能 ===
+- 所有的前期准备工作做好后，最终需要实现一个继承于`BnSurfaceComposer`的子类，该子类完成接口中定义具体功能实现。
+- 因此在Android系统中，SurfaceFlinger是图形显示系统的最终实现类。
+{{{class="brush:c++"
+// SurfaceFlinger.h
+class SurfaceFlinger :
+        public BinderService<SurfaceFlinger>,
+        public BnSurfaceComposer,
+        protected Thread
+{
+public:
+    static char const* getServiceName() { return "SurfaceFlinger"; }
+
+            SurfaceFlinger();
+    virtual ~SurfaceFlinger();
+    void    init();
+
+    virtual status_t onTransact(
+    uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags);
+
+    // ISurfaceComposer interface
+    // ......
+    virtual status_t    captureScreen(DisplayID dpy,
+                              sp<IMemoryHeap>* heap,
+                              uint32_t* width,
+                              uint32_t* height,
+                              PixelFormat* format,
+                              uint32_t reqWidth,
+                              uint32_t reqHeight);
+    // ......
+}
+
+// SurfaceFlinger.cpp
+// 具体实现captureScreen功能
+status_t SurfaceFlinger::captureScreen(DisplayID dpy,
+        sp<IMemoryHeap>* heap,
+        uint32_t* width, uint32_t* height, PixelFormat* format,
+        uint32_t sw, uint32_t sh)
+{
+    // ......
+    sp<MessageBase> msg = new MessageCaptureScreen(this,
+            dpy, heap, width, height, format, sw, sh);
+    status_t res = postMessageSync(msg);
+    if (res == NO_ERROR) {
+        res = static_cast<MessageCaptureScreen*>( msg.get() )->getResult();
+    }
+    return res;
+}
+}}}
+
+== Java层和C++层相互调用 ==
+- 前面提到的两种方式是在Java层调用Java层的Service，在C++层调用C++层的Service。因为彼此都可以找到自己的Proxy类定义，难度并不大。如何在Java层和C++层相互调用呢？
+- 参考[[Binder核心框架层_Java]]中IMyService.Stub的代码，可以手工实现在Java层和C++层的相互调用。
+- 下面以Framework层调用C++层的SurfaceFlinger为例：
+{{{class="brush:java"
+try {
+    // 传递服务名称给ServiceManager，并返回IBinder对象。
+    IBinder surfaceFlinger = ServiceManager.getService("SurfaceFlinger");
+    if (surfaceFlinger != null) {
+        // 准备好传输数据和返回数据的Parcel对象，注意使用obtain方法
+        Parcel data = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        // 写入InterfaceToken，该字符串是C++层实现的接口名称，
+        // 注意不要将Service名称和接口名称搞混淆。
+        data.writeInterfaceToken("android.ui.ISurfaceComposer");
+        data.writeString("/sdcard/screenshot.png");
+        // 调用transact方法，这里需要关注的是方法的编号，
+        // 例如当前调用的编号CAPTURE_SCREEN == FIRST_CALL_TRANSACTION + 10
+        surfaceFlinger.transact(IBinder.FIRST_CALL_TRANSACTION + 10,
+                                data, reply, 0);
+        // 回收Parcel
+        data.recycle();
+        reply.recycle();
+    }
+} catch (RemoteException ex) {
+    // ......
+}
+}}}

@@ -57,8 +57,11 @@ ntop
 1.9. 修改MAC地址、包伪装
 ifconfig eth0 hw ether 00:23:ae:b4:3d:49 
 
-iptables -t nat -I POSTROUTING -j MASQUERADE
 echo "1" > /proc/sys/net/ipv4/ip_forward
+iptables -F
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o eth0 -jMASQUERADE
 
 1.10. 查询域名服务器
 dig

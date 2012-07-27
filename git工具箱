@@ -385,6 +385,9 @@ $ git bisect visualize
 # 查看签出信息
 $ git bisect log
 
+3.9 gc      垃圾清理
+$ git gc
+
 4. Git 图形界面
 # 查看历史版本的图形化工具
 4.1 gitk
