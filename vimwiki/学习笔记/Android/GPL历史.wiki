@@ -18,7 +18,14 @@
 - ......
 
 == GPL关系图 ==
-[[pic/copyleft.png]]
+=== copyleft ===
+{{http:pic/copyleft.png}}
+
+=== software-licenses ===
+{{http:pic/Infographic-of-popular-software-licenses.jpg}}
+
+=== OSS-License ===
+{{http:pic/OSS-License.jpg}}
 
 == Android包含的License ==
 === Apache 2.0 License ===
