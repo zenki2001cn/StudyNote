@@ -1,6 +1,6 @@
 = 等级条使用 =
 
-[pic/ratingbar.jpeg]
+{{http:pic/ratingbar.jpeg}}
 
 - 评分（星）的最大数的设置，调用setNumStars()方法。
 - 现在的评分的设置，调用setRating()方法。

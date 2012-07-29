@@ -1,5 +1,7 @@
 = List Set Map比较 =
 
+%toc
+
 == List ==
 - 次序是List最重要的特点：它保证维护元素特定的顺序。一个List可以生成ListIterator,使用它可以从两个方向遍历List,也可以从List中间插入和移除元素。
 

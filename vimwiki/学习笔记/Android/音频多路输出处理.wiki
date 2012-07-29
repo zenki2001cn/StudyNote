@@ -55,7 +55,7 @@ status_t AudioPolicyManagerBase::handleA2dpConnection(AudioSystem::audio_devices
     - 以上创建的两个OutputTrack对象同时又会被加入到两个MixerThread线程中。
 - 当DuplicatingThread::threadLoop线程往两个OutputTrack对象写数据的同时，两个`MixerThread::threadLoop`线程从中获取数据并输出到不同目标中。
 
-[[pic/bt_thread_track.png]]
+{{http:pic/bt_thread_track.png}}
 
 === AudioFlinger::openDuplicateOutput ===
 {{{class="brush:c++"

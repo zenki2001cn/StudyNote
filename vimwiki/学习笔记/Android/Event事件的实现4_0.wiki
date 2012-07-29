@@ -3,4 +3,4 @@
 %toc
 
 == Event处理框架图 ==
-[[pic/InputEvent.png]]
+{{http:pic/InputEvent.png}}

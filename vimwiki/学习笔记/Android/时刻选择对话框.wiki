@@ -1,6 +1,6 @@
 = TimePickerDialog使用 =
 
-[pic/timedialog.png]
+{{http:pic/timedialog.png}}
 
 # is24HourView = true 
 # is24HourView = false

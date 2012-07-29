@@ -18,7 +18,7 @@ frameworks/base/core/java/android/os/storage/MountServiceListener.java
 - MountService会以回调方式通知上层设备状态的变化，通过registerListener()方法注册回调。
 - NativeDaemonConnector是用来接收socket消息的线程类，MountService向其注册回调接口INativeDaemonConnectorCallbacks来传递消息。
 
-[[pic/MountService.png]]
+{{http:pic/MountService.png}}
 
 == MountService的初始化 ==
 - 从MountService的构造方法来看它的运行机制和工作流程：

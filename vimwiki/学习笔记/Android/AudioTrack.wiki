@@ -10,7 +10,7 @@
 
 == AudioTrack工作流程(C++层) ==
 
-[[pic/Audio_AudioTrack.png]]
+{{http:pic/Audio_AudioTrack.png}}
 
 === 初始化AudioTrack实例 ===
 {{{class="brush:c++"
@@ -105,7 +105,7 @@ status_t AudioTrack::set( int streamType, uint32_t sampleRate, int format,
 === 创建IAudioTrack对象 ===
 - AudioTrack和AudioFlinger的关系可参考下图
 
-[[pic/AudioTrack_AudioFlinger.png]]
+{{http:pic/AudioTrack_AudioFlinger.png}}
 
 {{{class="brush:c++"
 status_t AudioTrack::createTrack_l(

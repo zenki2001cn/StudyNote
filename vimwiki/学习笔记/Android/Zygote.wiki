@@ -17,7 +17,7 @@ frameworks/base/core/java/com/android/internal/os/ZygoteInit.java
 }}}
 
 == ZygoteInit类 ==
-[[pic/zygote_systemserver.png]]
+{{http:pic/zygote_systemserver.png}}
 
 === 方法：main ===
 {{{class="brush:java"
@@ -72,7 +72,7 @@ public static void main(String argv[]) {
 - `system_init()`会启动四个`native services`: `AudioFlinger`、`MediaPlayerService`、`CameraService`、`AudioPolicyService`。之后回调SystemServer.java中的`init2()`方法
 - `init2()`方法调用`ServerThread`线程类，通过`ServicesManager`加入大约30多个services
 
-[[pic/zygote_fork.png]]
+{{http:pic/zygote_fork.png}}
 
 === 类：SystemServer ===
 {{{class="brush:java"

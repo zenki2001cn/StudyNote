@@ -28,12 +28,15 @@
 | 1940     | -2                | 40                 |
 
 
-| zenki  | jasdjf | adjfa | asdfaf | asdfadf |
-|--------|--------|-------|--------|---------|
-|        | adsf   | sdfaf | dsafsf | asdfaf  |
-| asdfaf |        |       |        |         |
-| \/     | asdf   | >     | >      | adfa    |
-| \/     |        |       |        |         |
+| zenki  | jasdjf  | adjfa | asdfaf | asdfadf |
+|--------|---------|-------|--------|---------|
+|        | adsf    | sdfaf | dsafsf | asdfaf  |
+| asdfaf |         |       |        |         |
+| \/     | asdf    | >     | >      | adfa    |
+| \/     |         |       |        |         |
+| \/     | asdfsdf | >     | >      | >       |
+| \/     | asdfsdf | >     | >      | >       |
+
 
 === My knowledge base ===
 # 10

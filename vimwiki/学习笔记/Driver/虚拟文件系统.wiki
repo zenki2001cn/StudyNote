@@ -10,7 +10,7 @@
     - 文件对象
     - 目录项对象
 
-[[pic/vfs_model.png]]
+{{http:pic/vfs_model.png}}
 
 == 超级块对象 ==
 {{{class="brush:text"

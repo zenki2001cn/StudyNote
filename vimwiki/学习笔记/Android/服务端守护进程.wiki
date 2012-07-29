@@ -10,7 +10,7 @@ frameworks/base/cmds/servicemanager/service_manager.c
 }}}
 
 == 要点说明 ==
-[pic/Binder_servicemanager.png]
+{{http:pic/Binder_servicemanager.png}}
 
 *servicemanager：是一个守护进程，它用来管理系统级的各种服务。该进程在init.rc中设置，并保证在系统中永远存在。所有其他的，想做为Service运行着的Binder服务，必须在该进程注册。其他的客户端也必须通过该进程查询所需的服务。这是Android中Binder实现的一个十分重要的部分。*
 

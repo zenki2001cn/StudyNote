@@ -77,7 +77,7 @@ openPlatformInput()方法，再通过scan_dir()方法扫描/dev/input目录并�
 }}}
 
 == Event处理类图 ==
-[[pic/Event处理类.png]]
+{{http:pic/Event处理类.png}}
 
 = 参考代码 =
 - [[Event处理参考代码2_1]]

@@ -1,5 +1,7 @@
 = 如何获取后台运行的Service =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import android.content.Context;
@@ -10,7 +12,7 @@ import android.app.ActivityManager.RunningServiceInfo;
 - 通过getSystemService(Context.ACTIVITY_SERVICE)获取ActivityManager对象 
 - 通过ActivityManager对象的getRunningServices()方法获取Service列表
 
-例程源码(JAVA)
+== 示例代码 ==
 {{{class="brush:java"
 public static String getRunningServicesInfo(Context context) {
     StringBuffer serviceInfo = new StringBuffer();

@@ -1,7 +1,7 @@
 = 进度条对话框 =
 
-[pic/progressdialog.png]
-[pic/progressdialog2.png]
+{{http:pic/progressdialog.png}}
+{{http:pic/progressdialog2.png}}
 
 例程源码(JAVA)
 {{{class="brush:java"

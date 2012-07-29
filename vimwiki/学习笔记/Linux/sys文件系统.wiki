@@ -124,7 +124,7 @@ class                 irq            msi_bus     subsystem@        vendor
 config                local_cpulist  pci_bus/    subsystem_device
 }}}
 
-[[pic/sysfs.png]]
+{{http:pic/sysfs.png}}
 
 == Linux统一设备模型 ==
 {{{class="brush:text"

@@ -197,4 +197,4 @@ struct rlimit {
 | RLIMIT_STACK      | 栈大小的最大数          |      |
 
 == Linux进程思维导图 ==
-[[pic/Linux进程.png]]
+{{http:pic/Linux进程.png}}

@@ -1,6 +1,6 @@
 = Spinner使用 =
 
-[pic/spinner.png]
+{{http:pic/spinner.png}}
 
 - Adapter的设置，调用setAdapter()方法。
 - 追加Item选择时间的处理，调用setOnItemSelectedListener()方法，并把 AdapterView.OnItemSelectedListener实例作为参数传递过去。

@@ -14,7 +14,7 @@ MountService服务。
 }}}
 
 == 结构图 ==
-[[pic/usb_storage.jpg]]
+{{http:pic/usb_storage.jpg}}
 
 == StorageManager管理类 ==
 - StorageManager是提供给应用层的接口管理类，用来负责USB设备的操作，如挂载外置存储卡，获取存储卡状态：

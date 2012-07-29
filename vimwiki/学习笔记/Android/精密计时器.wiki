@@ -1,6 +1,6 @@
 = 精密计时器使用 =
 
-[pic/chronometer.png]
+{{http:pic/chronometer.png}}
 
 - 计时开始,调用start()方法。
 - 计时结束,调用stop()方法。

@@ -1,7 +1,7 @@
 = 组合模式-Composite Pattern =
 _*允许你将对象组成树形结构来表现“整体/部分”的层次结构。组合能让用户以一致的方式处理个别对象和对象组合。*_
 
-[pic/composite.png]
+{{http:pic/composite.png}}
 
 *OO基础*
 - 抽象

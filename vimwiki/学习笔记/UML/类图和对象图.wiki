@@ -5,7 +5,7 @@ _类图是用类和它们之间的关系描述系统的一种图示，是从静�
 
 === 定义类 ===
 
-[pic/leitu.png]
+{{http:pic/leitu.png}}
 
 名字 :: 类的名字用黑体字书写在长方形的最上面，给类命名时最好能够反映类所代表的问题域中的概念。
 
@@ -18,52 +18,52 @@ _类图由类和它们之间的关系组成，类与类之间通常有关联，�
 
 ==== 关联关系 ====
 
-普通关联 :: [pic/guanlianguanxi.png]
+普通关联 :: {{http:pic/guanlianguanxi.png}}
 
 {{{class="brush:text"
 普通关联是最常见的一种关联，只要类与类之间存在连接关系就可以用普通关联表示。
 }}}
 
-对象图 :: [pic/duixiangtu.png]
+对象图 :: {{http:pic/duixiangtu.png}}
 
 {{{class="brush:text"
 类图表示类和类与类之间的关系，对象图则表示在某一时刻这些类的具体实例和这些实例之间的具体连接关系。
 }}}
 
-递归关联 :: [pic/diguiguanlian.png]
+递归关联 :: {{http:pic/diguiguanlian.png}}
 
 {{{class="brush:text"
 如果一个类与它本身有关联关系，那么这种关联称为递归关联(recursive association)。递归关联指的是同类的对象之间语义上的连接。
 }}}
 
-限定关联 :: [pic/xiandingguanlian.png]
+限定关联 :: {{http:pic/xiandingguanlian.png}}
 
 {{{class="brush:text"
 限定关联用于一对多或多对多的关联关系中。在限定关联中，使用限定词将关联中多的那一端的具体对象分成对象集。
 限定词可以理解为一种关键词，用关键词把所有的对象分开。
 }}}
 
-或关联 :: [pic/huoguanlian.png]
+或关联 :: {{http:pic/huoguanlian.png}}
 
 {{{class="brush:text"
 所谓或关联就是对二个或更多个关联附加的约束条件，使类中的对象一次只能应用于一个关联关系中。
 }}}
 
-有序关联 :: [pic/youxuguanlian.png]
+有序关联 :: {{http:pic/youxuguanlian.png}}
 
 {{{class="brush:text"
 对象与对象之间的连接可以具有一定的次序，就像应把窗口安排在屏幕之上一样。一般情况下，对象之间的关联都是无序的，
 如果要明确表示关联中的次序关系，一定要将规格说明{排序}放在表示关联的直线旁，且紧挨着对象被排序的类。
 }}}
 
-三元关联 :: [pic/sanlianguanlian.png]
+三元关联 :: {{http:pic/sanlianguanlian.png}}
 
 {{{class="brush:text"
 类与类之间的关联关系，不仅限于两个类之间，多个类之间也可以有关联关系。
 如果三个类之间有关联关系，则称之为三元关联。
 }}}
 
-聚合 :: [pic/juhe.png]
+聚合 :: {{http:pic/juhe.png}}
  
 {{{class="brush:text"
 聚合是关联的特例，如果类与类之间的关系具有“整体与部分”的特点，则把这样的关联称为聚合。
@@ -71,14 +71,14 @@ _类图由类和它们之间的关系组成，类与类之间通常有关联，�
 
 ==== 继承 ====
 
-普通继承 :: [pic/putongjicheng.png]
+普通继承 :: {{http:pic/putongjicheng.png}}
 
 {{{class="brush:text"
 一个类(通用元素)的所有信息(属性或操作)能被另一个类(具体元素)继承，继承某个类的类中不仅可以有属于自己的信息，而且还拥有了被继承类中的信息，
 这种机制就是通用化。
 }}}
 
-受限继承 :: [pic/shouxianjicheng.png]
+受限继承 :: {{http:pic/shouxianjicheng.png}}
 
 {{{class="brush:text"
 给通用化关系附加一个约束条件，进一步说明该通用化关系的使用方法或扩充方法，这样的通用化关系称为受限通用化。
@@ -87,7 +87,7 @@ _类图由类和它们之间的关系组成，类与类之间通常有关联，�
 
 == 接口 ==
 
-接口 :: [pic/jiekou.png]
+接口 :: {{http:pic/jiekou.png}}
 
 {{{class="brush:text"
 接口通常被描述为抽象操作，也就是只用标识(返回值、操作名称、参数表)，说明它的行为、而真正实现部分放在使用该接口的元素中。
@@ -95,7 +95,7 @@ _类图由类和它们之间的关系组成，类与类之间通常有关联，�
 
 == 包 ==
 
-包 :: [pic/bao.png]
+包 :: {{http:pic/bao.png}}
 
 {{{class="brush:text"
 包(package) 是一种组合机制，把各种各样的模型元素通过内在的语义连在一起成为一个整体就叫做包。

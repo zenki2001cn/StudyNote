@@ -7,7 +7,7 @@
 - 从需求的功能(用例)出发，提供跟踪进入系统中具体实现的类和方法，检查其是否正确的能力。
 
 == 示例 ==
-[pic/yonglitu.png]
+{{http:pic/yonglitu.png}}
 
 == 用例图组成 ==
 {{{class="brush:text"

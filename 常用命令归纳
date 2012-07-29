@@ -44,7 +44,11 @@ tcptrace
 网络数据抓取与分析
 
 1.7.4 dstat
+dstat -cdlmnpsy
 netperf
+
+1.7.5 slurm
+slurm -L -i eth0
 
 1.8. 网络流量分析的Web端服务
 ntop
@@ -53,8 +57,11 @@ ntop
 1.9. 修改MAC地址、包伪装
 ifconfig eth0 hw ether 00:23:ae:b4:3d:49 
 
-iptables -t nat -I POSTROUTING -j MASQUERADE
 echo "1" > /proc/sys/net/ipv4/ip_forward
+iptables -F
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o eth0 -jMASQUERADE
 
 1.10. 查询域名服务器
 dig
@@ -101,6 +108,9 @@ medusa -h host -u user -p password -M module
 1.18 获取IP地址
 * ifconfig eth0 |head -2|tail -1 |awk {'print $2'} |cut -d : -f 2
 
+1.19 通过socket接收网络命令的工具
+1.19.1 socat
+
 2. 系统相关
 2.1. 查看硬件信息
 dmidecode
@@ -113,8 +123,9 @@ partimage -z1 save /dev/sda1 save.img
 x86info
 
 2.4. 查看系统运行状态
-htop
-atop
+2.4.1 htop
+2.4.2 atop
+2.4.3 iotop
 
 2.5. 温度检测
 sensors
@@ -228,11 +239,11 @@ ppm
 ppmto*
 
 3.6. 平铺式终端管理器
-dvtm
+3.6.1 dvtm
 dvtm -m mod
 默认ctrl+g 后再按其他键作为操作方法
 
-ranger
+3.6.2 ranger
 python写的vi风格的管理器
 
 3.7. 平铺式桌面管理器

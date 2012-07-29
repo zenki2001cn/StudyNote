@@ -179,7 +179,7 @@ public WifiStateMachine(Context context, String wlanInterface) {
 - 而状态对象在各自的状态下对同一个命令进行不同的处理，并且由于当前状态不同，跳转到的目标状态也有所差异。
 - 当我们需要分析一条命令的功能时，必须明确当前处于什么状态，`并在该状态下查看该命令的实现代码`。
 
-[[pic/WifiStateMachine.png]]
+{{http:pic/WifiStateMachine.png}}
 
 == 监听wpa_supplicant ==
 - WifiMonitor是用来监听wpa_supplicant服务端消息的类，它在启动wpa_supplicant时会启动该类关联的工作线程。

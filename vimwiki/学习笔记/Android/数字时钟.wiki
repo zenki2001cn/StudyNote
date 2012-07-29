@@ -1,6 +1,6 @@
 = 数字时钟 =
 
-[pic/digitalclock.png]
+{{http:pic/digitalclock.png}}
 
 例程源码(Resource)
 {{{class="brush: xml"

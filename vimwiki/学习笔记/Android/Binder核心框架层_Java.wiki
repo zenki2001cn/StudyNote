@@ -174,10 +174,11 @@ public interface IMyService extends android.os.IInterface {
     - Stub是一个抽象类，我们需要继承并实现子类中的接口方法，才能实现真正的服务端功能，本例即为IMyService.aidl中定义的方法。
 - 再看整个IMyService.java，它实际上是使用了Java语言内部类的语法来实现双重继承，并通过简单工厂的模式创建了一个Java层Binder框架类。
 
-=== Binder调用的3个要点 ===
+=== Binder调用的4个要点 ===
 - 首先要构造两个Parcel对象，一个用于发送，一个用于返回。
-- 远程方法调用是先将方法名编号，再使用Parcel对象`传递`对应`编号`来实现。
-- 接收远程的返回值，并将返回的Parcel解析成对应的Student对象。
+- 使用Parcel对象将需要调用的服务名称传递给ServiceManager，参考上面的代码`_data.writeInterfaceToken(DESCRIPTOR);`。
+- 远程方法调用前先对每个方法名进行编号，再使用Parcel对象`传递`对应的`编号`给远程服务端。
+- 接收远程服务端的返回值，并将返回的Parcel解析成对应的Student对象。
 
 == JNI调用 ==
 {{{class="brush:text"

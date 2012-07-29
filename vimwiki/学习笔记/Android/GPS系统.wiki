@@ -42,7 +42,7 @@ hardware/libhardware/include/hardware/gps.h
 - JNI提供了GPS功能在HAL层的实现接口，会被LocationProviderInterface接口调用(如GpsLocationProvider)。
 - GPS HAL实现标准Android的HAL层模型，为JNI层提供了GPS定位的实现方法。
 
-[[pic/Location_Frame.png]]
+{{http:pic/Location_Frame.png}}
 
 == GPS管理类 ==
 - LocationManager为应用层提供操作接口，通过getSystemService(Context.LOCATION_SERVICE)方法获得。

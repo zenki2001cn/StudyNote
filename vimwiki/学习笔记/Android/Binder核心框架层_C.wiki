@@ -11,7 +11,7 @@ frameworks/base/libs/binder/*
 }}}
 
 == 主要类定义 ==
-[pic/Binder_core.jpg]
+{{http:pic/Binder_core.jpg}}
 
 - *RefBase.h* 引用计数，定义类RefBase、模板sp(强引用计数指针)和wp(弱引用计数指针)。
 - *Parcel.h* 在IPC中传输的数据容器，定义类Parcel。

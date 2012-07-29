@@ -1,7 +1,7 @@
 = 观察者模式(Observer Pattern) =
 _*在对象之间定义一对多的依赖，这样一来，当一个对象改变状态，依赖它的对象都会收到通知，并自动更新。*_
 
-[pic/observer.png]
+{{http:pic/observer.png}}
 
 *OO基础*
 - 抽象

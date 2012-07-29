@@ -1,5 +1,7 @@
 = 获取文件信息 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import java.io.File;

@@ -40,4 +40,4 @@
 }}}
 
 === 约束是架构设计的上下文 ===
-[[pic/big_picture.png]]
+{{http:pic/big_picture.png}}

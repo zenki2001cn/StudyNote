@@ -259,7 +259,7 @@ InputChannel，实现处理事件消息的callback方法。
 }}}
 
 == Event处理类图 ==
-[[pic/Event处理类.png]]
+{{http:pic/Event处理类.png}}
 
 = 参考代码 =
 - [[Event处理参考代码2_3]]

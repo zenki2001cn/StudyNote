@@ -1,2 +1,2 @@
 = 任脉 =
-[[pic/任脉.jpg]]
+{{http:pic/任脉.jpg}}

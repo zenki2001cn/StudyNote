@@ -1,7 +1,7 @@
 = 命令模式-Command Pattern =
 _*将请求封装成对象，这可以让你使用不同的请求、队列，或者日志请求来参数化其他对象。命令模式也可以支持撤销操作。*_
 
-[pic/command.png]
+{{http:pic/command.png}}
 
 *OO基础*
 - 抽象

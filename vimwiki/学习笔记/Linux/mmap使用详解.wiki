@@ -52,7 +52,7 @@ int msync(const void *start, size_t length, int flags);
     # 如果是要求VM_LOCKED(映射区不被换出)方式映射, 则发出缺页请求, 把映射页面读入内存中.
 
 === 内存映射图 ===
-[pic/mmap.png]
+{{http:pic/mmap.png}}
 
 == munmap ==
 原型 :: int munmap(void *start, size_t length);

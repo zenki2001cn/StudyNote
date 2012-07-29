@@ -15,4 +15,4 @@ _Android是一个移动设备的软件堆栈，包括操作系统、中间件和
 - *Rich development environment* - 丰富的开发环境
 
 == 架构 ==
-[pic/system-architecture.jpg]
+{{http:pic/system-architecture.jpg}}

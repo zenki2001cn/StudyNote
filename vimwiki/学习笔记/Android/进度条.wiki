@@ -1,6 +1,6 @@
 = ProgressBar使用 =
 
-[pic/progressbar.png]
+{{http:pic/progressbar.png}}
 
 == 相关类 ==
 {{{class="brush:java"
@@ -24,7 +24,7 @@ import android.widget.ProgressBar;
 
 == 普通进度条控件 ==
 ==== 普通圆形进度条 ====
-[pic/normal_progress.png]
+{{http:pic/normal_progress.png}}
 
 XML布局
 {{{class="brush:xml"
@@ -36,7 +36,7 @@ XML布局
 }}}
 
 ==== 大号圆形进度条 ====
-[pic/big_progress.png]
+{{http:pic/big_progress.png}}
 
 XML布局
 {{{class="brush:xml"
@@ -48,7 +48,7 @@ XML布局
 }}}
 
 ==== 小号圆形进度条 ====
-[pic/small_progress.png]
+{{http:pic/small_progress.png}}
 
 XML布局
 {{{class="brush:xml"
@@ -60,7 +60,7 @@ XML布局
 }}}
 
 ==== 长形进度条 ====
-[pic/square_progress.png]
+{{http:pic/square_progress.png}}
 
 例程源码(XML)
 {{{class="brush: xml"
@@ -97,7 +97,7 @@ myProgressBar.incrementSecondaryProgressBy(-5);
 
 == 标题栏进度条 ==
 ==== 标题栏圆形进度条 ====
-[pic/title_progress.png]
+{{http:pic/title_progress.png}}
 
 XML布局
 {{{class="brush:xml"
@@ -123,7 +123,7 @@ protected void onCreate(Bundle savedInstanceState) {
 }}}
 
 ==== 标题栏长形进度条 ====
-[pic/title_progress2.png]
+{{http:pic/title_progress2.png}}
 
 JAVA代码
 {{{class="brush:java"

@@ -25,7 +25,8 @@ Uri表示需要操作的数据，主要包含两部分信息：
 }}}
 
 === Uri的组成和说明 ===
-[pic/uri.jpg]
+{{http:pic/uri.jpg}}
+
 {{{class="brush:text"
 1.scheme：ContentProvider（内容提供者）的scheme由Android规定为：content://。
 2.主机名（或Authority）：用于唯一标识这个ContentProvider，外部调用者可以根据这个标识来找到它。

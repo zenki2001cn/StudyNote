@@ -292,13 +292,13 @@ sp<ISurface> SurfaceFlinger::createSurface(const sp<Client>& client, int pid,
 }}}
 
 == Surface创建时序图 ==
-[[pic/create_surface.png]]
+{{http:pic/create_surface.png}}
 
 == C++层的Surface显示实现 ==
 - 在IBinder左边的就是客户端部分，也就是需要窗口显示的应用程序，而右边就是SurfaceFlinger。创建一个Surface(C++层)分为两个过程，一个是在SurfaceFlinger 这边为每个应用程序(Client) 创建一个管理结构，另一个就是创建存储内容的buffer，以及在这个buffer上的一系列画图之类的操作。
 - 在新版本的Android中，BClient对应`UserClient`，Client对应`SharedClient`。
 
-[[pic/surface_class.jpg]]
+{{http:pic/surface_class.jpg}}
 
 === 在缓冲区上绘画 ===
 - [[显示缓冲区的作用]]

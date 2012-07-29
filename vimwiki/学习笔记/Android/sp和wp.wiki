@@ -25,7 +25,7 @@ RefBase::incStrong会同时增加强引用计数和弱引用计数，而weakref_
 - 无论是sp或wp，它要求构造参数的目标对象类型必须继承自`RefBase`类(可参考以下UML图)。`sp和wp是对目标对象的一层封装，虽然目标对象是继承于RefBase类，但他们不会直接管理引用计数，而这个任务就交给了sp和wp`。
 
 === sp和wp继承图 ===
-[[pic/spwp.png]]
+{{http:pic/spwp.png}}
 
 == RefBase.h ==
 === RefBase ===

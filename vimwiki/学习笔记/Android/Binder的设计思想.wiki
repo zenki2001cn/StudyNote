@@ -68,4 +68,4 @@ SMgr象个火车票代售点，收集了所有火车的车票，可以通过它�
 等任何方式获得该Binder的引用，向该Binder发送请求。
 }}}
 
-[[pic/binder_model.jpg]]
+{{http:pic/binder_model.jpg}}

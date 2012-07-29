@@ -8,7 +8,7 @@
     - `struct hw_module_methods_t`;
     - `struct hw_device_t`;
 
-[[pic/hal_module.png]]
+{{http:pic/hal_module.png}}
 
 - 概括的说，就是定义一个hw_module_t模块对象，用该`模块对象`的open方法初始化hw_device_t对象，最终的调用device`设备对象`的自定义方法对模块进行操作。
 

@@ -54,6 +54,9 @@ unbindService(mConnection);
 }}}
 
 ==== 调用service方法 ====
+- Android根据aidl自动生成相应的IRemoteService.Stub类，以下是其中一个方法的Proxy端实现。
+- 客户端只要继承IRemoteService.Stub，并实现具体的`func1`方法即可。
+- Binder的Java端实现可参考[[Binder核心框架层_Java]]
 {{{class="brush:java"
 private boolean func1(){
     byte val = 0;
@@ -93,6 +96,7 @@ private boolean func1(){
 === 示例代码 ===
 ==== AIDL文件 ====
 
+- IRemoteService.aidl
 {{{class="brush:java"
 package com.example.android.apis.app;
 
@@ -110,6 +114,15 @@ interface IRemoteService {
      * Remove a previously registered callback interface.
      */
     void unregisterCallback(IRemoteServiceCallback cb);
+}
+}}}
+
+- IRemoteServiceCallback.aidl
+{{{class="brush:java"
+package com.example.android.apis.app;
+
+interfaces IRemoteServiceCallback {
+    void callback();
 }
 }}}
 
@@ -152,8 +165,6 @@ public IBinder onBind(Intent intent) {
 === Client端 ===
 
 - startService开启一个Service
-- stopService停止一个Service
-
 {{{class="brush:java"
 // 方法一
 startService(new Intent(
@@ -161,11 +172,14 @@ startService(new Intent(
 
 // 方法二
 startService(new Intent(IRemoteService.class.getName()));
+}}}
 
+- stopService停止一个Service
+{{{class="brush:java"
 // 方法一
 stopService(new Intent(
         "com.example.android.apis.app.IRemoteService"));
-
+        
 // 方法二
 stopService(new Intent(IRemoteService.class.getName()));
 }}}
@@ -183,10 +197,9 @@ stopService(new Intent(IRemoteService.class.getName()));
 {{{class="brush:xml"
 <service android:name=".app.RemoteService" android:process=":remote">
     <intent-filter>
-        <!-- These are the interfaces supported by the service, which you can bind to. -->
+        <!-- 通过注册这些字符串标识，发送Intent绑定Service -->
         <action android:name="com.example.android.apis.app.IRemoteService" />
         <action android:name="com.example.android.apis.app.ISecondary" />
-        <!-- This is an action code you can use to select the service without explicitly supplying the implementation class. -->
         <action android:name="com.example.android.apis.app.REMOTE_SERVICE" />
     </intent-filter>
 </service>

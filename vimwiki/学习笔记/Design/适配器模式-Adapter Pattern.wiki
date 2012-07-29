@@ -1,7 +1,7 @@
 = 适配器模式-Adapter Pattern =
 _*将一个类的接口，转换成类的另一个接口。适配器让原本不兼容的类可以合作无间。*_
 
-[pic/adapter.png]
+{{http:pic/adapter.png}}
 
 *OO基础*
 - 抽象

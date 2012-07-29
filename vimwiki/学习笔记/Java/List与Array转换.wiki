@@ -1,5 +1,7 @@
 = List与Array转换 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import java.util.List;

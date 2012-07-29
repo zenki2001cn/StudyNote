@@ -115,9 +115,6 @@ LOCAL_COPY_HEADERS_TO := libhellod
 LOCAL_COPY_HEADERS := hellod.h
 
 include $(BUILD_SHARED_LIBRARY)
-
-BUILD_TEST=true
-ifeq ($(BUILD_TEST),true)
 }}}
 
 === 使用C静态库 ===
@@ -150,7 +147,6 @@ LOCAL_SRC_FILES := maind.c
 LOCAL_C_INCLUDES := $(INCLUDES)
 
 include $(BUILD_EXECUTABLE)
-endif # ifeq ($(WPA_BUILD_SUPPLICANT),true)
 }}}
 
 === 编译Jar库 ===

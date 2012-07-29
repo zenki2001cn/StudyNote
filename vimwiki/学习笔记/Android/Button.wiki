@@ -1,6 +1,6 @@
 = Button使用方法 =
 
-[pic/button.png]
+{{http:pic/button.png}}
 
 追加按钮点击事件处理的时候
 # 调用按钮的setOnClickListener()方法，并把View.OnClickListener的实例作为参数传入

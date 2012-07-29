@@ -1,7 +1,7 @@
 = 策略模式(Strategy Pattern) =
 _*策略模式定义了算法族，并将他们分别封装起来，让他们之间可以互相转换，此模式让算法的变化独立于使用算法的客户。*_
 
-[pic/strategy.png]
+{{http:pic/strategy.png}}
 
 *OO基础*
 - 抽象

@@ -27,7 +27,7 @@
 == 架构设计方法的划分 ==
 - 首先是多阶段的，其次是多视图的
 - 一句话,先做后做——这叫阶段(Phase),齐头并进——这叫视图(View)
-[[pic/multi_view.png]]
+{{http:pic/multi_view.png}}
 
 - 投标的案例
 
@@ -40,8 +40,8 @@
 }}}
 
 == 逻辑架构设计的 10 条经验 ==
-[[pic/10exp.png]]
+{{http:pic/10exp.png}}
 
 == 质疑驱动的逻辑架构设计整体思路 ==
-[[pic/zhiyi_jiagou.png]]
+{{http:pic/zhiyi_jiagou.png}}
 

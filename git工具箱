@@ -190,7 +190,7 @@ $ git reset HEAD^^
 $ git reset file1 file2
 $ git reset ded0993b22b7c81d82d17374eb5df9bf6e6f23a2
 
-2.10 解决冲突
+2.10 conflict 解决冲突
 2.10.1 解决方法
     当merge命令自身无法解决冲突的时候，它会将工作树置于一种特殊的状态，并且给用户提供冲突信息，
 以期用户可以自己解决这些问题。当然在这个时候，未发生冲突的代码已经被“git merge”登记在了“index file”里了。
@@ -384,6 +384,9 @@ $ git bisect reset
 $ git bisect visualize
 # 查看签出信息
 $ git bisect log
+
+3.9 gc      垃圾清理
+$ git gc
 
 4. Git 图形界面
 # 查看历史版本的图形化工具

@@ -16,7 +16,7 @@
 }}}
 
 == 结构图 ==
-[[pic/wifi_framework2.png]]
+{{http:pic/wifi_framework2.png}}
 
 == 应用层控制 ==
 

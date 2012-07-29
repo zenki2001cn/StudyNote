@@ -1,6 +1,6 @@
 = TextView的使用 =
 
-[pic/textview.png]
+{{http:pic/textview.png}}
 
 - 设置文字列到TextView，调用setText()方法
 - 取得TextView的文字列，调用getText()方法

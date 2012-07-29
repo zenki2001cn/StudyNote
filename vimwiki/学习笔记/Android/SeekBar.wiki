@@ -1,6 +1,6 @@
 = SeekBar使用 =
 
-[pic/seekbar.png]
+{{http:pic/seekbar.png}}
 
 - 最大值的设置，调用setMax()方法。
 - 现在进度值的设置，调用setProgress()方法。

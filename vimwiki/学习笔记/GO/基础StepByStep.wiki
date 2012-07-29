@@ -1,7 +1,9 @@
 = 基础StepByStep =
 
+%toc
+
 == hello,world ==
-{{{class="brush: text"
+{{{class="brush: java"
 package main
 
 import fmt "fmt" // Package implementing formatted I/O.
@@ -13,7 +15,7 @@ func main() {
 
 == 源文件声明 ==
 所有Go源文件需要使用 *package* 进行声明，例如：
-{{{class="brush: text"
+{{{class="brush: java"
 package main
 }}}
 
@@ -23,7 +25,7 @@ package main
 == 如何编译 ==
 *6g* 和 *8g* 分别用在64位x86和32位x86系统
 过程如下：
-{{{class="brush: text"
+{{{class="brush: java"
 >>>8g hello.go      #编译源文件
 >>>8l hello.8       #链接目标文件
 >>>8.out            #生成可执行文件
@@ -31,7 +33,7 @@ package main
 
 == 加载模块 ==
 使用 *import* 来加载模块
-{{{class="brush: text"
+{{{class="brush: java"
 import (
     "os"
     "flag"
@@ -41,7 +43,7 @@ import (
 == 动态声明 ==
 使用 *new* 或 *make* 来动态声明, *new* 返回一个指针类型，
 *make* 可以对变量初始化。
-{{{class="brush: text"
+{{{class="brush: java"
 type T struct { a, b int }
 var t *T = new(T)
 

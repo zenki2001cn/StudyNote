@@ -12,7 +12,7 @@
 - 如果有一个客户绑定到Service，stopService不会立即停止这个Service，必须要等待客户取消绑定。
 - 在严重的内存压力下，service会被系统kill,并在稍后重新启动。
 
-[pic/service_lifecycle.png]
+{{http:pic/service_lifecycle.png}}
 
 == Service调用 ==
 - `Context.startService()`用来启动一个Service，

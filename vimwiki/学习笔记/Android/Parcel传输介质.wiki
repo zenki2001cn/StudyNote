@@ -26,6 +26,18 @@ Android也提供了这样一种机制，而且效率更加高效，所有序列�
     - 普通数据和IBinder数据分别通过mData和mObjects保存。并且对于整型/浮点型、字符串型和IBinder类型采用不同的处理方式(查看read*和write*方法)。
     - `Parcel对数据读写的特性决定了它能够保存一个对象到内存中，再读取该段内存数据后还可以还原这个对象，并借助Binder机制来实现跨进程的对象序列化功能。`
     - Parcel还具备与生俱来的与驱动交互的特性，从flatten_binder()和unflatten_binder()中发现在读取IBinder对象类型时，会使用ProcessState对象与驱动交互。
+- 通常在Java层也有对应的Parcel类，需要注意的是在Java层传递一个字符串到C++层时，要进行String16类型到String8类型的转换，代码如下：
+=== Java层传递字符串 ===
+{{{class="brush:java"
+Parcel data = Parcel.obtain();
+data.writeString("hello,world");
+}}}
+
+=== C++层接收字符串 ===
+{{{class="brush:c++"
+const String8 hello = String8(data.readString16());
+LOGE("readString8 = %s", hello.string());
+}}}
 
 == Parcel.h ==
 === Parcel ===

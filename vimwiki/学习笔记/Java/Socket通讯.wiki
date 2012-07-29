@@ -1,0 +1,197 @@
+= Socket通讯 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:java"
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+}}}
+
+== TCP实现方式 ==
+{{http:pic/socket_tcp.jpg}}
+
+=== 服务端 ===
+- 初始化Socket服务，需要注意的是指定的IP地址和端口。
+{{{class="brush:java"
+private void setUp() {
+    try {
+        // 根据IP地址构建InetAddress对象
+        InetAddress address = InetAddress.getByName(mLocalAddress);
+        // 创建ServerSocket对象，并绑定指定的IP和端口
+        mSocket = new ServerSocket(mLocalPort, 10, address);
+    } catch (Exception e) {
+        // catch e
+    }
+}
+}}}
+
+- 监听Socket，该方法需要注意的是对tcp数据流的接收和处理。
+{{{class="brush:java"
+public void listenToCommand() {
+    Socket client = null;
+    InputStream is = null;
+
+    byte buffer[];
+    String event = "";
+
+    try {
+        // 以循环模式监听客户端请求
+        while (!mQuit) {
+            if (mSocket != null) {
+                // 监听客户端请求
+                client = mSocket.accept();
+                // 获取输入流
+                is = client.getInputStream();
+                // 这里的BUFFER_SIZE需要指定足够的大小，
+                // 以满足缓冲区的处理。
+                buffer = new byte[BUFFER_SIZE];
+
+                int count = 0;
+                int start = 0;
+                while (true) {
+                    count = is.read(buffer, start, BUFFER_SIZE - start);
+                    if (count < 0) {
+                        break;
+                    }
+
+                    // 每读取一次数据，就将该数据大小加上start。
+                    // 因为如果不匹配协议字符串，start值将变成
+                    // 上一次未处理数据的字节数
+                    count += start;
+                    // 这里将start置0，以便在后面处理已接收的数据
+                    start = 0;
+
+                    for (int i = 0; i < count; i++) {
+                        // 此处根据\r\n结尾的标识来解析协议字符串
+                        if ((buffer[i] == '\r') && (i + 1 < count)
+                                && (buffer[i + 1] == '\n')) {
+                            event = new String(buffer, start, i - start);
+                            
+                            // 获取到event事件后，做处理
+                            // ......
+                            // 如果找到可用的字串，则更新start标志
+                            // 接下来的数据不会覆盖未处理的数据，
+                            // start值用来记录未处理数据的起始位置。
+                            start = i + 1;
+                        }
+                    }
+
+                    // start != count 表示还有未处理的数据，
+                    // 因此需要做数据的拷贝动作。
+                    if (start != count) {
+                        final int remaining = BUFFER_SIZE - start;
+                        System.arraycopy(buffer, start, buffer, 0,
+                                remaining);
+                        // 这里将start更新为未处理数据的大小
+                        start = remaining;
+                    } else {
+                        // 如果接收到的数据正好处理完而没有剩余，
+                        // 就将start值恢复为0，并且不用做数据拷贝。
+                        start = 0;
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        // 在finally块中做释放处理
+        synchronized (this) {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                }
+                is = null;
+            }
+        }
+
+        try {
+            if (client != null) {
+                client.close();
+            }
+        } catch (IOException ex) {
+        }
+    }
+}
+}}}
+
+=== 客户端 ===
+- 初始化客户端Socket
+{{{class="brush:java"
+private void setUp() {
+    try {
+        // 创建连接远程服务器的Socket对象
+        mSocket = new Socket(mRemoteAddress, mRemotePort);
+        // 设置超时时间
+        mSocket.setSoTimeout(10000);
+
+        if (mSocket != null) {
+            // 获取输出流对象
+            mOutputStream = mSocket.getOutputStream();
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+}}}
+
+- 向服务器发送数据
+{{{class="brush:java"
+public void transformCommand(byte[] buffer) {
+    try {
+        if (mOutputStream != null) {
+            mOutputStream.write(buffer);
+            mOutputStream.flush();
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+}}}
+
+== UDP实现方式 ==
+=== 服务端 ===
+{{{class="brush:java"
+// 创建一个DatagramSocket对象，并指定监听的端口号
+DatagramSocket socket = new DatagramSocket(4567);
+byte data [] = new byte[1024];
+
+// 创建一个空的DatagramPacket对象
+DatagramPacket packet = new DatagramPacket(data,data.length);
+
+// 使用receive方法接收客户端所发送的数据，
+// 如果客户端没有发送数据，该进程就停滞在这里
+socket.receive(packet);
+String result = new String(packet.getData(),packet.getOffset(), packet.getLength());
+System.out.println("result--->" + result);
+}}}
+
+=== 客户端 ===
+{{{class="brush:java"
+try {
+    // 首先创建一个DatagramSocket对象
+    DatagramSocket socket = new DatagramSocket(4567);
+
+    // 创建一个InetAddree
+    InetAddress serverAddress = InetAddress.getByName("192.168.1.104");
+
+    String str = "hello";  //这是要传输的数据
+    byte data [] = str.getBytes();  //把传输内容分解成字节
+
+    // 创建一个DatagramPacket对象，并指定要指定这个数据包发送到
+    // 网络当中的哪个地址，以及端口号
+
+    DatagramPacket packet = new DatagramPacket(data,data.length,serverAddress,4567);
+
+    // 调用socket对象的send方法，发送数据
+    socket.send(packet);
+
+} catch (Exception e) {
+    e.printStackTrace();
+}
+}}}
