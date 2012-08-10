@@ -1,0 +1,115 @@
+= 信使Messenger =
+
+%toc
+
+== 概述 ==
+- Messenger工作原理可参考[[跨进程消息处理机制]]。
+- 另一个以Messenger为核心的机制可参考[[异步通道机制]]。
+{{{class="brush:text"
+    信使Messenger用来跨进程传递Message对象，因此称为“信使”。在一个进程A中创建的对象Messenger，
+可通过Binder机制传递给另一个进程B，而进程B则可以通过该Messenger给进程A发送Message消息。这样，
+进程间通信就可以借助Messenger实现更加强大的消息处理机制。
+}}}
+
+== Server端实现 ==
+=== 创建Service ===
+- Server端通过Service实现，并在客户端连接到Service时，将本地Messenger的IBinder对象传递给客户端。
+{{{class="brush:java"
+public class MessengerService extends Service {
+    // 自定义消息
+    public static final int MSG_SAY_HELLO = 1;
+
+    // 实现自定义接口的子类
+    private final IMessengerTest.Stub mBinder = new IMessengerTest.Stub() {
+        
+        @Override
+        public void sayHello() throws RemoteException {
+            Toast.makeText(MessengerService.this, "hello world", Toast.LENGTH_SHORT).show();
+        }
+    };
+
+    // 建立一个Handler来处理sayHello的功能，该Handler作为参数构造一个Messenger对象，
+    // 远程可通过Messenger来传递消息。
+    class MessengerTestHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+            case MSG_SAY_HELLO:
+                try {
+                    mBinder.sayHello();
+                    
+                    // 回复客户端的消息
+                    Message message = Message.obtain(null, MessengerTestActivity.MSG_REPLY_HELLO);
+                    msg.replyTo.send(message);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+                break;
+
+            default:
+                break;
+            }
+            super.handleMessage(msg);
+        }
+    }
+
+    // 定义一个MessengerTestHandler对象
+    private MessengerTestHandler mMessengerHandler = new MessengerTestHandler();
+    // 定义一个Messenger对象
+    private Messenger mMessenger = new Messenger(mMessengerHandler);
+
+    @Override
+    public IBinder onBind(Intent arg0) {
+        // 返回一个Messenger的IBinder给客户端
+        return mMessenger.getBinder();
+    }
+}
+}}}
+
+== Client端实现 ==
+=== 获取信使对象 ===
+- 客户端使用bindService启动服务端，同时可获取到服务端返回的Messenger对象。
+- 调用Messenger.send()方法即可向服务端发送消息。
+{{{class="brush:java"
+public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.main);
+        
+    // 启动服务端Service
+    bindService(new Intent(IMessengerTest.class.getName()),
+            mConnection, Context.BIND_AUTO_CREATE);
+}
+    
+// 定义一个Messenger作为远程的信使
+private Messenger mServerMessenger;
+
+private ServiceConnection mConnection = new ServiceConnection() {
+    
+    @Override
+    public void onServiceDisconnected(ComponentName arg0) {
+        
+    }
+    
+    @Override
+    public void onServiceConnected(ComponentName arg0, IBinder arg1) {
+        // 当连接到Service时即可获取到远端Messenger的对象
+        mServerMessenger = new Messenger(arg1);
+    }
+};
+}}}
+
+=== 发送消息 ===
+{{{class="brush:java"
+private void sendMessage() {
+    // 通过Messenger发送消息给远端
+    Message message = Message.obtain(null, MessengerService.MSG_SAY_HELLO);
+    // 同时将自己的Messenger传递给远端，以便远端可以回复消息
+    message.replyTo = new Messenger(mHandler);
+    
+    try {
+        mServerMessenger.send(message);    
+    } catch (RemoteException e) {    
+        e.printStackTrace();    
+    }    
+}
+}}}

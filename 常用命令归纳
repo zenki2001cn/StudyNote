@@ -84,6 +84,7 @@ python -m SimpleHTTPServer
 w3m
 ls | w3m
 cat foo.html | w3m -T text/html
+elinks
 
 1.16. firefox的插件
 Vimperator                  --- vim插件
@@ -553,5 +554,7 @@ curl http://betterthangrep.com/ack-standalone > /usr/bin/ack && chmod 0755
 下载地址：
 http://www.sublimetext.com/2
 
+4.38. Python包安装管理
+pip
 
 % vim:ft=txt

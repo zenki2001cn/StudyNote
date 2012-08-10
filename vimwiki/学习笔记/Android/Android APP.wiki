@@ -44,6 +44,7 @@
     - [[xml文件处理]]
     - [[JSON使用]]
     - [[Handler和Message]]
+    - [[信使Messenger]]
     - [[AsyncTask任务处理]]
     - [[Base64编码]]
     - [[Parcel对象]]
