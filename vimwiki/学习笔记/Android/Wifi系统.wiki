@@ -18,6 +18,9 @@
 == 结构图 ==
 {{http:pic/wifi_framework2.png}}
 
+== Wifi移植 ==
+[[http://blog.csdn.net/zhenwenxian/article/details/6575964|Wifi移植（Blog文章）]]
+
 == 应用层控制 ==
 
 == Java层服务 ==

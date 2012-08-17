@@ -4,13 +4,17 @@
 
 == 基本流程 ==
 === 解包 ===
-{{{class="brush:text"
-1、创建temp目录，将system.img拷贝到该目录
-2、unyaffs system.img 解包镜像
+{{{class="brush:bash"
+# 创建temp目录，将system.img拷贝到该目录
+$ mkdir temp && cp system.img temp
+# 解压system.img
+$ cd temp && unyaffs system.img
 }}}
 
 === 打包 ===
-{{{class="brush:text"
-1、创建temp目录，将目录文件拷贝到该目录
-2、mkyaffs2img temp/ system.img 打包镜像
+{{{class="brush:bash"
+# 创建temp目录，将目录文件拷贝到该目录
+$ mkdir temp && cp src temp
+# 打包镜像
+$ mkyaffs2img temp/ system.img 
 }}}

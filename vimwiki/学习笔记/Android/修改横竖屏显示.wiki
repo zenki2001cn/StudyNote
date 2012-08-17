@@ -1,0 +1,9 @@
+= 修改横竖屏显示 =
+
+%toc
+
+== 修改buildinfo.sh ==
+- 在`build/tools/buildinfo.sh`中添加旋转角度的属性设置。
+{{{class="brush:bash"
+echo "ro.sf.hwrotation=90"
+}}}

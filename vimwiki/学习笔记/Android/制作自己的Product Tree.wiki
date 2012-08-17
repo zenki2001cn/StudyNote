@@ -114,19 +114,17 @@ $(call inherit-product, $(SRC_TARGET_DIR)/products/generic.mk)
 # 按照规则查找需要build的文件夹，注意命名规则
 # 参考device/sample示例
 PRODUCT_PACKAGES := \
-    PlatformLibraryClient \                     =》当前目录apps下的PlatformLibraryClient文件夹
-    com.example.android.platform_library \      =》当前目录frameworks下的PlatformLibrary文件夹
-    libplatform_library_jni                     =》当前目录frameworks下的PlatformLibrary下的jni文件夹
+    PlatformLibraryClient \                 =》当前目录apps下名字为PlatformLibraryClient的应用
+    com.example.android.platform_library \  =》当前目录frameworks下名字为com.example.android.platform_library的jar包
+    libplatform_library_jni                 =》当前目录frameworks下名字为libplatform_library_jni的C/C++共享库
     
 # 拷贝命令，定义需要拷贝的文件源与路径
 PRODUCT_COPY_FILES := \
     vendor/mstar/etc/vold.conf:system/etc/vold.conf \
     vendor/mstar/bin/bash:system/bin/bash \
-    vendor/mstar/em1/help.epub:system/usr/help.epub \
     vendor/mstar/em1/help.pdf:system/usr/help.pdf \
-    vendor/mstar/etc/dhcpcd.conf:system/etc/dhcpcd/dhcpcd.conf \
 
-# 拷贝jar库
+# 拷贝jar库作为导出的APIs
 PRODUCT_SDK_ADDON_COPY_MODULES := \
     com.example.android.platform_library:libs/platform_library.jar
 
@@ -134,12 +132,14 @@ PRODUCT_SDK_ADDON_COPY_MODULES := \
 PRODUCT_PACKAGES := \
     mg-capacitive.kcm
         
-#set correct hardware
+# 添加属性设置
 ADDITIONAL_DEFAULT_PROPERTIES += ro.hardware=3622
 
 # 这组变量定义了编译出来的产品名称
 # Use 'make PRODUCT-<PRODUCT_NAME>-eng' to build the A0007.
 PRODUCT_BRAND := A0007
+
+# 产品特定的语言
 PRODUCT_LOCALES := \
     zh_CN \
     zh_TW \
@@ -192,14 +192,14 @@ PRODUCT_MAKEFILES := \
 
 === *.添加环境设置脚本(可选) ===
 - 创建device/<company_name>/products/vendorsetup.sh，并添加以下内容
+{{{class="brush:bash"
+add_lunch_combo A0007-user
+}}}
+
 - build系统会扫描以下文件
     - vendor/*/vendorsetup.sh 
     - vendor/*/build/vendorsetup.sh 
     - device/*/*/vendorsetup.sh
-
-{{{class="brush:bash"
-add_lunch_combo A0007-user
-}}}
 
 == 最终目录结构 ==
 - <company_name>
@@ -207,12 +207,20 @@ add_lunch_combo A0007-user
         - Android.mk
         - product_config.mk
         - system.prop
+    - apps
+        - custom_app
+        - Android.mk
+    - frameworks
+        - custom_framework
+        - Android.mk
     - products
         - AndroidProducts.mk
         - first_product_name.mk
         - second_product_name.mk
         - A0007.mk
         - vendorsetup.sh
+    - Android.mk
+    - CleanSpec.mk
 
 == 编译镜像 ==
 - 编译时需要设置TARGET_PRODUCT变量，变量名为A0007.mk中的PRODUCT_NAME定义

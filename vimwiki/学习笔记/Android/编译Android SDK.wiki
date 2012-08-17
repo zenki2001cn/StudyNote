@@ -3,26 +3,51 @@
 %toc
 
 == 加入自定义的SDK ==
-=== 1.编写自定义的Android.mk ===
-{{{class="brush:"
+=== 1.修改Android.mk ===
+{{{class="brush: bash"
 $ vim framework/base/Android.mk
 
-在non_base_dirs变量后加入自定义的包名，如:
+# 在non_base_dirs变量后加入自定义包的目录，如:
 non_base_dirs := \
 	../../external/apache-http/src/org/apache/http
-	../../vender/mokoid/frameworks/base/core/service/java
+    ../../vender/mokoid/frameworks/base/core/service/java
+
+# 在packages_to_document变量后加入自定义包的目录
+# 编译系统会遍历FRAMEWORKS_BASE_JAVA_SRC_DIRS变量指定的目录，
+# 该变量在build/core/pathmap.mk中定义
+packages_to_document := \
+    android \
+    javax/microedition/khronos \
+	com/foxconn/ebook/widget
+	
+# Search through the base framework dirs for these packages.
+# The result will be relative to frameworks/base.
+fwbase_dirs_to_document := \
+	test-runner/src \
+	$(patsubst $(LOCAL_PATH)/%,%, \
+	  $(wildcard \
+	    $(foreach dir, $(FRAMEWORKS_BASE_JAVA_SRC_DIRS), \
+	      $(addprefix $(dir)/, $(packages_to_document)) \
+	     ) \
+	   ) \
+	 )
 }}}
 
 === 2.运行编译命令 ===
 {{{class="brush: bash"
-$lunch sdk-eng
-$make sdk
-或者
-$make PRODUCT-dma6410xp-sdk
+# 更新api，需要在make clean之后运行此命令
+$ make update-api TARGET_PRODUCT=dma6410xp
+
+# 在源码根目录执行以下命令
+$ lunch sdk-eng
+$ make sdk
+# 或者
+$ make PRODUCT-dma6410xp-sdk
 }}}
 
 === 3.生成SDK ===
-{{{class="brush:text"
-生成的SDK目录:out/host/linux-x86/sdk/
+{{{class="brush:bash"
+# 生成的SDK目录
+out/host/linux-x86/sdk/
 }}}
 

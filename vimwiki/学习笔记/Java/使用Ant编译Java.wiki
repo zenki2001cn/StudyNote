@@ -2,17 +2,15 @@
 
 %toc
 
-== 编写build.xml文件 ==
-
-=== 基本组成 ===
+== 基本组成 ==
 {{{class="brush:xml"
 <project>
-    <!!-- 1.全局变量的定义 -->
+    <!-- 1.全局变量的定义 -->
     <property/>
 
-    <!!-- 2.任务组 -->
+    <!-- 2.任务组 -->
     <target>
-        <!!-- 3.许多单项任务... 像copy,delete,javac,jar... -->
+        <!-- 3.许多单项任务... 像copy,delete,javac,jar... -->
         <task1/>
         <task2/>
         <task3/>
@@ -21,87 +19,189 @@
 </project>
 }}}
 
-==== Project ====
+=== project ===
 | 属性    | 描述               | 是否必须 |
 |---------|--------------------|----------|
 | name    | 项目名称           | No       |
 | default | 缺省的target标识   | Yes      |
 | basedir | 所有路径的基准路径 | No       |
 
-==== target ====
-| 属性        | 描述                               | 是否必须 |
-|-------------|------------------------------------|----------|
-| name        | 任务名称                           | Yes      |
-| depends     | 逗号分隔的target列表，表示依赖关系 | No       |
-| if          | 执行target需要设定的属性名         | No       |
-| unless      | 执行target需要清除的属性名         | No       |
-| description | 关于target的简短描述               | No       |
+=== target ===
+| 属性        | 描述                                                         | 是否必须 |
+|-------------|--------------------------------------------------------------|----------|
+| name        | 任务名称                                                     | Yes      |
+| depends     | 逗号分隔的target列表，表示依赖关系                           | No       |
+| if          | 验证指定的属性是否存在，存在时，target才会被执行             | No       |
+| unless      | 验证指定的属性是否为假，不存在时，target才会被执行，与if相反 | No       |
+| description | 关于target的简短描述                                         | No       |
 
-==== property ====
+=== property ===
+- 定义的属性可通过${name}的形式引用。
 | 属性  | 描述     | 是否必须 |
 |-------|----------|----------|
 | name  | 属性名称 | 否       |
 | value | 属性值   | 否       |
 
-==== Path-like Structures ====
+==== 内置的属性元素 ====
+{{{class="brush:xml"
+basedir: project基目录的绝对路径。
+ant.file: buildfile的绝对路径，如上面的各例子中，ant.file的值为E:"build.xml。
+ant.version: Ant的版本。
+ant.project.name: 当前指定的project的名字，即前文说到的project的name属性的值。
+ant.java.version: Ant检测到的JDK的版本。
+}}}
+
+=== path-like structures ===
 | 属性     | 描述                   | 是否必须 |
 |----------|------------------------|----------|
 | location | 相对于基目录的文件位置 |          |
 | path     | 逗号分隔的文件列表     |          |
 
-=== build.xml示例 ===
+== 常用Task ==
+=== copy ===
+- 对文件和目录的复制功能。
+{{{class="brush:xml"
+<!-- 复制单个文件 -->
+<copy file="file.txt" tofile="copy.txt"/>
+
+<!-- 对文件目录进行复制-->
+<copy todir="../newdir/dest_dir">
+    <fileset dir="src_dir"/>
+</copy>
+
+<!-- 将文件复制到另外的目录 -->
+<copy file="file.txt" todir="../other/dir"/>
+}}}
+
+=== delete ===
+- 对文件或目录进行删除。
+{{{class="brush:xml"
+<!-- 删除某个文件 -->
+<delete file="photo/amigo.jpg"/>
+
+<!-- 删除某个目录 -->  
+<delete dir="photo"/>
+
+<!-- 删除所有的备份目录或空目录 -->
+<delete includeEmptyDirs="true">
+    <fileset dir="." includes="**/*.bak"/>
+</delete> 
+}}}
+
+=== mkdir ===
+- 创建目录
+{{{class="brush:xml"
+<!-- 创建目录 -->
+<mkdir dir="build"/>
+}}}
+
+=== move ===
+- 移动文件或目录
+{{{class="brush:xml"
+<!-- 移动单个文件 -->
+<move file="fromfile" tofile=”tofile”/>
+
+<!-- 移动单个文件到另一个目录 -->
+<move file="fromfile" todir=”movedir”/>
+
+<!-- 移动某个目录到另一个目录 -->
+<move todir="newdir">
+    <fileset dir="olddir"/>
+</move> 
+}}}
+
+=== echo ===
+- 根据日志或监控器的级别输出信息。它包括`message`、`file`、`append`和`level`四个属性。
+{{{class="brush:xml"
+<echo message="Hello,Zenki" file="logs/system.log" append="true">
+}}}
+
+=== javac ===
+- 编译Java程序
+{{{class="brush:xml"
+<target name="compile" depends="clean">
+    <mkdir dir="build/classes"/>
+    <javac srcdir="src" destdir="build/classes"/>
+</target>
+}}}
+
+=== java ===
+- 运行Java程序
+{{{class="brush:xml"
+<target name="run" depends="compile">
+    <java classname="HelloWorld">
+        <classpath>
+            <pathelement path="build/classes"/>
+        </classpath>
+    </java>
+</target>
+}}}
+
+=== jar ===
+- 编译jar文件
+{{{class="brush:xml"
+<target name="jar" depends ="run">
+    <jar destfile="helloworld.jar" basedir="build/classes">
+        <manifest>
+            <attribute name="Main-class" value="HelloWorld"/>
+        </manifest>
+    </jar>
+</target>
+}}}
+
+== build.xml示例 ==
 {{{class="brush:xml"
 <?xml version="1.0"  encoding="GB2312" ?>
 
 <project default="dist" basedir=".">
 
-    <!!--主要的系统环境属性-->
+    <!--主要的系统环境属性-->
     <property environment="env"/><!--取window,unix...的环境变量-->
     <property name="java.home" value="${env.JAVA_HOME}"/>
     <property name="ant.home"  value="${env.ANT_HOME}"/>
 
-    <!!--主要的app环境属性-->
+    <!--主要的app环境属性-->
     <property name="app.name"      value="hello-ant"/>
     <property name="app.jar"       value="${app.name}.jar"/>
     <property name="app.copyright" value=" Copyright (c) 2002 The Neusoft Software Foundation.  All rights reserved."/>
 
 
-    <!!--app中src的属性-->
+    <!--app中src的属性-->
     <property name="src.dir"    value="src" />
     <property name="src.main"   value="${src.dir}/main"/>
     <property name="src.script" value="${src.dir}/script"/>
 
-    <!!--app用到的lib-->
+    <!--app用到的lib-->
     <property name="lib.dir" value="lib"/>
 
-    <!!--app的build目录中-->
+    <!--app的build目录中-->
     <property name="build.dir"      value="build" />
     <property name="build.classes"  value="${build.dir}/classes"/>
     <property name="build.docs"     value="${build.dir}/docs"/>
     <property name="build.docs.api" value="${build.docs}/api"/>
     <property name="build.lib"      value="${build.dir}/lib"/>
 
-    <!!--app的dist (distribution) 目录中-->
+    <!--app的dist (distribution) 目录中-->
     <property name="dist.dir"      value="dist"/>
     <property name="dist.bin"      value="${dist.dir}/bin"/>
     <property name="dist.docs"     value="${dist.dir}/docs"/>
     <property name="dist.lib"      value="${dist.dir}/lib"/>
 
-    <!!--app的docs目录中-->
+    <!--app的docs目录中-->
     <property name="docs.dir"      value="docs"/>
 
     <path id="classpath">
-        <!!--本项目只有一个java，用不上classpath，这里只是做个例子-->
+        <!--本项目只有一个java，用不上classpath，这里只是做个例子-->
         <pathelement location="${build.classes}"/>
         <pathelement path="${java.home}/lib/tools.jar"/>
     </path>
 
     <target name="init">
-        <!!--清除以前目录-->
+        <!--清除以前目录-->
         <delete dir="${build.dir}" failonerror="false" />
         <delete dir="${dist.dir}"  failonerror="false"/>
 
-        <!!--准备目录-->
+        <!--准备目录-->
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${build.classes}"/>
         <mkdir dir="${build.docs}"/>
@@ -113,37 +213,37 @@
         <mkdir dir="${dist.lib}"/>
     </target>
 
-<!!--
+    <!--
     ===================================================================
       Build the code (Compile Tasks,File Tasks)
     ===================================================================
--->
+    -->
     <target name="build" depends="init">
-        <!!--编译-->
+        <!--编译-->
         <javac srcdir="${src.main}" destdir="${build.classes}">
             <classpath refid="classpath"/>
         </javac>
     </target>
 
-<!!--
+    <!--
     ===================================================================
       打包文档(Archive Tasks)
       Create the project jars: xxx1.jar and xxx2.jar
     ===================================================================
--->
+    -->
    <target name="jars" depends="build">
         <jar basedir="${build.classes}" jarfile="${build.lib}/${app.jar}"/>
     </target>
 
-<!!--
+    <!--
      ===================================================================
        Creates the API documentation
      ===================================================================
--->
+    -->
     <target name="javadocs"
             depends="jars"
             description="--> creates the API documentation">
-        <!!--copy docs 手册... -->
+        <!--copy docs 手册... -->
         <copy todir="${build.docs}">
             <fileset dir="${docs.dir}"/>
         </copy>
@@ -162,31 +262,31 @@
          </javadoc>
     </target>
 
-<!!--
+    <!--
      ===================================================================
        Create the distribution that can run (Archive Tasks)
        主要是从各目录中把该copy的copy上
      ===================================================================
--->
-   <target name="dist" depends="javadocs">
-        <!!--copy bin 执行文件 -->
+    -->
+    <target name="dist" depends="javadocs">
+        <!--copy bin 执行文件 -->
         <copy todir="${dist.bin}">
             <fileset dir="${src.script}/"/>
         </copy>
         <copy todir="${dist.docs}">
             <fileset dir="${build.docs}/"/>
         </copy>
-        <!!-- copy lib 文件 -->
+        <!-- copy lib 文件 -->
         <copy todir="${dist.lib}">
             <fileset dir="${build.lib}/"/>
         </copy>
 
     </target>
-<!!--
+    <!--
      ===================================================================
       Cleans everything(File Tasks)
       例如可以删除build中的文件，留给你发挥吧
      ===================================================================
--->
+    -->
 </project>
 }}}

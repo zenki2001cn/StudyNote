@@ -2,12 +2,13 @@
 
 %toc
 
-1.进入android目录,运行脚本
+== 环境配置脚本 ==
 {{{class="brush: bash"
 $ . build/envsetup.sh
 }}}
-2.该脚本可以生成很多命令,如下
-{{{class="brush: text"
+
+== 脚本工具 ==
+{{{class="brush: bash"
 - croot:   Changes directory to the top of the tree.
 - m:       Makes from the top of the tree.
 - mm:      Builds all of the modules in the current directory.
@@ -17,19 +18,25 @@ $ . build/envsetup.sh
 - resgrep: Greps on all local res/*.xml files.
 - godir:   Go to the directory containing a file.
 
-可以使用-help参数查看帮助
+# 可以使用-help参数查看帮助
 }}}
 
-3.使用mmm可以编译某个目录下的模块
+== mmm和mm ==
 {{{class="brush: bash"
+# 在源码根目录执行执行
 $ mmm packages/apps/Contacts/
+# 或在packages/apps/Contacts/中执行
+$ mm
 
-生成两个文件
+# 可根据当前设备型号添加参数
+$ mm TARGET_PRODUCT=A1107
+
+# 最终生成两个文件
 out/target/product/generic/data/app/ContactsTests.apk
 out/target/product/generic/system/app/Contacts.apk
 }}}
 
-4.生成新的系统镜像
+== 生成新的系统镜像 ==
 {{{class="brush: bash"
 $ make stnod
 }}}

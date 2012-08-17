@@ -40,4 +40,19 @@ $ find . | cpio -o -H newc | gzip > ../ramdisk.img
 $ cd tmp
 # 如果没有mkimage，需要安装：apt-get install uboot-mkimage
 $ mkimage -A arm -O linux -T ramdisk -C none -a 0x80800000 -e 0x80800000 -n 'ramdisk-uboot' -d ../ramdisk.img ../ramdisk-uboot.img
+
+# mkimage使用方法说明
+Usage: mkimage -l image
+          -l ==> list image header information
+          
+       mkimage [-x] -A arch -O os -T type -C comp -a addr -e ep -n name -d data_file[:data_file...] image
+          -A ==> set architecture to 'arch'
+          -O ==> set operating system to 'os'
+          -T ==> set image type to 'type'
+          -C ==> set compression type 'comp'
+          -a ==> set load address to 'addr' (hex)
+          -e ==> set entry point to 'ep' (hex)
+          -n ==> set image name to 'name'
+          -d ==> use image data from 'datafile'
+          -x ==> set XIP (execute in place)
 }}}
