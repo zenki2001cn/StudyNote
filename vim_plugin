@@ -163,7 +163,7 @@ t       Change scan type, results will be from either the current file, all open
 直接输入拼音,然后按Ctrl+\,即可输入中文。
 按Ctrl+^键，直接输入拼音,就可出现中文。
 
-20. C语言支持
+20. c-support
 \hp             --- 显示帮助信息
 :A              --- 头文件之间切换
 gf              --- 跳转到相应的头文件
