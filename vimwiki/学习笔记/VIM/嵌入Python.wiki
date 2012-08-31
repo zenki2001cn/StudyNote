@@ -1,0 +1,175 @@
+= 嵌入Python =
+
+%toc
+
+== 包含Python语句块 ==
+- 在方法中包含Python的语法，需要使用`python << EOF`开头，并使用`EOF`结尾。`EOF`可换成其他大写的字串。
+- 注意`python << EOF`、`import`、`class`、`EOF`必须在一行的顶端，`不能有缩进和空格`。
+{{{class="brush:python"
+function! IcecreamInitialize()
+python << EOF
+import os
+
+class StrawberryIcecream:
+    def __call__(self):
+        print 'EAT ME'
+EOF
+endfunction
+}}}
+
+== vim模块预览 ==
+- `vim.command`：执行vim命令。
+- `vim.eval`：返回vim变量值。
+- `vim.error`：vim异常。
+- `vim.buffers`：所有buffer的列表。
+- `vim.windows`：所有窗口的列表。
+- `vim.current`：当前显示的对象。
+- `vim.current.line`：当前行对象。
+- `vim.current.buffer`：当前buffer对象。
+- `vim.current.window`：当前窗口对象。
+- `vim.current.range`：当前行的范围。
+
+=== _vim.command_ ===
+{{{class="brush:python"
+import vim
+
+# 变量赋值
+vim.command("let var = %d" % val)
+vim.command("let var = '%s'" % val)
+# 设置tw属性
+vim.command("set tw=72")
+# 字符串替换
+vim.command("%s/aaa/bbb/g")
+}}}
+
+=== _vim.eval_ ===
+{{{class="brush:python"
+import vim
+
+text_width = vim.eval("&tw")
+str = vim.eval("12+12")
+}}}
+
+=== vim.error ===
+{{{class="brush:python"
+try:
+    vim.command("put a")
+except vim.error:
+	# nothing in register a
+}}}
+
+=== vim.buffers ===
+{{{class="brush:python"
+import vim
+
+# 索引buffers（只读）
+b = vim.buffers[i]
+
+# 测试buffer
+b in vim.buffers
+
+# 返回buffers数量
+n = len(vim.buffers)
+	    
+# 遍历buffers
+for b in vim.buffers:
+}}}
+
+=== vim.windows ===
+{{{class="brush:python"
+import vim
+
+# 索引windows（只读）
+w = vim.windows[i]
+
+# 测试windows
+w in vim.windows
+
+# 返回windows数量
+n = len(vim.windows)
+
+# 遍历windows
+for w in vim.windows:
+}}}
+
+=== vim.current ===
+{{{class="brush:python"
+import vim
+
+vim.current.line	    # The current line (RW)		String
+vim.current.buffer	    # The current buffer (RO)		Buffer
+vim.current.window	    # The current window (RO)		Window
+vim.current.range	    # The current line range (RO)	Range
+}}}
+
+=== buffer ===
+==== 方法 ====
+- buffer.append(str)：添加一行到buffer
+- buffer.append(list)：添加多行到buffer
+- buffer.mark(name)：返回名为name的标记，其所在的坐标(row,col)
+- buffer.range(s,e)：返回start,end标记的范围对象
+
+{{{class="brush:python"
+# 打印buffer名称
+print b.name		
+
+# 替换第一行内容
+b[0] = "hello!!!"
+	
+# 删除整个buffer
+b[:] = None	
+	
+# 删除整个buffer
+del b[:]
+	
+# 在开头插入一行
+b[0:0] = [ "a line" ]
+	
+# 删除第三行
+del b[2]
+	
+# 在末尾插入一行
+b.append("bottom")
+	
+# 返回行数
+n = len(b)
+	
+# 返回标记名字为a的一行
+(row,col) = b.mark('a')
+	
+# 返回range对象
+r = b.range(1,5)
+}}}
+
+=== range ===
+==== 属性 ====
+- range.start：标记buffer的开始位置。	
+- range.end：标记buffer的结束位置。	
+==== 方法 ====
+- range.append(str)：添加一行到range对象。	
+- range.append(list)：添加多行到range对象。	
+
+{{{class="brush:python"
+vim.command("%d,%dhardcopy!" % (r.start+1,r.end+1))
+}}}
+
+=== window ===
+==== 属性 ====
+- window.buffer：(只读) 当前窗口显示的内容	
+- window.cursor：(读写) 当前光标位置，返回(row,col)	
+- window.height：(读写) 当前窗口的高度，返回rows
+- window.width：(读写) 当前窗口的宽度，返回columns	
+
+{{{class="brush:python"
+import vim
+
+(row, col) = vim.current.window.cursor
+line = vim.current.buffer[row-1]
+prevChar, nextChar = line[col-1], line[col]
+
+vim.current.window.cursor = (1, 0)      # move to top left
+vim.current.buffer[0] = "hello, world"  # change first line
+vim.current.buffer.append("last line!")
+del vim.current.buffer[3]
+}}}
+

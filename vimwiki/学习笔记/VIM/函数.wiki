@@ -13,6 +13,7 @@ endfunction
 - 在脚本语句中使用`call 函数名(参数)`。
 - 在vim命令中使用`:call 函数名(参数)`。
 - 注：在函数体中使用参数需要在参数变量名称前加上`a:`，例如参数名为keyword，则函数体中使用`a:keyword`来引用。
+- 可以将函数的返回值赋值给变量：`let info = system('ls -l ' . a:path)`
 
 == 常用系统函数 ==
 - vim中查看帮助文档`:help function-list`
