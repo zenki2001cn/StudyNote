@@ -70,6 +70,14 @@ $ make xxx_defconfig
 $ make
 }}}
 
+== 清理内核镜像 ==
+{{{class="brush:bash"
+$ cd ~/android/kernel
+$ make clean
+# 或
+$ make distclean    # distclean会清理.config文件
+}}}
+
 == 制作uboot启动的镜像 ==
 {{{class="brush:bash"
 # 生成arch/arm/boot/uImage镜像

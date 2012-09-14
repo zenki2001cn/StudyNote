@@ -20,6 +20,7 @@
     - [[CTS测试]]
     - [[Android启动性能分析]]
     - [[Android调试技术]]
+    - [[fastboot烧录]]
 
 ----
 

@@ -2,6 +2,29 @@
 
 %toc
 
+== 安装 ==
+{{{class="brush:bash"
+# 1. 下载工具和库
+$ sudo apt-get install mercurial libncurses* libncurses5-dev \
+               ruby-dev python2.6-dev libperl-dev
+
+# 2. 下载vim源码
+$ hg clone https://vim.googlecode.com/hg/ vim
+
+# 3. 编译vim
+# 可选的参数：--enable-python3interp=yes --enable-sniff=yes --enable-hangulinput=yes
+#             --with-local-dir=/usr/local
+$ cd vim
+$ ./configure --enable-multibyte --with-features=huge --enable-xim=yes --enable-pythoninterp=yes \
+              --enable-gui=yes --enable-cscope=yes --enable-fontset=yes --enable-perlinterp=yes \
+              --enable-mzschemeinterp=yes --enable-luainterp=yes --enable-rubyinterp=yes \
+              --enable-tclinterp=yes --with-vim-name=vim7.3
+
+# 4. 安装vim
+$ make
+$ sudo make install
+}}}
+
 == 语法 ==
 - [[变量定义]]
 - [[逻辑控制]]

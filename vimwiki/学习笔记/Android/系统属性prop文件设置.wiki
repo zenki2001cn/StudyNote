@@ -290,6 +290,7 @@ $(INSTALLED_SDK_BUILD_PROP_TARGET): $(INSTALLED_BUILD_PROP_TARGET)
 | ro.build.product               | generic                                               |                        |
 | ro.build.description           | sdk-eng 1.5 CUPCAKE 148875 test-keys                  |                        |
 | ro.build.fingerprint           | generic/sdk/generic/:1.5/CUPCAKE/148875:eng/test-keys |                        |
+| ro.sf.hwrotation               | ro.sf.hwrotation=270                                  | 设置屏幕旋转度数       |
 | rild.libpath                   | /system/lib/libreference-ril.so                       |                        |
 | rild.libargs                   | -d /dev/ttyS0                                         |                        |
 | ro.config.notification_sound   | F1_New_SMS.ogg                                        |                        |

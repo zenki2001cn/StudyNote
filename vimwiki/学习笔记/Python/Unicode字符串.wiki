@@ -1,0 +1,59 @@
+= Unicode字符串 =
+
+%toc
+
+== unicode赋值 ==
+{{{class="brush:python"
+# 字符串声明
+>>> a = u'hello'
+u'hello'
+>>> a = unicode('hello')
+u'hello'
+
+# 获取第一个元素
+>>> a[0]
+u'h'
+# 转换成十进制
+>>> ord(a[0])
+104
+
+# 中文赋值
+>>> a = '你好'
+>>> a
+'\xe4\xbd\xa0\xe5\xa5\xbd'
+>>> print a
+你好
+# UTF-8解码成unicode
+>>> a.decode('utf8')
+u'\u4f60\u597d'
+}}}
+
+== unichr内置函数 ==
+- 该内置函数将unicode的数字编码值转换成对应的字符。
+- 参数范围在`0~0x10ffff`。
+{{{class="brush:python"
+>>> unichr(104)
+u'h'
+>>> unichr(104000)
+u'\U00019640'
+}}}
+
+== unicodedata模块 ==
+- 该模块提供各种方法显示对应的unicode信息。
+{{{class="brush:python"
+>>> import unicodedata
+>>> unicodedata.lookup('LEFT CURLY BRACKET')
+u'{'
+>>> unicodedata.name(u'/')
+'SOLIDUS'
+>>> unicodedata.decimal(u'9')
+9
+>>> unicodedata.decimal(u'a')
+Traceback (most recent call last):
+  File "<stdin>", line 1, in ?
+ValueError: not a decimal
+>>> unicodedata.category(u'A')  # 'L'etter, 'u'ppercase
+'Lu'
+>>> unicodedata.bidirectional(u'\u0660') # 'A'rabic, 'N'umber
+'AN'
+}}}

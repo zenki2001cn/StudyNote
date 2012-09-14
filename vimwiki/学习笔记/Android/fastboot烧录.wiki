@@ -1,0 +1,76 @@
+= fastboot烧录 =
+
+%toc
+
+== 准备工作 ==
+{{{class="brush:bash"
+    1. 使用串口连接device和PC，通过minicom进入串口调试界面。
+    2. 启动device进入uboot界面。
+    3. 在uboot界面输入fastboot，进入fastboot模式。
+    4. 在PC端指令fastboot烧录指令。
+}}}
+{{http:pic/fastboot_mode.png}}
+
+== PC端烧录指令 ==
+=== fastboot用法简介 ===
+{{{class="brush:bash"
+usage: fastboot [ <option> ] <command>
+
+commands:
+  update <filename>                        reflash device from update.zip
+  flashall                                 flash boot + recovery + system
+  flash <partition> [ <filename> ]         write a file to a flash partition
+  erase <partition>                        erase a flash partition
+  format <partition>                       format a flash partition 
+  getvar <variable>                        display a bootloader variable
+  boot <kernel> [ <ramdisk> ]              download and boot kernel
+  flash:raw boot <kernel> [ <ramdisk> ]    create bootimage and flash it
+  devices                                  list all connected devices
+  continue                                 continue with autoboot
+  reboot                                   reboot device normally
+  reboot-bootloader                        reboot device into bootloader
+  help                                     show this help message
+
+options:
+  -w                                       erase userdata and cache
+  -s <serial number>                       specify device serial number
+  -p <product>                             specify product name
+  -c <cmdline>                             override kernel commandline
+  -i <vendor id>                           specify a custom USB vendor id
+  -b <base_addr>                           specify a custom kernel base address
+  -n <page size>                           specify the nand page size. default: 2048
+}}}
+
+=== flash uboot ===
+{{{class="brush:bash"
+# 烧录uboot
+$ fastboot flash uboot uboot.bin
+# 重启device
+$ fastboot reboot
+}}}
+
+=== flash kernel ===
+{{{class="brush:bash"
+# 烧录kernel
+$ fastboot flash kernel arch/arm/boot/uImage
+# 重启device
+$ fastboot reboot
+}}}
+
+=== flash ramdisk ===
+{{{class="brush:bash"
+# 烧录ramdisk
+$ fastboot flash uramdisk uramdisk.img
+}}}
+
+=== flash system ===
+{{{class="brush:bash"
+# 烧录system
+$ fastboot flash system $OUT/system.img
+}}}
+
+=== flash recovery ===
+{{{class="brush:bash"
+# 烧录recovery
+$ fastboot flash recovery $OUT/recovery.img
+}}}
