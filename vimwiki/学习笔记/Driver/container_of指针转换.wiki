@@ -1,0 +1,44 @@
+= container_of指针转换 =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:c"
+#include <linux/kernel.h>
+}}}
+
+== container_of宏 ==
+- 通常C语言通过在struct中包含另一个struct来实现继承。如何根据父类对象指针获取子类的对象呢？Linux Kernel中使用`container_of`宏定义。
+{{{class="brush:c"
+/**
+ * container_of - cast a member of a structure out to the containing structure
+ * @ptr:	the pointer to the member.
+ * @type:	the type of the container struct this is embedded in.
+ * @member:	the name of the member within the struct.
+ *
+ */
+#define container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+}}}
+
+== 示例说明 ==
+- 该示例中，struct scull_dev包含struct cdev对象，并且对象名是m_cdev。
+    - container_of宏接收的第一个参数是指向m_cdev成员的指针。
+    - 第二个参数是需要返回的对象类型。
+    - 第三个参数是一个成员变量名，由于container_of是宏定义，它可以将该变量名和第二个参数组合，返回其地址。
+- container_of最终将m_cdev的指针转换，得到了继承子类struct scull_dev对象的指针。
+{{{class="brush:c"
+# scull_dev结构描述
+struct scull_dev { 
+    struct cdev m_cdev;
+    // ...... 
+};
+
+# 指针转换方法
+void convert() {
+    struct scull_dev *dev; 
+    dev = container_of(inode->i_cdev, struct scull_dev, m_cdev);
+}
+}}}
+
