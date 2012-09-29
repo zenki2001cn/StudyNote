@@ -34,8 +34,8 @@ Late Resume是和suspend配套的一种机制，是在内核唤醒完毕开始�
 
 == 代码分析 ==
 === Android Suspend ===
-当用户写入mem或者standby到/sys/power/state中的时候，state_store()会被调用，然后Android会在这里调用request_suspend_state()而标准的Linux会在这里进入enter_state()这个函数。
-如果请求的是休眠，那么early_suspend这个workqueue就会被调用，并且进入early_suspend状态。
+- 当用户写入mem或者standby到`/sys/power/state`中的时候，state_store()会被调用，然后Android会在这里调用request_suspend_state()。
+- 标准的Linux会在这里进入enter_state()这个函数。如果请求的是休眠，那么early_suspend这个workqueue就会被调用，并且进入early_suspend状态。
 {{{class="brush:c"
 void request_suspend_state(suspend_state_t new_state)
 {
@@ -62,7 +62,8 @@ void request_suspend_state(suspend_state_t new_state)
 }}}
 
 === Early Suspend ===
-在early_suspend()函数中，首先会检查现在请求的状态还是否是suspend，来防止suspend的请求会在这个时候取消掉(因为这个时候用户进程还在运行)，如果需要退出，就简单的退出了。如果没有，这个函数就会把early suspend中注册的一系列的回调都调用一次，然后同步文件系统，然后放弃掉main_wake_lock，这个wake lock是一个没有超时的锁，如果这个锁不释放，那么系统就无法进入休眠。
+- 在early_suspend()函数中，首先会检查现在请求的状态还是否是suspend，来防止suspend的请求会在这个时候取消掉(因为这个时候用户进程还在运行)，如果需要退出，就简单的退出了。
+- 如果没有，这个函数就会把early suspend中注册的一系列的回调都调用一次，然后同步文件系统，然后放弃掉main_wake_lock，这个wake lock是一个没有超时的锁，如果这个锁不释放，那么系统就无法进入休眠。
 {{{class="brush:c"
 static void early_suspend(struct work_struct *work)
 {
@@ -98,19 +99,18 @@ abort:
 }
 }}}
 
+==== early_suspend时序图 ====
 {{http:pic/early_suspend.png}}
 
 === Late Resume ===
 - 当所有的唤醒已经结束以后，用户进程都已经开始运行了，唤醒通常会是以下的几种原因：
 - 来电
-
 {{{class="brush:text"
     如果是来电，那么Modem会通过发送命令给rild来让rild通知WindowManager有来电响应，这样就会远程调用
 PowerManagerService来写"on"到/sys/power/state来执行late resume的设备，比如点亮屏幕等。
 }}}
 
 - 用户按键
-
 {{{class="brush:text"
     用户按键事件会送到WindowManager中，WindowManager会处理这些按键事件，按键分为几种情况，如果案件不是唤醒键
 (能够唤醒系统的按键)，那么WindowManager会主动放弃wakeLock来使系统进入再次休眠，如果按键是唤醒键，那么WindowManger
@@ -118,7 +118,6 @@ PowerManagerService来写"on"到/sys/power/state来执行late resume的设备，
 }}}
 
 - Late Resume会依次唤醒前面调用了Early Suspend的设备。
-
 {{{class="brush:c"
 static void late_resume(struct work_struct *work)
 {
@@ -161,7 +160,6 @@ abort:
 
 === Suspend ===
 - 当wake_lock运行suspend()以后，在wakelock.c的suspend()函数会被调用，这个函数首先sync文件系统，然后调用pm_suspend(request_suspend_state)，接下来pm_suspend()就会调用enter_state()来进入Linux的休眠流程。
-
 {{{class="brush:c"
 static void suspend(struct work_struct *work)
 {

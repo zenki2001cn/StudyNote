@@ -1,0 +1,144 @@
+= 设备(device) =
+
+%toc
+
+== 设备相关的数据结构 ==
+=== struct device ===
+- 设备类型包含以下几个重要的成员：
+    - parent：该设备所附属的设备，通常是某种总线或主控制器。
+    - kobj：驱动模型中代表当前设备的kobject，它的大致规则是device->kobj->parent等同于device->parent->kobj。
+    - bus：设备所在的总线。
+    - driver：管理这个设备的驱动。
+    - release：该设备最后一个引用被移除时调用的方法。
+{{{class="brush:c"
+struct device {
+	struct device		    *parent;
+
+	struct device_private	*p;
+
+	struct kobject          kobj;
+	const  char		        *init_name; /* initial name of the device */
+	struct device_type	    *type;
+
+	struct mutex		    mutex;	
+
+	struct bus_type	        *bus;		/* type of bus device is on */
+	struct device_driver    *driver;	/* which driver has allocated this device */
+	void		            *platform_data;	/* Platform specific data, device core doesn't touch it */
+	struct dev_pm_info	    power;
+
+#ifdef CONFIG_NUMA
+	int		                numa_node;	/* NUMA node this device is close to */
+#endif
+	u64		                *dma_mask;	/* dma mask (if dma'able device) */
+	u64		                coherent_dma_mask;
+
+	struct device_dma_parameters    *dma_parms;
+
+	struct list_head	    dma_pools;	/* dma pools (if dma'ble) */
+
+	struct dma_coherent_mem	*dma_mem;   /* internal for coherent mem override */
+	struct dev_archdata	archdata;       /* arch specific additions */
+	dev_t			        devt;	    /* dev_t, creates the sysfs "dev" */
+
+	spinlock_t		        devres_lock;
+	struct list_head	    devres_head;
+
+	struct klist_node	    knode_class;
+	struct class		    *class;
+	const struct attribute_group    **groups;	/* optional groups */
+
+	void	(*release)(struct device *dev);
+};
+}}}
+
+=== struct device_type ===
+- `struct device_type`用来给不同的设备分类，并描述这些设备特定的信息。该类型的作用与bus_type相似。
+{{{class="brush:c"
+struct device_type {
+	const char *name;
+	const struct attribute_group **groups;
+	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
+	char *(*devnode)(struct device *dev, mode_t *mode);
+	void (*release)(struct device *dev);
+
+	const struct dev_pm_ops *pm;
+};
+}}}
+
+=== struct device_private ===
+- device_private结构用来表示底层驱动模型的层次结构，因此将它从struct device中分离出来。
+{{{class="brush:c"
+struct device_private {
+	struct klist klist_children;
+	struct klist_node knode_parent;
+	struct klist_node knode_driver;
+	struct klist_node knode_bus;
+	void *driver_data;
+	struct device *device;
+};
+}}}
+
+== 设备属性 ==
+- 设备同样具有它的属性，由struct device_attribute来描述。
+
+=== struct device_attribute ===
+{{{class="brush:c"
+struct device_attribute {
+	struct attribute	attr;
+	ssize_t (*show)(struct device *dev, struct device_attribute *attr,
+			        char *buf);
+	ssize_t (*store)(struct device *dev, struct device_attribute *attr,
+			        const char *buf, size_t count);
+};
+}}}
+
+=== DEVICE_ATTR辅助宏 ===
+- 内核同样提供了一个宏来帮助创建设备属性结构，它使用了_ATTR宏，可参见其[[如何创建sysfs]]中的定义。
+{{{class="brush:c"
+#define DEVICE_ATTR(_name, _mode, _show, _store) \
+struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 创建设备属性 ===
+- `device_create_file`用来创建一个对应设备属性的文件。
+- `device_remove_file`用来移除一个对应设备属性的文件。
+
+== 设备的注册和移除 ==
+- `device_register`方法用来注册一个设备，通常需要给总线指定一个名称。该方法首先初始化device结构，然后再将该设备添加到驱动模型中。
+{{{class="brush:c"
+int device_register(struct device *dev)
+{
+	device_initialize(dev);
+	return device_add(dev);
+}
+}}}
+
+- `device_unregister`方法用来移除一个设备。该方法首先从驱动模型中移除设备，然后将该设备的引用减一。
+{{{class="brush:c"
+void device_unregister(struct device *dev)
+{
+	device_del(dev);
+	put_device(dev);
+}
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+// 声明一个device实例
+struct device ldd_bus = {
+ .init_name = "ldd0",
+ .release = ldd_bus_release
+}; 
+
+// 注册一个设备
+int register_device() {
+    int ret = device_register(&ldd_bus);
+    return ret;
+}
+
+// 移除一个设备
+void unregister_device() {
+    device_unregister(&ldd_bus);
+}
+}}}

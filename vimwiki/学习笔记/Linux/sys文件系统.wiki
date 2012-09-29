@@ -260,7 +260,7 @@ struct attribute_group {
 
 === __ATTR ===
 - 在内核中，sysfs属性一般是由`__ATTR`系列的宏来声明的：
-    - _name:名称
+    - _name: 名称
     - _mode：权位
     - _show：读函数
     - _store：写函数

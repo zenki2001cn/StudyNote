@@ -1,0 +1,162 @@
+= 什么是kobject =
+
+%toc
+
+== 相关文件 ==
+{{{class="brush:c"
+#include <linux/kobject.h>
+#include <linux/types.h>
+}}}
+
+== Kobjects、Ksets和Subsystems ==
+- kobject是基础的数据结构，它组成了整个设备模型，它的主要功能包括：
+    - 对象引用计数：一种跟踪对象生命周期的方法，通过引用计数实现。
+    - sysfs表示：sysfs中出现的每个对象，都包含一个kobject。
+    - 数据结构粘合：粘合设备模型中复杂的多级对象。
+    - 热拔插处理：kobject子系统处理事件的产生，通知用户空间关于硬件的热拔插。
+
+== kobject ==
+- struct kobject通常被嵌入到其他结构中，它可被看作是一个顶级的抽象类。
+{{{class="brush:c"
+struct kobject {
+	const char		    *name;
+	struct list_head	entry;
+	struct kobject		*parent;
+	struct kset		    *kset;
+	struct kobj_type	*ktype;
+	struct sysfs_dirent	*sd;
+	struct kref		    kref;
+	unsigned int state_initialized:1;
+	unsigned int state_in_sysfs:1;
+	unsigned int state_add_uevent_sent:1;
+	unsigned int state_remove_uevent_sent:1;
+	unsigned int uevent_suppress:1;
+};
+}}}
+
+- 例如，struct cdev中会嵌入一个kobject结构：
+{{{class="brush:c"
+struct cdev {
+    struct kobject kobj;
+    struct module *owner;
+    const struct file_operations *ops;
+    struct list_head list;
+    dev_t dev;
+    unsigned int count;
+};    
+}}}
+
+- 当需要从kobject对象转换成cdev对象时，使用container_of宏。参见[[container_of指针转换]]。
+{{{class="brush:c"
+struct cdev *device = container_of(kp, struct cdev, kobj);
+}}}
+
+=== kobject初始化 ===
+- 使用`kobject_init`初始化kobject对象。
+- 使用`kobject_set_name`设置kobject对象的名称，该名称也是sysfs文件系统节点的名称。
+
+=== kobject的引用计数 ===
+- kobject保持一个struct kref结构的成员作为引用计数，只要该引用计数存在，那么该kobject对象就必须存在。
+{{{class="brush:c"
+struct kref {
+	atomic_t refcount;
+};
+}}}
+
+- `kobject_get`调用会递增kobject的引用计数。
+- `kobject_put`调用会递减kobject的引用计数。
+
+=== cdev转换kobject示例 ===
+- 通过kobject增加一个cdev对象的引用计数：
+{{{class="brush:c"
+static struct kobject *cdev_get(struct cdev *p)
+{
+	struct module *owner = p->owner;
+	struct kobject *kobj;
+
+	if (owner && !try_module_get(owner))
+		return NULL;
+	kobj = kobject_get(&p->kobj);
+	if (!kobj)
+		module_put(owner);
+	return kobj;
+}
+}}}
+
+=== kobj_type ===
+- 通过引入另一个结构体struct kobj_type来描述kobject对象，由相同的kobj_type表示的kobject通常是同一类型的对象。
+{{{class="brush:c"
+struct kobj_type {
+	void (*release)(struct kobject *kobj);      // 释放kobject的函数指针
+	const struct sysfs_ops *sysfs_ops;
+	struct attribute **default_attrs;
+	const struct kobj_ns_type_operations *(*child_ns_type)(struct kobject *kobj);
+	const void *(*namespace)(struct kobject *kobj);
+};
+}}}
+
+=== kobject的释放 ===
+- kobject对象的引用计数为0时，需要一个函数来释放kobject对象，该方法包含在kobj_type结构中。
+- kobj_type对象通常被嵌入到kobject结构体中，通过`get_ktype`获取kobj_type对象。
+{{{class="brush:c"
+static inline struct kobj_type *get_ktype(struct kobject *kobj)
+{
+    return kobj->ktype;
+}
+}}}
+
+==== 释放kobject函数示例 ====
+{{{class="brush:c"
+void my_object_release(struct kobject *kobj) {
+    struct my_object *mine = container_of(kobj, struct my_object, kobj); 
+
+    // 释放mine
+    kfree(mine);
+}
+}}}
+
+== kset ==
+- 从上面的kobject结构体中，我们可以看见其中的两个成员`parent`和`kset`，通过这两个成员将整个驱动模型划分成不同的层次，并相互连接。
+    - parent指向当前层次中的上一级。
+    - kset指向当前层次的kobject集合。
+- kset是kobject对象的容器，它包含同一类型的kobject对象集合。每一个kset对象都会对应一个sysfs中的目录。
+- kset和kobject的关系可参见下图：
+{{http:pic/kset.png}}
+ 
+=== kset初始化和释放 ===
+- `kset_init`调用初始化一个kset对象，
+- `kobject_add`调用可以关联两个kobject对象，使这两个kobject产生层级关系。
+- `kset_register`调用是kobject_init和kobject_add的结合。
+- `kobject_del`调用用来移除一个kobject对象。
+- `kset_unregister`调用是kobject_del和kobject_put的结合。
+{{{class="brush:c"
+struct kset {
+    struct list_head list;
+	spinlock_t list_lock;
+	struct kobject kobj;
+	const struct kset_uevent_ops *uevent_ops;
+};
+}}}
+
+=== kset的引用计数 ===
+- kset同样有一组方法来管理引用计数，它们实际上是对kobject对象方法的一层封装。
+- `kset_get`调用会递增kobject的引用计数。
+{{{class="brush:c"
+static inline struct kset *kset_get(struct kset *k)
+{
+    // 调用kobject_get递增引用计数
+	return k ? to_kset(kobject_get(&k->kobj)) : NULL;
+}
+}}}
+- `kset_put`调用会递减kobject的引用计数。
+{{{class="brush:c"
+static inline void kset_put(struct kset *k)
+{
+    // 调用kobject_put递减引用计数
+	kobject_put(&k->kobj);
+}
+}}}
+
+== 子系统(subsys) ==
+- 子系统通常出现在sysfs的顶级（但不总是）。如/sys/block（块设备），/sys/devices（核心设备）。
+- 子系统是对kset的一层封装，它用来帮助建立kset在系统层级中的位置，并通过一个读写信号量（参见[[内核同步]]）管理同步操作。

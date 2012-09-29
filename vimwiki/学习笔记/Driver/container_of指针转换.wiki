@@ -21,6 +21,16 @@
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
 }}}
+	
+=== offsetof宏 ===
+{{{class="brush:c"
+#undef offsetof
+#ifdef __compiler_offsetof
+#define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
+#else
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+}}}
 
 == 示例说明 ==
 - 该示例中，struct scull_dev包含struct cdev对象，并且对象名是m_cdev。

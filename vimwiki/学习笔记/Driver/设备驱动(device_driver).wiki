@@ -1,0 +1,145 @@
+= 设备驱动(device_driver) =
+
+%toc
+
+== 设备驱动相关的数据结构 ==
+=== struct device_driver ===
+- 设备的驱动由struct device_driver来描述。
+- 该结构可视为从device_type中分离出来的一个设备驱动的抽象，而一些关于电源管理相关的方法由该结构来处理。
+- 它主要包含以下几个重要的成员：
+    - name：设备驱动的名称，在sysfs驱动模型中来描述该驱动。
+    - bus：与该驱动相关的总线类型。
+    - owner：驱动使用的模块对象。
+    - mod_name：模块的名称。
+- 同时它还包含一组设备驱动相关的操作：
+    - probe：设备驱动被加载时调用。
+    - remove：设备驱动被移除时调用。
+    - shutdown：关闭设备时被调用。
+    - suspend：系统休眠时被调用。
+    - resume：系统唤醒时被调用。
+    - pm：电源管理相关的操作。
+
+{{{class="brush:c"
+struct device_driver {
+	const char		    *name;
+	struct bus_type		*bus;
+
+	struct module		*owner;
+	const char		    *mod_name;	            /* used for built-in modules */
+
+	bool                suppress_bind_attrs;	/* disables bind/unbind via sysfs */
+
+	int (*probe) (struct device *dev);
+	int (*remove) (struct device *dev);
+	void (*shutdown) (struct device *dev);
+	int (*suspend) (struct device *dev, pm_message_t state);
+	int (*resume) (struct device *dev);
+	
+	const struct attribute_group **groups;
+	const struct dev_pm_ops *pm;
+
+	struct driver_private *p;
+};
+}}}
+
+=== struct driver_private ===
+- 与bus_type_private结构一样，一些底层驱动模型相关的数据结构被独立出来，由driver_private结构来描述。
+{{{class="brush:c"
+struct driver_private {
+	struct kobject kobj;
+	struct klist klist_devices;
+	struct klist_node knode_bus;
+	struct module_kobject *mkobj;
+	struct device_driver *driver;
+};
+}}}
+
+== 设备驱动的属性 ==
+- 设备驱动的属性表示了其在sysfs中的文件节点，由struct driver_attribute来描述。
+
+=== struct driver_attribute ===
+{{{class="brush:c"
+struct driver_attribute {
+	struct attribute attr;
+	ssize_t (*show)(struct device_driver *driver, char *buf);
+	ssize_t (*store)(struct device_driver *driver, const char *buf,
+			 size_t count);
+};
+}}}
+
+=== DRIVER_ATTR辅助宏 ===
+- 内核同样提供了一个宏来帮助创建设备驱动的属性，它使用了_ATTR宏，可参见其[[如何创建sysfs]]中的定义。
+{{{class="brush:c"
+#define DRIVER_ATTR(_name, _mode, _show, _store)	\
+struct driver_attribute driver_attr_##_name =		\
+    __ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 创建设备驱动属性 ===
+- `driver_create_file`用来创建一个对应设备驱动属性的文件。
+- `driver_remove_file`用来移除一个对应设备驱动属性的文件。
+
+== 设备驱动的注册和移除 ==
+- `driver_register`方法用来注册一个设备驱动，通常需要对设备驱动对象做一些初始化。
+{{{class="brush:c"
+int driver_register(struct device_driver *drv)
+{
+	int ret;
+	struct device_driver *other;
+
+	BUG_ON(!drv->bus->p);
+
+	if ((drv->bus->probe && drv->probe) ||
+	    (drv->bus->remove && drv->remove) ||
+	    (drv->bus->shutdown && drv->shutdown))
+		printk(KERN_WARNING "Driver '%s' needs updating - please use "
+			"bus_type methods\n", drv->name);
+
+	other = driver_find(drv->name, drv->bus);
+	if (other) {
+		put_driver(other);
+		return -EBUSY;
+	}
+
+	ret = bus_add_driver(drv);
+	if (ret)
+		return ret;
+	ret = driver_add_groups(drv, drv->groups);
+	if (ret)
+		bus_remove_driver(drv);
+	return ret;
+}
+}}}
+
+- `driver_unregister`方法用来移除一个设备驱动。
+{{{class="brush:c"
+void driver_unregister(struct device_driver *drv)
+{
+	if (!drv || !drv->p) {
+		return;
+	}
+	driver_remove_groups(drv, drv->groups);
+	bus_remove_driver(drv);
+}
+}}}
+
+=== 示例代码 ===
+{{{class="brush:c"
+// 声明一个device_driver实例
+struct device_driver ldd_driver = {
+    .name = "ldd_driver",
+    .bus = &ldd_bus_type,
+    .module = THIS_MODULE,
+};
+
+// 注册一个设备驱动
+int register_driver() {
+   int ret = driver_register(&ldd_driver); 
+   return ret;
+}
+
+// 移除一个设备驱动
+void unregister_driver() {
+    driver_unregister(&ldd_driver);
+}
+}}}

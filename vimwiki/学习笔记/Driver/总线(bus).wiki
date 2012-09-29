@@ -1,0 +1,128 @@
+= 总线 =
+
+%toc
+
+== 总线相关的数据结构 ==
+=== struct bus_type ===
+- 总线类型包含了总线属性(bus_attribute)、设备属性(device_attribute)、驱动属性(driver_attribute)。
+- 总线类型还提供了一套处理设备操作的方法：
+    - match：任何时候，当一个新的设备或驱动被添加给这个总线，并且该设备可被该驱动处理，则返回非零值。
+    - uevent：uevent事件处理。
+    - probe：加载驱动时被调用。
+    - remove：移除驱动时被调用。
+    - shutdown：系统关闭时被调用。
+    - suspend：系统休眠时被调用。
+    - resume：系统唤醒时被调用。
+
+{{{class="brush:c"
+struct bus_type {
+	const char		        *name;
+	struct bus_attribute	*bus_attrs;
+	struct device_attribute	*dev_attrs;
+	struct driver_attribute	*drv_attrs;
+
+	int (*match)(struct device *dev, struct device_driver *drv);
+	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
+	int (*probe)(struct device *dev);
+	int (*remove)(struct device *dev);
+	void (*shutdown)(struct device *dev);
+
+	int (*suspend)(struct device *dev, pm_message_t state);
+	int (*resume)(struct device *dev);
+
+	const struct dev_pm_ops *pm;
+
+	struct bus_type_private *p;
+};
+}}}
+
+=== sturct dev_pm_ops ===
+- sturct dev_pm_ops结构包含了关于电源管理的一套回调函数。
+{{{class="brush:c"
+struct dev_pm_ops {
+	int (*prepare)(struct device *dev);
+	void (*complete)(struct device *dev);
+	int (*suspend)(struct device *dev);
+	int (*resume)(struct device *dev);
+	int (*freeze)(struct device *dev);
+	int (*thaw)(struct device *dev);
+	int (*poweroff)(struct device *dev);
+	int (*restore)(struct device *dev);
+	int (*suspend_noirq)(struct device *dev);
+	int (*resume_noirq)(struct device *dev);
+	int (*freeze_noirq)(struct device *dev);
+	int (*thaw_noirq)(struct device *dev);
+	int (*poweroff_noirq)(struct device *dev);
+	int (*restore_noirq)(struct device *dev);
+	int (*runtime_suspend)(struct device *dev);
+	int (*runtime_resume)(struct device *dev);
+	int (*runtime_idle)(struct device *dev);
+};
+}}}
+
+=== struct bus_type_private ===
+- 最近的内核将一些底层驱动模型数据结构独立出来，生成了struct bus_type_private，其中包含了一组kset的列表。
+    - drivers_kset表示总线相关的驱动列表。
+    - devices_kset表示接入到该总线的所有设备列表。
+{{{class="brush:c"
+struct bus_type_private {
+	struct kset subsys;
+	struct kset *drivers_kset;
+	struct kset *devices_kset;
+	struct klist klist_devices;
+	struct klist klist_drivers;
+	struct blocking_notifier_head bus_notifier;
+	unsigned int drivers_autoprobe:1;
+	struct bus_type *bus;
+};
+}}}
+
+== 总线属性 ==
+- 总线属于驱动模型的一层，同样具有它的属性，由struct bus_attribute来描述。
+
+=== struct bus_attribute ===
+{{{class="brush:c"
+struct bus_attribute {
+	struct attribute	attr;
+	ssize_t (*show)(struct bus_type *bus, char *buf);
+	ssize_t (*store)(struct bus_type *bus, const char *buf, size_t count);
+};
+}}}
+
+=== BUS_ATTR辅助宏 ===
+- 内核同样提供了一个宏来帮助创建总线属性结构，它使用了_ATTR宏，可参见其[[如何创建sysfs]]中的定义。
+{{{class="brush:c"
+#define BUS_ATTR(_name, _mode, _show, _store)	\
+struct bus_attribute bus_attr_##_name = __ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 创建总线属性 ===
+- `bus_create_file`用来创建一个对应总线属性的文件。
+- `bus_remove_file`用来移除一个对应总线属性的文件。
+
+== 总线的注册和移除 ==
+- `bus_register`方法用来注册一个虚拟总线，通常需要给总线指定一个名称。
+- `bus_unregister`方法用来移除一个虚拟总线。
+
+=== 示例代码 ===
+{{{class="brush:c"
+// 声明一个bus_type实例
+struct bus_type ldd_bus_type = { 
+    .name = "ldd", 
+    .match = ldd_match,
+};
+
+// 注册一个总线的示例
+int register_bus() {
+    int ret = bus_register(&ldd_bus_type);
+    return ret;
+}
+
+// 移除一个总线的示例
+void unregister_bus() {
+    bus_unregister(&ldd_bus_type);
+}
+}}}
+
+== 列举设备和驱动 ==
+- 内核提供了两个方法`bus_for_each_drv`和`bus_for_each_dev`来枚举一个虚拟总线上的所有驱动和设备。
