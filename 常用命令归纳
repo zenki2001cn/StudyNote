@@ -36,6 +36,9 @@ netstat -r
 netstat -atunp
 netstat -ltunp
 
+1.7.2 查看80端口的服务并排序
+netstat -na|grep :8000|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -r -n
+
 1.7.2 iftop、iptraf
 命令行下的网络监控
 
