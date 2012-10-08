@@ -36,3 +36,50 @@ struct class {
 	struct class_private *p;
 };
 }}}
+
+== 类的属性 ==
+- 类的属性表示了其在sysfs中的文件节点，由struct class_attribute来描述。
+
+=== struct class_attribute ===
+{{{class="brush:c"
+struct class_attribute {
+	struct attribute attr;
+	ssize_t (*show)(struct class *class, struct class_attribute *attr,
+			        char *buf);
+	ssize_t (*store)(struct class *class, struct class_attribute *attr,
+			        const char *buf, size_t count);
+};
+}}}
+
+=== CLASS_ATTR辅助宏 ===
+- 内核同样提供了一个宏来帮助创建类的属性，它使用了_ATTR宏，可参见其[[如何创建sysfs]]中的定义。
+{{{class="brush:c"
+#define CLASS_ATTR(_name, _mode, _show, _store)			\
+struct class_attribute class_attr_##_name =             \
+    __ATTR(_name, _mode, _show, _store)
+}}}
+
+=== 创建类属性 ===
+- `class_create_file`用来创建一个对应类属性的文件。
+- `class_remove_file`用来移除一个对应类属性的文件。
+
+== 类的接口 ==
+- 类的接口是一种触发机制，可用来在设备进入或离开时得到通知。它通过struct class_interface结构来描述。
+    - `add_dev`方法是当设备被加入时调用。
+    - `remove_dev`方法是当设备被移除时调用。
+- 可注册多个类接口，并通过`node`链表管理。
+
+=== struct class_interface ===
+{{{class="brush:c"
+struct class_interface {
+	struct list_head	node;
+	struct class		*class;
+
+	int (*add_dev)		(struct device *, struct class_interface *);
+	void (*remove_dev)	(struct device *, struct class_interface *);
+};
+}}}
+
+=== 注册类接口 ===
+- `class_interface_register`方法用来注册一个类的接口。
+- `class_interface_unregister`方法用来注销一个类的接口。

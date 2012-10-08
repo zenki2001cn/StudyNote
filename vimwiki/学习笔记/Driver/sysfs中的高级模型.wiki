@@ -8,18 +8,22 @@
 #include <linux/pm.h>
 }}}
 
-== 总线(bus) ==
+== 基本概念 ==
+=== 总线(bus) ===
 - 总线是处理器与一个或多个设备之间的通道，驱动模型中通过struct bus_type描述总线类型。
 - [[总线(bus)]]
 
-== 设备(device) ==
+=== 设备(device) ===
 - 设备是对真实世界中设备的抽象，驱动模型通过struct device描述设备类型。
 - [[设备(device)]]
 
-== 设备驱动(device_driver) ==
+=== 设备驱动(device_driver) ===
 - 驱动模型跟踪所有系统已知的驱动，并使用struct device_driver来描述设备驱动类型。
 - [[设备驱动(device_driver)]]
 
-== 类(class) ==
+=== 类(class) ===
 - 类按照设备类型来给设备分类，比如SCSI磁盘和SATA磁盘，在类的级别，它们都是磁盘。它以一种直观的分类方式给用户空间提供信息。
 - [[类(class)]]
+
+== 如何使用驱动模型 ==
+- [[如何使用驱动模型]]
