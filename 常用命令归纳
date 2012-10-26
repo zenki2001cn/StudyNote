@@ -14,10 +14,10 @@ wget -r -p -k -np --accept=iso,tgz --reject=avi,rmvb url
 1.3. 获取网页内容
 curl
 
-1.4. TCP/IP命令交互程序
+1.4. TCP/IP命令交互程序 : nc
 nc
-nc -l -p port
-nc ip port
+Server端：nc -l -p port
+Client端：nc ip port
 
 1.5. 网络端口查看程序
 nmap -A -T4 xxx.xxx.xxx.xxx-xxx -p port xxx-xxx
@@ -146,10 +146,25 @@ krdc
 2.8. 系统启动设置
 sysv-rc-conf
 
-2.9. 打开文件和端口的进程信息
+2.9. 列出打开文件相关信息 : lsof
 lsof
-lsof -i 4:80
-lsof /home/zenki
+lsof /home/zenki            : 列出打开当前目录的进程;
+lsof -u dutor               : 列出用户dutor打开的文件, 可指定多个用户, 默认是OR的关系;
+lsof -c tair                : 列出名称以tair开头的进程打开的文件, c for command, 可指定多个;
+lsof -c /^t.*r$/            : 列出名称以t开头, r结尾的进程打开的文件;
+lsof -p 12315               : 列出进程号为12315的进程打开的文件, 可指定多个;
+lsof server.log             : 列出打开server.log文件的进程, 可指明多个文件; 
+lsof +D .                   : 递归地列出当前目录中被打开的文件, 当然也可以lsof | grep `pwd`;
+lsof -i                     : 列出打开的套接字;
+lsof -i tcp                 : 列出打开的tcp套接字;
+lsof -i :5198               : 列出打开5198端口的进程;
+lsof -i :ssh                : 列出打开22端口的进程;
+lsof -i tcp:5198            : 列出打开5198号tcp端口的进程;
+lsof -U                     : 列出打开Unix域套接字的进程;
+lsof -d 0-2                 : 列出在0到2文件描述符上打开文件的进程;
+lsof -d mem                 : 列出打开映射文件的进程;
+lsof -d txt                 : 列出打开的可执行文件;
+lsof -t                     : 列出进程号，和其他选项组合使用;
 kill -HUP `lsof -t /u/abe/bar`
 
 2.10. 系统配置web界面
