@@ -14,7 +14,7 @@ wget -r -p -k -np --accept=iso,tgz --reject=avi,rmvb url
 1.3. 获取网页内容
 curl
 
-1.4. TCP/IP命令交互程序 : nc
+1.4. nc - TCP/IP命令交互程序
 nc
 Server端：nc -l -p port
 Client端：nc ip port
@@ -146,7 +146,7 @@ krdc
 2.8. 系统启动设置
 sysv-rc-conf
 
-2.9. 列出打开文件相关信息 : lsof
+2.9. lsof - 列出打开文件相关信息
 lsof
 lsof /home/zenki            : 列出打开当前目录的进程;
 lsof -u dutor               : 列出用户dutor打开的文件, 可指定多个用户, 默认是OR的关系;
@@ -235,6 +235,12 @@ clamscan
 2.22. 终端录制工具
 ttyrec  生成录制的文件
 ttyplay 播放录制的文件
+
+2.23. xclip - 系统剪贴板
+xclip
+$ echo "hello" | xclip                          输出到选中剪贴板
+$ echo "hello" | xclip -selection clipboard     输出到剪贴板
+$ xclip -o                                      获取选中剪贴板内容
 
 3. 文件管理
 3.1. 批量utf8转换和修改文件名

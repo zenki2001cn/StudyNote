@@ -388,6 +388,22 @@ $ git bisect log
 3.9 gc      垃圾清理
 $ git gc
 
+3.10 rebase 合并并行的分支
+# 当本地开发和远程开发产生分叉时，可使用rebase来合并提交，消除这两个分叉。
+$ git rebase origin
+# 如果需要解决冲突后，继续rebase
+$ git rebase --continue
+
+3.11 rebase & merge 恢复悬空对象
+# 检查是否有误删的文件，它们会被显示为dangling对象
+$ git fsck --lost-found
+# 查看dangling对象
+$ git show SHA1
+# 恢复dangling对象，只能恢复提交内容
+$ git rebase SHA1
+# 恢复dangling对象，可恢复分支状态
+$ git merge SHA1
+
 4. Git 图形界面
 # 查看历史版本的图形化工具
 4.1 gitk
