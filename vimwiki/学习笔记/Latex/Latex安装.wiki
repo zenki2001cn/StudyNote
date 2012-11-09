@@ -1,8 +1,103 @@
 = 安装Latex的注意事项 =
 
-== 中文解决方法 ==
-{{{class="brush: text"
-sudo apt-get install latex-cjk-chinese ttf-arphic-*
+%toc
+
+== 安装基本程序和库 ==
+=== 1.安装TexLive+Latex+CJK ===
+{{{class="brush:bash"
+# 安装Latex宏包
+$ sudo apt-get install texlive texlive-math-extra texlive-latex-base texlive-latex-extra \
+         texlive-latex-recommended texlive-pictures texlive-science texlive-bibtex-extra \
+         texlive-common latex-beamer
+# 或者完整安装
+$ sudo apt-get install texlive-full latex-beamer
 }}}
 
->>[[Latex学习笔记]]
+=== 2.安装中文支持 ===
+{{{class="brush:bash"
+$ sudo apt-get install latex-cjk-chinese ttf-arphic-*
+}}}
+
+== 生成中文字体包 ==
+=== 1.安装字体生成工具 ===
+{{{class="brush:bash"
+$ sudo apt-get install fontforge
+}}}
+
+=== 2.创建字体地图 ===
+[[pic/font.tar.bz2]]
+
+{{{class="brush:bash"
+# 创建~/font目录，将font.tar.bz2解压并拷贝到~/font目录，把simsun.ttc（以该字体为例）也拷贝到该目录。
+$ mkdir ~/font
+$ cp simsun.ttc ~/font
+$ cd ~/font/
+
+# 执行以下命令生成字体地图
+$ fontforge -script subfonts.pe simsun.ttc song Unicode.sfd
+}}}
+
+=== 3.创建字体映射文件 ===
+{{{class="brush:bash"
+# 在~/font目录下，将以下内容保存成makemap.sh脚本，并执行该脚本。
+for i in *.tfm
+do
+cat >> song.map << EOF
+${i%.tfm} ${i%.tfm} < ${i%.tfm}.pfb
+EOF
+done
+}}}
+
+=== 4.创建c70song.fd文件 ===
+{{{class="brush:bash"
+# 在~/font目录下，将以下内容保存成c70song.fd文件。
+% This is c70song.fd for CJK package.
+% created by Edward G.J. Lee
+% modify by Yue Wang
+\ProvidesFile{c70song.fd}
+\DeclareFontFamily{C70}{song}{\hyphenchar \font\m@ne}
+\DeclareFontShape{C70}{song}{m}{n}{<-> CJK * song}{}
+\DeclareFontShape{C70}{song}{bx}{n}{<-> CJKb * song}{\CJKbold}
+\endinput
+}}}
+
+== 刷新字库 ==
+{{{class="brush:bash"
+# 创建配置文件夹
+$ mkdir -p ~/.texmf-var/fonts/map/dvips/CJK
+$ mkdir -p ~/.texmf-var/fonts/tfm/CJK/song
+$ mkdir -p ~/.texmf-var/fonts/type1/CJK/song
+$ mkdir -p ~/.texmf-var/tex/latex/CJK/UTF8
+
+# 拷贝字体文件
+$ cp ~/font/song.map ~/.texmf-var/fonts/map/dvips/CJK
+$ cp ~/font/*.tfm ~/.texmf-var/fonts/tfm/CJK/song
+$ cp ~/font/*.pfb ~/.texmf-var/fonts/type1/CJK/song
+$ cp ~/font/c70song.fd ~/.texmf-var/tex/latex/CJK/UTF8
+
+# 刷新字体缓存
+$ sudo texhash
+$ updmap --enable Map song.map
+}}}
+
+== 测试latex ==
+=== 1.测试示例 ===
+{{{class="brush:bash"
+# 将以下文件保存成test.tex
+\documentclass{article}
+\usepackage{CJKutf8}
+\begin{document}
+\begin{CJK}{UTF8}{song}
+这是一个Latex测试!
+\end{CJK}
+\end{document}
+}}}
+
+=== 2.生成pdf ===
+{{{class="brush:bash"
+$ pdflatex test.tex
+$ evince test.pdf
+}}}
+
+== 参考链接 ==
+[[http://www.dutor.net/index.php/2009/06/ubuntu-texlive-cjk/]]

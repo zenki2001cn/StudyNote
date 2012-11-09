@@ -1,5 +1,7 @@
 = LaTex基本语法 =
 
+%toc
+
 == 空白距离 ==
 {{{class="brush: text"
 空白和制表符被看作是一个空白字符
@@ -100,6 +102,3 @@ xdvi myfile.dvi
 dvipdfmx myfile.dvi
 dvips myfile.dvi
 }}}
-
->>[[Latex学习笔记]]
-

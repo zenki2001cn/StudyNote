@@ -80,12 +80,16 @@ int registerMethods(JNIEnv* env) {
     jclass clazz;
 
     // 查找指定类
+    // 如果是C语言实现，则需要改成下面的形式，参见jin.h
+    // clazz = (*env)->FindClass(env, kClassName); 
     clazz = env->FindClass(kClassName);
     if (clazz == NULL) {
         return -1;
     }
 
     // 将方法列表注册给指定的类
+    // 如果是C语言实现，则需要改成下面的形式，参见jin.h
+    // (*env)->RegisterNatives(env, clazz, gMethods, sizeof(gMethods) / sizeof(gMethods[0]))
     if (env->RegisterNatives(clazz, gMethods,
             sizeof(gMethods) / sizeof(gMethods[0])) != JNI_OK) {
         return -1;
@@ -104,6 +108,8 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     JNIEnv* env = NULL;
     jint result = -1;
 
+    // 如果是C语言实现，则需要改成下面的形式，参见jin.h
+    // (*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_4)
     if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
 	    goto bail;
     }

@@ -42,6 +42,8 @@ public class Test {
 }}}
 
 ==== 使用javah生成.h头文件 ====
+- javah根据class文件生成相应的C头文件：javah Test/hello
+
 {{{class="brush:c"
 #include <jni.h>
 /* Header for class Test */

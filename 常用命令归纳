@@ -117,8 +117,12 @@ medusa -h host -u user -p password -M module
 
 2. 系统相关
 2.1. 查看硬件信息
-dmidecode
-hwinfo
+2.1.1 dmidecode
+2.1.2 hwinfo
+2.1.3 hardinfo
+2.1.4 inxi    
+* 下载方法：wget https://inxi.googlecode.com/svn/trunk/inxi 
+* 命令行使用方法：./inxi -c0 -v7
 
 2.2. 分区备份
 partimage -z1 save /dev/sda1 save.img
