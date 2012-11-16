@@ -200,6 +200,7 @@ Ctrl+F12 对当前目录进行扫描,并生成ctags文件
 Ctrl+]              --- 跳转定义的函数
 Ctrl+t              --- 跳转返回
 Ctrl+o              --- 返回上一次光标位置
+Ctrl+i              --- 返回下一次光标位置
 :tn                 --- 下一个tag位置
 :tp                 --- 上一个tag位置
 :tag func_name      --- 跳到指定方法名的定义处

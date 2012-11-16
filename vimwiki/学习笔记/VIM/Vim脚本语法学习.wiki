@@ -23,6 +23,11 @@ $ ./configure --enable-multibyte=yes --with-features=huge --enable-xim=yes --ena
 # 4. 安装vim
 $ make
 $ sudo make install
+
+# 5. 输入法无法使用的解决方法
+# 去掉以下两个编译选项
+--enable-python3interp=yes \  
+--enable-hangulinput \  
 }}}
 
 == 语法 ==
