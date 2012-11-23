@@ -1,0 +1,361 @@
+* Problems & issues
+    #A1 _ Generation of the win32 executable is currently broken (I don't have 
+      the time to adapt the exr file for the current version of exerb)
+    #A1 _ arg vs xarg: definition, switch them?
+    #A1 _ parse error: {cite n=aus\: p=11: kaiser83}
+        !!! n="aus:" should work though
+    #A2 _ Wrong line numbers in the log for regions defined with 
+      ''#DefRegion'' etc.
+    #A2 _ ''[[#textpipe][TextPipe]]'' generates wrong link when splitting 
+      output (''[[integration#textpipe][TextPipe]]'' is okay though)
+    #A3 _ LaTeX output for task lists that are embedded in lists throws an 
+      error: ''! LaTeX Error: Too deeply nested.''
+        - This is most likely a proplem with deplate per se but deplate should 
+          at least display a warning or similar.
+    #A4 _ Find a way to respect whitespace at the beginning of a macro's 
+      argument, e.g.
+        - ''{text: \ bla}'' -> currently generates a non-breakable space
+        - ''{text exact!: bla}''
+        - ''{text:: bla}''
+        - ''{text @body=" bla"}'' (this one would integrate well with the 
+          existing basis)
+    #A4 All regions & macros should take a template argument that makes the 
+      body be passed through the template filter.
+    #A4 For whatever reason there has to be a blank line in the following 
+      example; also, it's annoying having to escape #COMMENTS which shouldn't 
+      be necessary as the command isn't allowed in templates anyway:
+      #Verb <<---------
+        #DefRegion id=Slide <<--
+        * {xarg: title}
+        \#OPT: id={xarg: id}
+        \#COMMENTS: {xarg: n}
+
+        #XARG: @body
+        --
+      ---------
+        !!! I'm not sure if this wasn't already solved by making #XARG 
+            non-volatile.
+    #A4 When passing a block on initialization of deplate/converter, newly 
+      listed modules in options.modules should be automatically loaded.
+
+    #A5 _ Interviki names defined as format strings
+    #A5 _ parbox macro (latex)
+        - or rather an inline macro that takes a clip or the contents of a 
+          variable and formats it as (inline) particle (ie wrap it up in a 
+          parbox, div ...)
+    #A5 _ #INC: look in the directory of the input file first
+    #A7 _ Wrong numbering when defining a heading as an example's title 
+      (level_as_string gets lost somehow or is not updated right in time)
+    #A9 _ Duplicate anchors
+        - Regions.html: - r_geyser	914, 917
+            - dot_example	906, 909
+            - \InlatexExample	1036, 1037
+            - InlatexExampleXY	1040, 1043
+        - The Bib
+            - mynona__p1	158
+            - mass4	159
+    #A9 _ The ref macro inserts a heading number even if ''headings'' is set 
+      to "plain"; running numbers are also used in auto-generated labels which 
+      is wrong.
+
+    #B1 _ New Command #PARAM, #PN (or something like that), that works like 
+      \#PP but on the following elements. It should actually define a list of 
+      properties that are automatically tagged on following elements right 
+      when processing the input.
+        !!! This can currently be done by setting $ElementName[VAR]=VALUE.
+    #B1 _ Support for output via latex-screenplay
+    #B1 _ Enable filtering of dialog lines according to speaker
+    #B1 _ Enable filtering of scenes according to characters and place
+    #B1 _ Disable #Native in templates (why/when was it enabled?)
+    #B1 _ Handling of multi-file output is still a mess
+    #B1 _ Check for potential code injection (when using eval & 
+      Deplate::Cache)
+        - check if we can use Deplate::Cache without evaluating strings
+        - places where user input finds its way into the output
+            navbar-png.rb :: variables['buttonsColour'], 
+              variables['buttonsFileFormat']
+        - this calls for a general validation framework for variables, I'd say
+    #B3 _ All File.open & File.exists should be replaced with wrapper 
+      functions; depending on some allow flags these functions should restrict 
+      access to:
+            1. the directory of auxiliary files
+            2. || $PWD + subdirectories
+            3. || the current input file's directory || the output directory
+            4. || any directory
+    #B5 _ Further checks if international characters in simple wiki names now 
+      really work
+    #B5 _ ''#DefElement'' & ''#DefParticle'': Does it work with strange 
+      characters? Are the Rx properly escaped etc.?
+    #B7 _ Check if calling "services" from the document (not the template) 
+      works (most likely not)
+        - this should probably be renamed to something like template 
+          function/helper and restricted to templates
+
+    #C2 _ The arguments need different rules
+        - Good
+            - foo=1 bar="bla bla" x=(1 2 3) z=[1; 3; 4]
+            - foo! bar=true var=false x=\true y="true"
+            - var=bla\ bla y="[1 2 3]"
+        - Bad
+            - foo=bar=1 bar=bla bla x=y!z
+    #C2 _ Do we still need @dest? @dest vs. @options.out vs.  
+      @output.destination: One should be enough.
+    #C4 _ Skeletons vs. services vs. #INC: this is kind of redundant
+    #C5 _ Microformats http://microformats.org/wiki/Main_Page
+        - Use index for <a rel="tag"></a> http://microformats.org/wiki/rel-tag
+        - rel="license"
+        - rel="friend" http://www.gmpg.org/xfn/
+        - Task lists -> http://microformats.org/wiki/hcalendar
+    #C5 _ Currently, deplate converts a document in three steps; this is wrong 
+      because it introduces too much complexity just to avoid running deplate 
+      three times à la LaTeX; there should be only one step and the 
+      saved/cached metadata should be used for setting references and the 
+      like. Basically, running a single-step deplate two times should be 
+      sufficient to get everything right.
+        - deplate should be able to automatically check if the newly created 
+          metadata and the previous one converge and stop if they do or if a 
+          certain threshold was surpassed (can't converge error).
+    #C7 _ Improved support for symbols: input vs. output encoding
+    #C7 _ Symbols & locales: The conversion table should be contained in the 
+      source file's DATA section, not in some extra file
+    #C7 _ Guesslanguage: Temporarily switch languages
+    #C7 _ citations: allow something like {cite: author#page}
+    #C8 _ lists: don't tranform list items to structs but accumulate the items 
+      right away
+    #C9 _ HTML: use entities for special characters (e.g. &uuml; instead of 
+      ü) -- the problem with this currently is, that we have to know the input 
+      encoding in order to compile a conversion list; an alternative approach 
+      would be to convert everything to utf8 internally but this whould rely 
+      on iconv which is not available on all platforms (at least not with the 
+      default ruby installation)
+
+    #E2 _ guesslanguage: Use best guess for most of the input document.
+    #E2 _ Output themes (style + template): (1) collect files in directories 
+    or (2) define theme in a metafile that refers to the styles and templates 
+    to be used.
+    #E3 _ #Math region (similar to \{math\} macro but at the block/element 
+    level)
+    #E4 _ {var} ~~ {arg: var} || {get: var}
+    #E4 _ {val:} vs. {var:} vs. {arg:} vs. {xarg:} vs. {get:} vs. {opt:}
+    #E4 _ variables vs. clips
+    #E4 _ Check if an #IF command finishes an element
+    #E4 _ {cite an!: xxx} -> X & Y~(2000)
+    #E4 _ citation styles
+            - numbered à la uniform medical submission requirements ...
+            - implementations: prefixed (=style) methods:
+                - eg: apa_cite
+                    - if ''STYLE_method'' doesn't exist -> Fallback: 
+                    ''default_method'' or simply ''method''?
+    #E4 _ #MAKEBIB -> #LIST: bib
+    #E4 _ #Style -> Mark text in region with style attribute
+
+    #F3 _ chaining formatter; reimplement the way particles are formatted
+    #F5 _ check how inlatex-compound can be made more robust (and make it the 
+    default for dealing with inline latex bits)
+    #F9 _ Regions should be handled differently so that nested regions can use 
+    \#End -- or completely remove this alternative markup for regions.
+
+** Docbook
+    #A1 _ Author names like "{foo bar}" are parsed and formatted first and 
+      rearranged later on. As a consequence, Deplate complains about unknown 
+      macros. The solution would be to have a simplified latex input filter. 
+      In the meanwhile, we disable macros when parsing the text.
+    #A _ deplate complains about a malformed list (toc, lot, lof?) or internal 
+      error when compiling the manual
+    #C _ docbook support for styles (e.g. for task lists) (well, how? role?)
+    #D _ docbook support for custom lists
+
+** HTML
+    #A _ Make the tabbar use ul/li tags instead of a table.
+    #A _ If an indexed word is moved to a list (#LIST), then the index points 
+      to the wrong position.
+    #B _ The #AUTOIDX command should not create an index entry for itself. 
+      (Wasn't this already fixed?)
+    #F _ Option to insert line numbers as labels
+
+** LaTeX
+
+** PHP
+    #B _ Make internal wiki links propagate the get arguments -> Base url 
+      should be a format string.
+
+** Plain text
+
+** Other
+    #B _ plain headers mustn't increase the heading index
+        - but this currently interferes with some other mechanisms (this was a 
+          problem in the past, I'm not sure if this is still true)
+    #C _ define how convert_string should work when invoked repeatedly (with 
+      respect to #IDX, #ABBREV, ...)
+    #F _ custom names for labels/refs (html output)
+        - or use extended wiki names instead
+    #F _ relative/absolute file names & urls in the \{img\} and #IMG: define 
+      proper behaviour
+        - general solution or formatter specific (as it is now)?
+
+
+** Tests for ...
+    - Test cases for file handling (in, out, stdin, stdout)
+    - "services"
+
+
+* TODO
+** 0.09
+    - Metadata-related stuff should be re-implemented (and made more useful)
+    - Two/n-pass single-step redesign (there really is no use in implementing 
+      more features before this was done)
+    - Prepare the Deplate::Input for non-line-based format like latex.
+    - define a way to create a slot from within a deplate document
+    - basic support for:
+        - textile input
+        - markdown input
+        - wikipedia input
+    - TEI output
+    - sciposter output (or similar)
+    - \FreeMind output
+    - \OpenDocument or RTF output (if rtf.rb can be used for this)
+    - Method/attribute naming: indentation vs. level (heading)
+    - citation & bibliography styles
+    - the output stuff has to be managed by the formatter class alone
+    - HTML: make indexed words be hyperlinked to the index (~~tag cloud)
+    - HTML: bib entries should have backlinks to where an author was cited
+    - PHP: mysql backend for the comment facility (per page, element)
+
+** 0.??
+    - unify region & command & anchor
+        - unify region & command
+        - if it isn't a region/command, check if it could be an anchor
+        - make it case insensitive
+        - or leave it the way it is
+    - allow addressing slots by name only
+        - make slots "relative" so that something like begin+5 and end-6 can 
+          never overlap.
+    - make autoidx a particle of its own with a volatile rx saved in the 
+      current instance of Deplate::Core (don't create new classes) -- the rx 
+      should be a property of Deplate::Core though
+        - autoindexing is class-wide; if used in a multi-whatever environment, 
+          this will result in unexpected indexes (but then: in conjunction 
+          with some metadata, this probably is what one wants to do)
+    - clean up deplate.rb (handling of @sources, \--each, \--many is ...  
+      suboptimal)
+    - reconsider the way indexes & clips & footnotes etc. work
+    - text blocks that can be freely placed on a page (at least for HTML & 
+      LaTeX)
+
+** 1.0
+    - check variables for consistent naming; define synonyms if necessary
+    - LaTeX
+        - dense08: decrease the line spacing too
+        - longtable
+            - Make it possible to define a continuation caption
+            - smaller font sizes conflict with caption
+        - figures
+            - here! doesn't work properly when using longtable & figures
+    - HTML: re-check table alignment & positioning
+    - HTML + LaTeX: wrap text around floats (tables, figures)
+
+* Additional classes for improved functionality
+    - Widgets: Calender, Forms (HTML/PHP only?)
+
+* Additional classes for better support of other wiki markups
+    - bold
+    - colored text
+    - inline html
+    - no autolinking region (twiki)
+    - center/left/right aligned text (tiki)
+    - text box (tiki)
+    - special characters (tiki)
+    - title bar (tiki)
+    - hanging line indent (tiki)
+    - nested quotes (E-Mail style quotes)
+    - other text styles: underline, strike through ...
+
+* Other ideas
+    - ''if'', ''ifelse'' macros (or define a region (e.g., #Particle) that 
+      evaluates its body as template and parses the result as inline text, 
+      yielding some particles which are appended to the previous element's 
+      body).
+    - plain text: ascii representation for images
+        - support for more formatters (eg aalib) & find a pure ruby solution
+        - find a way to convert vector based formats
+    - #A, #ANCHOR command
+        - integrate with ctags
+    - #ACRONYM ... Glossar and acronyms
+    - #MAKEGLOSSAR
+    - #REQUIRE, #INCLUDE once! ... include a file only once (isn't this 
+      already the default?)
+    - #Filter ... (general region) filter region through an external program, 
+      insert result as verbatim, image, table etc.
+    - html: backreferences from the bibliography to the citation
+    - html: citation/bibliography styles?
+    - a way to define page layouts (it should at least be possible to make 
+      posters/slides using a html/latex/context formatter)
+    - Define styles in deplate
+    - colours (or maybe not; abstract styles are probably better)
+        - Use classes in html, colours in other output formats
+    - rss somehow?
+        - Mod: rss-item. Erzeugt Region ''#RssItem title=TITLE, desc=@body''.  
+          Die Items werden mit erstmaligen Datum + Url (im Text hinterlassen 
+          sie einen Anchor) in einer yaml datei abgespeichert. Die 15 neuesten 
+          Items werden als RSS-Feed (FILE.rss oder doc_option["rssItemsFile"]) 
+          gespeichert. Außerdem wird eine HTML Version erzeugt (FILE-log.html, 
+          doc_option["rssItemsLogFile"]), dass sich wie Template 
+          (doc_option["rssItemsLogTemplate"]) anpassen lässt.
+            - Nachteil, dass die RSS-items über Datei verstreut sind.
+        - Mod: rss. Eine Region #Rss, die eine Desc Liste als RSS Feed 
+          interpretiert.
+            - Nachteil, dass man genaue URLs angeben muss, wo das RSS Item 
+              hinzeigt.
+        - Mod: rss-auto: Maintain a list of sections + date; determine 
+          automatically, which sections are new/have changed
+    - The syntax of regions vs. commands vs. macros is stupid -> unify!  
+      (problem of the use of # for anchors, commands, and regions, which could 
+      be solved by disallowing text/comments following an anchor or by 
+      defining a #A command)
+    - Option to keep/convert comments
+    - better markup for tables (yet unseen/unknown)
+        - eg region: \ListAsTable
+            - 1 level items = rows: head, body, foot
+            - 2 level items = cells
+                ??? Or do it like phpwiki's definition list tables?
+    - formatter "state": block/element - inline/particle, mathematical - text
+    - make the xmlrpc module handle files in subdirectories???; actually test 
+      it
+    - make a php-based wiki that uses deplate via xmlrpc
+    - write a wiki server or a deplate plugin for some existing wiki
+    - write a general source code documentation tool that uses deplate markup 
+      -- or bend rdoc to do so
+    - markup for math stuff (à la ASCIIMath but for all output formats)
+
+* Support for additional formats (in & out)
+** In
+    - mediawiki
+    - docuwiki
+    - pmwiki
+    - simplified latex
+    - simplified docbook
+    - rd
+    - markdown
+    - textile
+    - xml
+        - FreeMind
+
+** Out
+    - OpenDocument
+    - FreeMind
+    - direct pdf output via the pdf-writer library
+    - rtf formatter (only if it can be done better than docbook+jade does and 
+      if it is easier to implement than an \OpenDocument formatter)
+    - a deplate formatter (once there is a LaTeX input filter; make it so that 
+      a roundtrip like deplate -> latex -> deplate doesn't produce too much 
+      noise)
+
+** Etc.
+    - Text_Wiki::Deplate class (in php, yuk)
+
+
+% @Last Change: 07-Jän-2005.
+% vi: ft=viki:tw=78
+% Local Variables:
+% vikiNoSimpleNames: 1
+% End:

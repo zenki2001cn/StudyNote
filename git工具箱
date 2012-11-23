@@ -165,6 +165,8 @@ $ git shortlog [-n | -w | -e]
 $ git relog
 # 显示事件日期格式
 $ git log --pretty=format:'%h - %an -%ad -%s'
+# 显示某个文件的相关的信息
+$ git log repo/foo.c
 
 2.8 show    显示仓库信息
 $ git log -p -2
@@ -192,19 +194,21 @@ $ git reset ded0993b22b7c81d82d17374eb5df9bf6e6f23a2
 
 2.10 conflict 解决冲突
 2.10.1 解决方法
-    当merge命令自身无法解决冲突的时候，它会将工作树置于一种特殊的状态，并且给用户提供冲突信息，
-以期用户可以自己解决这些问题。当然在这个时候，未发生冲突的代码已经被“git merge”登记在了“index file”里了。
+
+	当merge命令自身无法解决冲突的时候，它会将工作树置于一种特殊的状态，
+并且给用户提供冲突信息，以期用户可以自己解决这些问题。当然在这个时候，
+未发生冲突的代码已经被“git merge”登记在了“index file”里了。
 如果你这个时候使用“git diff”，显示出来的只是发生冲突的代码信息。
-    在你解决了冲突之前，发生冲突的文件会一直在“index file”中被标记出来。这个时候，如果你使用“git commit”提交的话，
-git会提示：“filename.txt needs merge”
+    在你解决了冲突之前，发生冲突的文件会一直在“index file”中被标记出来。
+这个时候，如果你使用“git commit”提交的话，git会提示：“filename.txt needs merge”
     在发生冲突的时候，如果你使用“git status”命令，那么会显示出发生冲突的具体信息。
     在你解决了冲突之后，你可以使用如下步骤来提交：
 
-* 第一步：编辑修改冲突文件(如果需要增加文件)：
-$ git add file1
+        * 第一步：编辑修改冲突文件(如果需要增加文件)：
+        $ git add file1
 
-* 第二步：提交修改代码
-$ git commit
+        * 第二步：提交修改代码
+        $ git commit
 
 2.10.2 冲突文件说明
 # 冲突文件由以下形式组成：
@@ -218,7 +222,7 @@ $ git commit
 >>>>>>> 
 
 2.11 恢复修改文件
-2.9.1 从服务器更新文件
+2.11.1 从服务器更新文件
 $ git pull origin testing
 
 2.11.2 恢复修改过的文件
@@ -425,4 +429,4 @@ exec wish8.5 "$0" -- "$@"
 4.4 git信息统计数据
 gitstats
 
-% vim:ft=txt
+vim:tw=78:ts=4:noet:ft=txt:
