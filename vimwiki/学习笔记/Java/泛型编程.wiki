@@ -1,0 +1,141 @@
+= 泛型编程 =
+
+%toc
+
+== 语法规则 ==
+* Java语法要求使用`<>`符号，并使用一个占位符，如`T`，来声明一个参数化的类型。
+* 声明一个泛型方法时，需要在返回值的关键字前加入类型`<T>`的声明。
+* 泛型同样支持可变参数的声明。
+* 不能创建一个泛型的数组，通常使用`ArrayList<T>`来实现。
+
+=== 泛型数组 ===
+{{{class="brush:java"
+// 泛型数组需要由ArrayList<T>来辅助创建。
+public class ListOfGenerics<T> {
+    private List<T> array = new ArrayList<T>();
+    
+    public void add(T item) { 
+        array.add(item); 
+    }
+    
+    public T get(int index) {
+        return array.get(index);
+    }
+}
+}}}
+
+=== 泛型类 ===
+{{{class="brush:java"
+// 示例一
+public class GenericTest<T> {
+    private T mObj; 
+
+    public GenericTest(T arg) {
+        mObj = arg;
+    }
+}
+}}}
+
+=== 泛型接口 ===
+{{{class="brush:java"
+public interface GenericInterface<T> {
+    public T showTypeInfo();
+}
+
+/**
+ * @Synopsis 实现一个泛型的接口，需要指定一个具体的类型作为参数
+ */
+public class GenericTest<T> implements GenericInterface<String> {
+    // 方法返回值需要和泛型参数类型对应
+    public String showTypeInfo() {
+        // do something
+    }
+}
+}}}
+
+=== 泛型方法 ===
+{{{class="brush:java"
+public <T> void sayHello() {
+    // do something 
+}
+}}}
+
+=== 泛型可变参数 ===
+{{{class="brush:java"
+public <T> void showArgInfo(T... ts) {
+    // do something 
+}
+}}}
+
+=== 泛型类继承 ===
+{{{class="brush:java"
+// 泛型接口
+interface HasColor {
+    Color getColor();
+}
+
+// 泛型基类
+class HoldItem<T> {
+    T mItem;
+    HoldItem(T item) {
+        this.mItem = item;
+    }
+    T getItem() {
+        return mItem;
+    }
+}
+
+// 泛型继承的子类
+class Together<T extends HasColor> extends HoldItem<T> {
+    Together(T item) {
+        super(item);
+    }
+    
+    Color getColor() {
+        return item.getColor();
+    }
+}
+}}}
+
+=== 泛型通配符 ===
+{{{class="brush:java"
+class Fruit {}
+class Apple extends Fruit {}
+
+List<? extends Fruit> list = new ArrayList<Apple>();   
+list.add(new Apple());          // Error   
+list.add(new Fruit());          // Error   
+  
+List<? super Fruit> list = new ArrayList<Apple>();   
+list.add(new Apple());          // OK
+list.add(new Fruit());          // OK
+}}}
+
+== 泛型的陷阱 ==
+* 在泛型代码内部，无法获得任何有关泛型参数类型的信息。此行为称为`擦除`。
+    * 因为在Java1.0以前，并没有关于泛型的设计，为了保持对大量类库的向后兼容，采用了这种折衷方式。
+    * 所以针对List<String>和List<Integer>两种类型而言，在运行时期没有任何区别，`它们都被认为是List类型，而T被转化为Object`，也就是说`无法编写String或Integer类的相关方法`。
+* 如下例所示，无法在运行期决定参数arg是否属于T类型的实例，并创建一个T类型的对象。
+{{{class="brush:java"
+public class GenericTest<T> {
+    public GenericCompare(Object arg) {
+        if (arg instanceof T) {                 // Error
+            T var = new T();                    // Error
+            T[] array = new T[10];              // Error
+            T[] array2 = (T) new Object[10];    // Error
+        }
+    }
+}
+}}}
+
+* 解决这种擦除的一种方法是可以通过继承一个类型，来限定擦除的边界，如下面的示例：
+{{{class="brush:java"
+// 类型T被限定在MyObj的子类
+public class GenericTest<T extends MyObj> {
+    private T mObj; 
+
+    public GenericTest(T arg) {
+        mObj = arg;
+    }
+}
+}}}

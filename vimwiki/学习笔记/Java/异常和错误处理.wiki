@@ -1,5 +1,7 @@
 = 异常和错误处理 =
 
+%toc
+
 == 异常处理语句格式 ==
 {{{class="brush: java"
 try {

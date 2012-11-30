@@ -20,5 +20,5 @@ if (files != null) {
 }
 
 // 通过toArray()方法转换成数组
-File[] files2 = listAll.toArray(new File[] {});
+File[] files2 = listFiles.toArray(new File[] {});
 }}}

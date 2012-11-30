@@ -1,5 +1,7 @@
 = JUnit使用 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import junit.framework.Test;

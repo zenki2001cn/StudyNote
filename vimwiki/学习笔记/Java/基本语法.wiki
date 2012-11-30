@@ -1,5 +1,7 @@
 = 基本语法 =
 
+%toc
+
 == 类的声明 ==
 *使用class来声明类*
 {{{class="brush: java"

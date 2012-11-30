@@ -1,5 +1,7 @@
 = 类型检查 =
 
+%toc
+
 == 基本概念 ==
 运行期类型识别(RTTI, run-time type identification) :: 当你只有一个指向对象的基类的引用时，RTTI可以让你找出这个对象的确切类型。
 
