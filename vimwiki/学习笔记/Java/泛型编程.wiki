@@ -7,8 +7,9 @@
 * 声明一个泛型方法时，需要在返回值的关键字前加入类型`<T>`的声明。
 * 泛型同样支持可变参数的声明。
 * 不能创建一个泛型的数组，通常使用`ArrayList<T>`来实现。
+* 任何基本类型，都不能作为类型参数。如`int`, `byte`等等。
 
-=== 泛型数组 ===
+=== 泛型数组(List<T>) ===
 {{{class="brush:java"
 // 泛型数组需要由ArrayList<T>来辅助创建。
 public class ListOfGenerics<T> {
@@ -24,7 +25,7 @@ public class ListOfGenerics<T> {
 }
 }}}
 
-=== 泛型类 ===
+=== 泛型类(class<T>) ===
 {{{class="brush:java"
 // 示例一
 public class GenericTest<T> {
@@ -36,7 +37,7 @@ public class GenericTest<T> {
 }
 }}}
 
-=== 泛型接口 ===
+=== 泛型接口(interface<T>) ===
 {{{class="brush:java"
 public interface GenericInterface<T> {
     public T showTypeInfo();
@@ -53,21 +54,21 @@ public class GenericTest<T> implements GenericInterface<String> {
 }
 }}}
 
-=== 泛型方法 ===
+=== 泛型方法(<T> function) ===
 {{{class="brush:java"
 public <T> void sayHello() {
     // do something 
 }
 }}}
 
-=== 泛型可变参数 ===
+=== 泛型可变参数(T... arg) ===
 {{{class="brush:java"
 public <T> void showArgInfo(T... ts) {
     // do something 
 }
 }}}
 
-=== 泛型类继承 ===
+=== 泛型类继承(T extends) ===
 {{{class="brush:java"
 // 泛型接口
 interface HasColor {
@@ -97,7 +98,7 @@ class Together<T extends HasColor> extends HoldItem<T> {
 }
 }}}
 
-=== 泛型通配符 ===
+=== 泛型通配符(<? super>) ===
 {{{class="brush:java"
 class Fruit {}
 class Apple extends Fruit {}
@@ -112,6 +113,7 @@ list.add(new Fruit());          // OK
 }}}
 
 == 泛型的陷阱 ==
+=== 类型限定和擦除 ===
 * 在泛型代码内部，无法获得任何有关泛型参数类型的信息。此行为称为`擦除`。
     * 因为在Java1.0以前，并没有关于泛型的设计，为了保持对大量类库的向后兼容，采用了这种折衷方式。
     * 所以针对List<String>和List<Integer>两种类型而言，在运行时期没有任何区别，`它们都被认为是List类型，而T被转化为Object`，也就是说`无法编写String或Integer类的相关方法`。
@@ -136,6 +138,49 @@ public class GenericTest<T extends MyObj> {
 
     public GenericTest(T arg) {
         mObj = arg;
+    }
+}
+}}}
+
+=== 超类型通配符和无界通配符 ===
+* 当创建一个基于派生类的泛型类型时，需要使用超类型通配符`<? super>`。
+* 无界通配符`<?>`可以指向超类型通配符的引用。
+{{{class="brush:java"
+public class GenericPatten {
+    class Fruit {
+    }    
+
+    class Apple extends Fruit {
+    }
+
+    class Jonathan extends Apple {
+    }
+
+    List<? super Fruit>     mListSuper;
+    List<?>                 mListUnbound;
+
+    public GenericPatten() {
+        // 创建Fruit的泛型列表
+        mListSuper = new ArrayList<Fruit>();
+        mListSuper.add(new Apple());
+        mListSuper.add(new Jonathan());
+        mListSuper.add(new Fruit());
+
+        // 使用无界通配符
+        mListUnbound = mListSuper;
+    }
+    
+    // 遍历列表，可以在运行时获得每个列表成员的类型
+    public void showFruit() {
+        int len = mListSuper.size();
+        int i;
+        for (i = 0; i < len; i++) {
+            System.out.println("List<? super Fruit> item class: " + mListSuper.get(i).getClass().getName());
+        }
+
+        for (i = 0; i < len; i++) {
+            System.out.println("List<?> item class: " + mListUnbound.get(i).getClass().getName());
+        }
     }
 }
 }}}

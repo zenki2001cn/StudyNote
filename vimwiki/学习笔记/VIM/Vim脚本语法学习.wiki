@@ -18,7 +18,7 @@ $ cd vim
 $ ./configure --enable-multibyte=yes --with-features=huge --enable-xim=yes --enable-pythoninterp=yes \
               --enable-gui=yes --enable-cscope=yes --enable-fontset=yes --enable-perlinterp=yes \
               --enable-mzschemeinterp=yes --enable-luainterp=yes --enable-rubyinterp=yes \
-              --enable-tclinterp=yes --with-vim-name=vim7.3
+              --enable-tclinterp=yes --enable-xim=yes --with-vim-name=vim7.3
 
 # 4. 安装vim
 $ make
