@@ -66,14 +66,15 @@ _斜体文本_
 上标^脚本^
 下标,,脚本,,
 
-链接
-WikiWords
-[[链接源地址|链接描述]]
-[[链接源地址][链接描述]]
-[http://habamax.ru/blog habamax 的主页]
-图片及图片链接
-[[images/pabloymoira.jpg]]
-[[index.html|images/pabloymoira.jpg]]
+=== 链接 ===
+- [[链接源地址|链接描述]]
+- [[http://habamax.ru/blog|habamax的主页]]
+- [[file:/home/zenki/temp/Asec.h]]
+- [[local:Vim脚本语法学习.html]]
+- [[diary:2012-06-01]]
+=== 图片及图片链接 ===
+{{http:pic/paboymoira.jpg}}
+{{http://www.icodeit.org/wp-content/uploads/2012/01/clip_image002.jpg|graphviz}}
 
 标题
 = 1 级标题 =

@@ -69,9 +69,12 @@ iptables -P INPUT ACCEPT
 iptables -P FORWARD ACCEPT
 iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o eth0 -jMASQUERADE
 
-1.10. 查询域名服务器
-dig
-dig -x host
+1.10. dig
+1.10.1 查询域名服务器
+$ dig -x host
+
+1.10.2 通过 DNS 来读取 Wikipedia 的词条
+$ dig +short txt <keyword>.wp.dg.cx
 
 1.11. ssh翻墙
 ssh -qTfnN -D 8080 root@192.168.108.10
@@ -117,6 +120,9 @@ medusa -h host -u user -p password -M module
 
 1.19 通过socket接收网络命令的工具
 1.19.1 socat
+
+1.20. 简单的SMTP server
+$ python -m smtpd -n -c DebuggingServer localhost:1025
 
 2. 系统相关
 2.1. 查看硬件信息
@@ -252,6 +258,41 @@ xclip
 $ echo "hello" | xclip                          输出到选中剪贴板
 $ echo "hello" | xclip -selection clipboard     输出到剪贴板
 $ xclip -o                                      获取选中剪贴板内容
+
+2.24 ssh - 安全远程登录工具
+2.24.1 免密码登录
+$ ssh-copy-id remote-machine
+# 或手动执行：
+$ ssh-keygen -t rsa -C "zenki2001cn@163.com"
+$ scp ~/.ssh/identity.pub remote-machine
+$ ssh remote-machine
+$ cat identity.pub >> ~/.ssh/authorized_keys
+
+2.24.2 端口转发
+# 这个命令在本机打开了2001端口,对本机2001端口的请求通过
+# somemachine作为跳板, 转到remotehost的80端口上。
+# somemachine可换成localhost
+$ ssh -N -L 2001:remotehost:80 user@somemachine
+# 示例：
+# 然后在/etc/hosts里面添加127.0.0.1 twitter.com
+$ ssh -f -N -L 0.0.0.0:443:twitter.com:443 shell.cjb.net
+$ ssh -f -N -L 0.0.0.0:80:twitter.com:80 shell.cjb.net
+
+2.24.3 挂载远程主机上的文件夹
+# 这条命令可以让你通过SSH加载远程主机上的文件系统为本地磁盘,
+# 前提是你需要安装FUSE及sshfs这两个软件
+$ sshfs name@server:/path/to/folder /path/to/mount/point
+# 卸载使用：
+$ fusermount -u /path/to/mount/point
+
+2.24.4 嵌套登录远程机器
+# 如果host_B无法直接访问，而host_A可以访问host_B
+$ ssh -t host_A ssh host_B
+$ ssh -t host1 ssh -t host2 ssh -t host3 ssh -t host4 ...
+
+2.25. history 
+2.25.1. 列出最常用的10条命令
+$ history | awk '{a[$2]++}END{for(i in a){print a[i] " " i}}' | sort -rn | head
 
 3. 文件管理
 3.1. 批量utf8转换和修改文件名
@@ -436,6 +477,8 @@ sudo apt-get install rabbitvcs-cli rabbitvcs-core rabbitvcs-gedit rabbitvcs-naut
 
 脚本如下查看tools/add_lang_to_source_hilight.sh
 
+3.25 du、ncdu
+
 4. 开发工具
 4.1. agave配色方案生成器
 agave
@@ -591,5 +634,6 @@ http://www.sublimetext.com/2
 
 4.38. Python包安装管理
 pip
+easyinstall
 
 % vim:ft=txt
