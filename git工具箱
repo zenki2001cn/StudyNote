@@ -33,6 +33,7 @@ Host tr
   Hostname gerrit.ext.ti.com
   Port 29418
   User Zenki
+  IdentityFile ~/.ssh/id_rsa
 
 1.4.4   添加rsa密钥
 $ ssh-add ~/.ssh/id_rsa

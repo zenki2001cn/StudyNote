@@ -1,0 +1,184 @@
+= Gerrit =
+
+%toc
+
+== 安装准备 ==
+- 下载Gerrit：http://code.google.com/p/gerrit/
+- Gerrit的安装指南：http://gerrit.googlecode.com/svn/documentation/2.2.1/install.html
+- 安装mysql、git
+{{{class="brush:bash"
+$ sudo apt-get install mysql-server git git-core
+}}}
+- 创建mysql账户
+{{{class="brush:bash"
+$ mysql -u root -p
+mysql> CREATE USER 'zenki'@'localhost' IDENTIFIED BY 'zenki007';
+mysql> CREATE DATABASE reviewdb;
+mysql> ALTER DATABASE reviewdb charset=latin1;
+mysql> GRANT ALL ON reviewdb.* TO 'zenki'@'localhost';
+mysql> FLUSH PRIVILEGES;
+}}}
+
+== 安装gerrit ==
+- 安装前先创建一个gerrit的安装目录。同时，代码仓库的默认安装路径也在该目录下。
+- 确认当前JAVA和JRE的环境变量所指定的版本是一致的。
+- 执行以下命令进行安装：
+    * `Git代码库的位置`要指向正确的位置。默认值是位于安装目录中的'git'目录，也可以是其他不同位置（例如/var/gits等等）。应该先配置好这个路径，因为在Gerrit启动时它会先扫描该目录来添加新项目。
+    * `监听地址`对有多个地址（例如IPv4和IPv6）的主机很有用，它可以限定使用哪个地址。*表示本地主机上的任意地址。
+    * `监听端口`是一个端口号。29418是默认的Gerrit SSH端口，而8080是默认的Gerrit Web端口。但是如果8080已经被别的应用程序占用了，那么你可能会想修改第二个端口。
+    * `身份验证方法`确定了如何登录Gerrit。如果你想挂入某个现有的身份验证提供方（例如Google Accounts），那么可以使用OpenID。但对测试而言（还有上面提到的范例），可以使用 development_become_any_account。键入?会显示一个可用方法的列表。
+{{{class="brush:bash"
+$ java -jar gerrit-full-2.5.war init -d ~/gerrit
+
+*** Gerrit Code Review 2.5
+*** 
+
+
+*** Git Repositories
+*** 
+
+Location of Git repositories   [git]: 
+
+*** SQL Database
+*** 
+
+Database server type           [MYSQL/?]: 
+Server hostname                [localhost]: 
+Server port                    [(MYSQL default)]: 
+Database name                  [reviewdb]: 
+Database username              [zenki]: 
+Change zenki's password        [y/N]? 
+
+*** User Authentication
+*** 
+
+Authentication method          [DEVELOPMENT_BECOME_ANY_ACCOUNT/?]: 
+
+*** Email Delivery
+*** 
+
+SMTP server hostname           [localhost]: 
+SMTP server port               [(default)]: 
+SMTP encryption                [NONE/?]: 
+SMTP username                  [zenki]: 
+Change zenki's password        [y/N]? 
+
+*** Container Process
+*** 
+
+Run as                         [zenki]: 
+Java runtime                   [/usr/lib/jvm/jdk1.6.0_31/jre]: 
+Upgrade /home/zenki/gerrit/bin/gerrit.war [Y/n]? 
+Copying gerrit.war to /home/zenki/gerrit/bin/gerrit.war
+
+*** SSH Daemon
+*** 
+
+Listen on address              [*]: 
+Listen on port                 [29418]: 
+
+*** HTTP Daemon
+*** 
+
+Behind reverse proxy           [y/N]? 
+Use SSL (https://)             [y/N]? 
+Listen on address              [*]: 
+Listen on port                 [8080]: 
+
+*** Plugins
+*** 
+
+Prompt to install core plugins [y/N]? 
+
+Initialized /home/zenki/gerrit
+}}}
+
+=== 运行gerrit ===
+- 在之前安装gerrit的目录下执行脚本，启动gerrit。
+{{{class="brush:bash"
+# 启动gerrit
+$ ~/gerrit/bin/gerrit.sh start
+# 停止gerrit
+$ ~/gerrit/bin/gerrit.sh stop
+# 重启gerrit
+$ ~/gerrit/bin/gerrit.sh restart
+}}}
+
+== 注册用户 ==
+=== 生成ssh私钥和公钥 ===
+{{{class="brush:bash"
+# 生成私钥和公钥
+$ ssh-keygen -t rsa -C "zenki2001cn@163.com"
+
+# 添加以下信息到~/.ssh/config，用来管理登录信息
+Host zenki-ubuntu
+  Hostname zenki-ubuntu
+  Port 29418
+  User Zenki
+  IdentityFile ~/.ssh/id_rsa
+
+# 添加rsa密钥
+$ ssh-add ~/.ssh/id_rsa
+
+# 启用ssh-agent
+$ ssh-agent 
+}}}
+
+=== 注册账户和配置 ===
+- 一切就绪后，使用浏览器，打开http://localhost:8080 此时，会出现gerrit的登录界面。
+- 点击右上角的[[http://localhost:8080/become|Become]]注册新账户。
+    - 注册使用的邮箱，需要和git config中配置的邮箱一致，否则，在提交代码时会报错。
+- 登录账户后，点击[[http://localhost:8080/#/settings/|settings]]进行账户设置，其中需要设置ssh公钥和一些信息。
+{{http:pic/import_pub_key.png}}
+
+=== 验证账户 ===
+{{{class="brush:bash"
+$ ssh -p 29418 zenki@localhost
+
+# 出现以下信息时，说明ssh能够正常工作：
+ ****    Welcome to Gerrit Code Review    ****
+
+  Hi demo, you have successfully connected over SSH.
+
+  Unfortunately, interactive shells are disabled.
+  To clone a hosted Git repository, use:
+
+  git clone ssh://demo@localhost:29418/REPOSITORY_NAME.git
+
+Connection to localhost closed.
+}}}
+
+== 使用gerrit ==
+=== 创建项目 ===
+- 可以通过web页面创建一个新的项目，也可以通过命令行创建：
+{{{class="brush:bash"
+$ ssh -p 29418 zenki@localhost gerrit create-project --name example.git
+}}}
+{{http:pic/create_project.png}}
+
+=== 下载代码 ===
+{{{class="brush:bash"
+$ git clone ssh://Zenki.J.Zha@127.0.0.1:29418/Gerrit_project_test.git
+}}}
+
+=== 提交代码 ===
+- 提交代码时会遇到错误信息，此时，需要将其推送到另一个分支。然后等待code review后，由管理员进行提交。
+{{{class="brush:bash"
+$ git config remote.origin.push refs/heads/*:refs/for/*
+$ git push origin
+Counting objects: 3, done.
+Writing objects: 100% (3/3), 217 bytes, done.
+Total 3 (delta 0), reused 0 (delta 0)
+To ssh://demo@localhost:29418/example.git
+ * [new branch]      master -> refs/for/master
+}}}
+
+=== 配置提交页面 ===
+- 进入项目管理，点击[[http://localhost:8080/#/admin/projects/All-Projects,access|Access]]打开项目权限设置的页面，需要添加两个选项Label Verified和Submit。添加结果如下：
+- 通过code review后的代码，便可以由管理员提交到仓库中，其他成员才可以同步更新这些代码。
+{{http:pic/submit.png}}
+
+== 参考链接 ==
+- http://www.infoq.com/cn/articles/Gerrit-jenkins-hudson
+- http://fatalove.iteye.com/blog/1332881
+- http://www.lifeyun.com/code-review-tools-installation-gerrit.html

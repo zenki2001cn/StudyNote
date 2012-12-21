@@ -1,0 +1,263 @@
+= “hello world”的思考 =
+
+%toc
+
+== 抛砖引玉 ==
+写一个hello world程序几乎是每一个程序员的必修课，无论你是新手（刚刚接触编程），
+还是老手（打算学习一门新的语言），该程序都是你前进的重要一步。今天，我们要从设计，
+抽象，面向对象的各个角度重新认识hello world。
+
+在不断的给该程序提出需求并解决问题的同时，来总结软件设计的思想。
+
+欲窥其义，先观其形。我们先来看一段hello world代码（C语言描述）：
+
+=== hello.c ===
+{{{class="brush:c"
+#include <stdio.h>
+
+int main(int argc, const char *argv[])
+{
+    printf("hello world\n");
+
+    return 0;
+}
+}}}
+
+首先我们来看这段代码主要的功能就是向标准输出打印字符串“hello world”。程序由一个
+hello.c文件组成，该文件包含一个main函数；编译时会先编译成一个hello.o文件，最后链接成
+一个可执行程序。
+{{{class="brush:bash"
+$ gcc -c hello.c
+$ gcc hello.o -o hello
+$ ./hello
+hello world
+}}}
+
+== 变化一：结构化和复用 ==
+我们首先提出的需求是将代码组织结构化，并且要有利于复用和扩展。通过`方法`——我们很容易让
+代码达到既简洁又可复用的目标。下面的代码中，我们通过声明一个display的方法，将打印功能的
+代码独立出来。
+
+    要点总结：将代码结构化的目的是为了复用。方法可以将一组代码封装起来，向外提供方法名
+    作为接口。方法要做到高内聚，低耦合。
+
+=== hello.c ===
+{{{class="brush:c"
+#include <stdio.h>
+
+void display()
+{
+    printf("hello world\n");
+}
+
+int main(int argc, const char *argv[])
+{
+    display();
+
+    return 0;
+}
+}}}
+
+== 变化二：模块化和复用 ==
+变化一中的复用，是为了在同一个文件内，并且由于C程序的编译特点，一个文件只能被编译成一个
+目标文件，因此如果被其他程序引入，则会产生问题。这里的模块化，即是要求将完成相同功能的方法
+划分到另一个独立的文件中，从而构成模块，并且能让其他的程序可以复用该模块。
+
+=== display.c ===
+{{{class="brush:c"
+#include <stdio.h>
+
+void display()
+{
+    printf("hello world\n");
+}
+}}}
+
+=== hello.c ===
+{{{class="brush:c"
+#include <stdio.h>
+
+int main(int argc, const char *argv[])
+{
+    display();
+
+    return 0;
+}
+}}}
+
+链接的方法有所不同：
+{{{class="brush:bash"
+$ gcc -c hello.c
+$ gcc -c display.c
+$ gcc hello.o display.o -o hello
+$ ./hello
+hello world
+}}}
+
+由此可见，display.o即是我们所独立出来的显示模块，对于“hello world”程序来说，它完成了打印字符串
+的功能。我们再看hello.c的代码，是不是更加的清晰简洁，而且程序结构更加一目了然。display模块一旦
+编译成共享库，还可以供其他程序使用，这就达到了功能模块化的目的。
+
+    要点总结：将功能模块化，不仅能够使程序的结构更加清晰，还能最大程度的实现复用。
+    
+== 变化三：参数化、复用和可变性 ==
+到目前为止，我们的“hello world”已经有了三个版本，但是最终它只能向控制台输出“hello world”的字样，
+我们的第三个需求变化是，输出自定义的字符串。`参数`即可以将可变部分从高内聚的方法实现，划分出来，
+作为方法的输入部分。其耦合部分交给方法的调用者，这样一来，输出自定义字符串这一需求，就可以通过输入
+不同的参数来完成。
+
+=== display.c ===
+{{{class="brush:c"
+#include <stdio.h>
+
+void display(char *message)
+{
+    printf("%s\n", message);
+}
+}}}
+
+=== hello.c ===
+{{{class="brush:c"
+#include <stdio.h>
+
+int main(int argc, const char *argv[])
+{
+    display("hello world, I'm here'");
+
+    return 0;
+}
+}}}
+
+    要点总结：在程序设计中，我们不仅要考虑复用性，还需要考虑可变性。如何将可变部分独立出来，需要
+    了解程序的整体结构，并且能够抓住其关键部分。
+    
+== 变化四：数据抽象和扩展 ==
+我们常常说“程序=数据结构+算法”。在“hello world”中，我们同样需要关注数据。在我们第三个例子中，display
+方法的参数类型是char*，它是C语言的原始数据类型，它并不能包含其他额外的信息，除了传递一个字符串指针。
+现在，我们要将数据抽象出来，将它封装成一个struct类型。先看代码：
+
+=== display.h ===
+{{{class="brush:c"
+#ifndef _display_H_
+#define _display_H_
+
+struct message_t {
+    char *msg;
+};
+
+#endif
+}}}
+
+=== display.c ===
+{{{class="brush:c"
+#include <stdio.h>
+#include "display.h"
+
+void display(struct message_t message)
+{
+    printf("%s\n", message.msg);
+}
+}}}
+
+=== hello.c ===
+{{{class="brush:c"
+#include <stdio.h>
+#include "display.h"
+
+int main(int argc, const char *argv[])
+{
+    struct message_t msg;
+    msg.msg = "hello world, I'm here";
+    display(msg);
+
+    return 0;
+}
+}}}
+
+在这个版本中，我们需要包含一个display.h头文件，该文件可被多个源文件包含（注意：这本身就是一种复用）。
+struct message_t封装了一个字符串类型的变量msg。同时display方法的参数类型换成了struct message_t。很多
+人会疑惑，这样不是更加麻烦，写更多的代码，换汤不换药？其实不然。struct为我们提供了封装的特性，它可以
+让数据`高内聚`（方法让实现代码高内聚），它可以将数据在未来的变化封装起来。对于方法调用者而言，我们只
+关心两件事：
+- 方法：display
+- 结构体：struct message_t
+
+由此一来，在未来，任何关于数据变化的部分，我们都可以在`struct message_t`中得到解决（例如：如果要统计每
+条信息被打印的次数，可以再封装一个int型的变量表示打印计数）。
+
+我们要深信：需求永远是在变化的。
+
+    要点总结：我们要善于挖掘数据，并将之封装起来，这一步，也可称之为抽象。抽象的目的不仅是为了复用，
+    更重要的是应对变化。如何封装数据，取决于你使用怎样的结构组织数据，这样做的同时也会大大影响你的算法。
+    
+== 变化五：逻辑抽象和扩展 ==
+如果把“hello world”字符串作为数据的话，那么将字符串打印到终端的处理过程就称之为逻辑。这一次，我们要将
+逻辑部分也进行封装。为什么要封装逻辑？原因很简单，根据业务的功能不同，需求同样会影响到逻辑部分。比如，
+我们可以将数据显示在终端，也可以通过网络将之发送给一个服务器。将逻辑部分封装，同样是为了应对未来的变化，
+并且能够方便扩展其行为。
+
+C语言可以通过一个函数指针，将逻辑处理函数封装进一个struct结构。如下面代码所示：
+
+=== display.h ===
+{{{class="brush:c"
+#ifndef _display_H_
+#define _display_H_
+
+struct message_t {
+    char *msg;
+    void (*display)(struct message_t*);
+};
+
+void display_no_tail(struct message_t*);
+void display_add_tail(struct message_t*);
+
+#endif
+}}}
+
+=== display.c ===
+{{{class="brush:c"
+#include <stdio.h>
+#include "display.h"
+
+void display_no_tail(struct message_t *message)
+{
+    printf("%s\n", message->msg);
+}
+
+void display_add_tail(struct message_t *message)
+{
+    printf("%s !!!\n", message->msg);
+}
+}}}
+
+=== hello.c ===
+{{{class="brush:c"
+#include <stdio.h>
+#include "display.h"
+
+int main(int argc, const char *argv[])
+{
+    struct message_t msg =  {
+        .msg             =  "hello world, I'm here",
+        .display         =  display_no_tail,
+    };
+
+    struct message_t msg2 =  {
+        .msg              =  "hello world, I'm here now",
+        .display          =  display_add_tail,
+    };
+
+    msg.display(&msg);
+    msg2.display(&msg2);
+
+    return 0;
+}
+}}}
+
+我们可以看到，在struct message_t结构中不仅封装了字符串信息，还有打印字符串的函数指针。而在其实现的源文件
+display.c中，给出了两个具体实现。在main方法中，通过声明两个struct message_t变量，使用不同的初始化数据实现
+不同的打印功能。该例子中的规则类似于变化四，调用者只需关心struct message_t，而该结构包含了display方法。
+
+    要点总结：封装逻辑的好处是为用户提供统一的调用接口，这样一来，变化的部分由具体实现者来完成。无论是对于
+    使用者还是实现者，他们之间沟通的桥梁变得越来越简单和清晰。
+
