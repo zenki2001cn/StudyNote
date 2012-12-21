@@ -158,7 +158,10 @@ $ ssh -p 29418 zenki@localhost gerrit create-project --name example.git
 
 === 下载代码 ===
 {{{class="brush:bash"
+# ssh方式
 $ git clone ssh://Zenki.J.Zha@127.0.0.1:29418/Gerrit_project_test.git
+# http方式
+$ git clone http://Zenki.J.Zha@127.0.0.1:8080/Gerrit_project_test.git
 }}}
 
 === 提交代码 ===
