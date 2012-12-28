@@ -638,7 +638,12 @@ curl http://betterthangrep.com/ack-standalone > /usr/bin/ack && chmod 0755
 http://www.sublimetext.com/2
 
 4.38. Python包安装管理
-pip
-easyinstall
+4.38.1 pip
+pip install ...
+pip install upgrade ...
+
+4.38.2 easy_install
+easy_install install ...
+easy_install --upgrade ...
 
 % vim:ft=txt

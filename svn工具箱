@@ -58,7 +58,7 @@ $ svnadmin load REPOS_PATH < repos-dumpfile
 2.7. recover 恢复版本库
 $ svnadmin recover REPOS_PATH
 
-3. svndumpfilter
+3. svndump
 3.1. 过滤dump文件
 $ svnadmin dump REPOS_PATH > repos-dumpfile
 
@@ -112,10 +112,14 @@ svn unlock REPOS_PATH
 4.11 import 导入版本库
 svn import LOCAL_PATH REPOS_PATH --username xxx --password xxx
 
-4.12 copy版本库
+4.12 copy 版本库
 svn cp SRC_REPOS_PATH DES_REPOS_PATH --username xxx --password xxx
+
+4.13 add 加入文件到版本库
+svn add [files]
 
 5. PS
 5.1. REPOS_PATH: SVN的URL
+5.2. rN: r10 => revision 10 ; r161 => revision 161 .etc
 
 % vim:ft=txt

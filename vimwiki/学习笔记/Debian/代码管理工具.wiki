@@ -2,4 +2,5 @@
 
 %toc
 
-- [[Gerrit]]
+- [[Gerrit]] --- CodeReview系统
+- [[Jenkins和Hundson]] --- 代码构建系统

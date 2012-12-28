@@ -150,10 +150,11 @@ Connection to localhost closed.
 
 == 使用gerrit ==
 === 创建项目 ===
-- 可以通过web页面创建一个新的项目，也可以通过命令行创建：
+- 可以通过命令行创建：
 {{{class="brush:bash"
 $ ssh -p 29418 zenki@localhost gerrit create-project --name example.git
 }}}
+- 也可以通过web页面创建一个新的项目：
 {{http:pic/create_project.png}}
 
 === 下载代码 ===
@@ -162,6 +163,8 @@ $ ssh -p 29418 zenki@localhost gerrit create-project --name example.git
 $ git clone ssh://Zenki.J.Zha@127.0.0.1:29418/Gerrit_project_test.git
 # http方式
 $ git clone http://Zenki.J.Zha@127.0.0.1:8080/Gerrit_project_test.git
+# https方式，如果之前配置了SSL加密
+$ git clone https://Zenki.J.Zha@127.0.0.1:8080/Gerrit_project_test.git
 }}}
 
 === 提交代码 ===

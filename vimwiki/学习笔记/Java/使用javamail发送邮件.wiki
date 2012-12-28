@@ -3,9 +3,9 @@
 %toc
 
 == 导入三个jar包 ==
-- [[pic/activation.jar]]
-- [[pic/additionnal.jar]]
-- [[pic/mail.jar]]
+- [[http:pic/activation.jar|activation.jar]]
+- [[http:pic/additionnal.jar|additionnal.jar]]
+- [[http:pic/mail.jar|mail.jar]]
 
 == 示例代码 ==
 === Mailer邮件处理类 ===

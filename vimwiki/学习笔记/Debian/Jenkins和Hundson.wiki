@@ -1,0 +1,31 @@
+= Jenkins和Hundson =
+
+%toc
+
+== 安装准备 ==
+- 首先下载Jenkins([[http://jenkins-ci.org/|下载地址]])和Hundson([[http://hudson-ci.org/|下载地址]])安装包。
+- 执行以下命令启动服务器：
+{{{class="brush:bash"
+# 默认的端口为8080，需要改变端口，添加参数--httpPort
+$ java -jar jenkins.war --httpPort=1234
+}}}
+
+== 配置管理 ==
+=== 安装插件 ===
+- 打开http://localhost:1234 登录Jenkins主页面，进入《系统管理》->《插件管理》->《可选插件》，下载“Gerrit Trigger”插件，与Gerrit集成。
+
+=== 新建任务和配置 ===
+- 点击[[http://localhost:1234/view/All/newJob|新任务]]按钮后，填写任务的配置信息。
+{{http:pic/jenkins_new.png}}
+
+- 新建项目名称
+{{http:pic/jenkins_project.png}}
+
+- 源码管理
+{{http:pic/jenkins_scm.png}}
+
+- Gerrit选项
+{{http:pic/jenkins_gerrit_trigger.png}}
+
+- 构建选项
+{{http:pic/jenkins_build.png}}
