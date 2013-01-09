@@ -646,4 +646,9 @@ pip install upgrade ...
 easy_install install ...
 easy_install --upgrade ...
 
+4.39 strace - 系统调用跟踪
+# 调式man调用
+$ strace -f -o /tmp/t -e trace=open man man
+$ cat /tmp/t
+
 % vim:ft=txt
