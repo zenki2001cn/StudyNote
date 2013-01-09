@@ -93,9 +93,16 @@ prefer-ipv4 = yes
 
 == 12、安装pdf查看 ==
 {{{class="brush: text"
-apt-get install evince
-apt-get install xpdf-chinese-simplified xpdf-chinese-traditional
+$ sudo apt-get install evince
+$ sudo apt-get install xpdf-chinese-simplified xpdf-chinese-traditional
+
+$ sudo apt-get install poppler-data
+# 删除系统使用的当前字体
+$ sudo mv /etc/fonts/conf.d/49-sansserif.conf /etc/fonts/conf.d/49-sansserif.conf.bak
 }}}
+
+- 如果当前主题使用sansserif字体，还需要变更主题的字体：
+{{http:pic/change_font.png}}
 
 == 13、安装nvidia显卡驱动 ==
 {{{class="brush: text"

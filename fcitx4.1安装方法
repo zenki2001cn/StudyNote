@@ -1,4 +1,4 @@
-sudo apt-get install libunique-dev
+sudo apt-get install libunique-dev libgtk2.0-dev libdbus-glib-1-dev libopencc-dev libpango1.0-dev libcairo2-dev
 sudo apt-get install intltool
 
 安装

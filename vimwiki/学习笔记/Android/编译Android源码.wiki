@@ -5,15 +5,20 @@
 == 官方的连接地址 ==
 配置环境 :: http://source.android.com/source/initializing.html
 编译 :: http://source.android.com/source/building.html
+问题1 :: http://www.linuxidc.com/Linux/2011-07/38430.htm
+问题2 :: http://www.cnblogs.com/dwayne/archive/2011/11/16/2251734.html  
 
 == 安装编译环境 ==
 {{{class="brush: bash"
 $ sudo apt-get install git-core gnupg sun-java5-jdk flex bison gperf \
             libsdl-dev libesd0-dev libwxgtk2.6-dev build-essential   \
-            zip curl libncurses5-dev zlib1g-dev
+            zip curl libncurses5-dev zlib1g-dev 
 
 # 根据版本可选择安装jdk6
 $ sudo apt-get install sun-java6-jdk
+
+# 64位系统可选择安装以下包
+$ sudo apt-get install g++-4.3 g++-4.3-multilib gcc-4.3-multilib gcc-4.3
 }}}
 
 == 设置环境变量 ==
