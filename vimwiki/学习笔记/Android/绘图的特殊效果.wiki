@@ -1,0 +1,24 @@
+= 绘图的特殊效果 =
+
+%toc
+
+- 使用BlurMaskFilter类实现绘画的特殊效果
+
+{{{class="brush:java"
+private Bitmap drawImageDropShadow(Bitmap originalBitmap) {
+    BlurMaskFilter blurFilter = new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL);
+    Paint shadowPaint = new Paint();
+    shadowPaint.setAlpha(50);
+    shadowPaint.setColor(activity.getResources().getColor(R.color.solid_red));
+    shadowPaint.setMaskFilter(blurFilter);
+
+    int[] offsetXY = new int[2];
+    Bitmap shadowBitmap = originalBitmap.extractAlpha(shadowPaint, offsetXY);
+
+    Bitmap shadowImage32 = shadowBitmap.copy(Bitmap.Config.ARGB_8888, true);
+    Canvas c = new Canvas(shadowImage32);
+    c.drawBitmap(originalBitmap, offsetXY[0], offsetXY[1], null);
+
+    return shadowImage32;
+}
+}}}

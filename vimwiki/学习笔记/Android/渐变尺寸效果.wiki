@@ -48,6 +48,16 @@ import android.view.animation.AnimationUtils;
 </set>
 }}}
 
+=== 使用XML动画效果 ===
+{{{class="brush:java"
+// 加载XML资源
+Animation mAnim = AnimationUtils.loadAnimation(context, R.anim.scale);
+// 获取动画对象
+ViewGroup view = (ViewGroup) findViewById(R.id.container);
+// 开始动画
+view.startAnimation(mAnim);
+}}}
+
 === 在JAVA代码中定义 ===
 {{{class="brush:java"
 //第一个参数fromX为动画起始时 X坐标上的伸缩尺寸   
@@ -65,7 +75,7 @@ import android.view.animation.AnimationUtils;
 //第六个参数pivotXValue为动画相对于物件的X坐标的开始位置
 //第七个参数pivotXType为动画在Y轴相对于物件位置类型   
 //第八个参数pivotYValue为动画相对于物件的Y坐标的开始位置
-myAnimation_Scale =new ScaleAnimation(0.0f, 1.4f, 0.0f, 1.4f, Animation.RELATIVE_TO_SELF, 
+myAnimation_Scale = new ScaleAnimation(0.0f, 1.4f, 0.0f, 1.4f, Animation.RELATIVE_TO_SELF, 
                                       0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
 }}}
 

@@ -31,6 +31,16 @@ import android.view.animation.AnimationUtils;
 </set>
 }}}
 
+=== 使用XML动画效果 ===
+{{{class="brush:java"
+// 加载XML资源
+Animation mAnim = AnimationUtils.loadAnimation(context, R.anim.translate);
+// 获取动画对象
+ViewGroup view = (ViewGroup) findViewById(R.id.container);
+// 开始动画
+view.startAnimation(mAnim);
+}}}
+
 === 在JAVA代码中定义 ===
 {{{class="brush:java"
 //第一个参数fromXDelta为动画起始时 X坐标上的移动位置   

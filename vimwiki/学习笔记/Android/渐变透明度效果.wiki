@@ -32,7 +32,7 @@ import android.view.animation.AnimationUtils;
 === 使用XML动画效果 ===
 {{{class="brush:java"
 // 加载XML资源
-Animation mAnim = AnimationUtils.loadAnimation(context, id);
+Animation mAnim = AnimationUtils.loadAnimation(context, R.anim.alpha);
 // 获取动画对象
 ViewGroup view = (ViewGroup) findViewById(R.id.container);
 // 开始动画

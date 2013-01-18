@@ -1,5 +1,7 @@
 = 通用布局 =
 
+%toc
+
 == 继承关系 ==
 
 {{http:pic/view_her.jpg}}
@@ -102,7 +104,7 @@ protected void onCreate(Bundle savedInstanceState) {
 }
 }}}
 
-=== 在View中獲取子视图 ===
+=== 当子视图被创建完成 ===
 - 重写onFinishInflate()方法,此方法在完成视图的创建時回調
 - getLayoutInflater()获取解析XML文件的对象，并通过该对象加载子视图
 
@@ -116,4 +118,45 @@ protected void onFinishInflate() {
     // write your code to set view
     setDefaultLayout();
 }
+}}}
+
+=== 当子视图的位置和大小被调整 ===
+{{{class="brush:java"
+protected void onLayout(boolean changed, int l, int t, int r, int b) { 
+    childCount = getChildCount();       // 获取子视图数 
+    childWidth = childCount > 0 ? getChildAt(0).getMeasuredWidth();     // 获取字节点的宽度 
+    
+    if (!setContentViewtShareWindowFlag && defaultWindow >= 0 && defaultWindow <= childCount-1) { 
+        //设置默认窗口的左端距离 
+        offset = -1 * defaultWindow * childWidth; 
+        setShareWindowFlag = true; 
+    } 
+    
+    //设置距离(0,0)点X轴方向的距离 
+    int left = 0 + offset; 
+    for (int i = 0; i < childCount; i++){ 
+        //设置每个子视图在布局中的位置 
+        View child = getChildAt(i); 
+        if (child.getVisibility() != View.GONE) { 
+            childCount.layout(left, 0, childWidth+left, child.getMeasuredHeight()); 
+            left = left + childWidth; 
+        } 
+    } 
+}
+}}}
+            
+=== 调整视图大小 ===
+{{{class="brush:java"
+protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) { 
+    super.onMeasure(widthMeasureSpec,heightMeasureSpec); 
+
+    // 调整子视图的大小
+    int childCount = getChildCount(); 
+    for (int i = 0; i < childCountnt; i++) { 
+        getChildAt(i).measure(widthMeasureSpec,heightMeasureSpecMeasureSpec); 
+    } 
+    
+    // 调整自身的大小
+    setMeasuredDimension(800, 600);
+} 
 }}}

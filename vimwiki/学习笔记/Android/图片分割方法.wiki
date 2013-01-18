@@ -1,5 +1,7 @@
 = 图片平均分割 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import android.graphics.Canvas;
@@ -10,7 +12,7 @@ import android.graphics.BitmapFactory;
 import android.content.Context;
 }}}
 
-方法一
+=== 方法一 - 操作画布 ===
 {{{class="brush:java"
 /**
  * 图片分割
@@ -41,7 +43,7 @@ public final void cuteImage(Canvas g, Paint paint, Bitmap imgBit, int x,
 }
 }}}
 
-方法二
+=== 方法二 - 操作Bitmap ===
 {{{class="brush:java"
 public final Bitmap cuteImage(Bitmap _imgBit, int _startX, int width,
                               int _startY, int height) {
