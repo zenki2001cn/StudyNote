@@ -1,5 +1,8 @@
 1. 网络相关
-1.1. 连接samba服务器
+1.1. 搜索samba
+sudo smbclient -L //10.10.96.96
+
+1.2. 连接samba服务器
 sudo mount -t smbfs|cifs //server//fold /dir -o user=user,passwd=passwd,iocharset=utf8
 
 1.2. 下载整个网站

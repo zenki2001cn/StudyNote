@@ -20,7 +20,7 @@ import android.database.Cursor;
 - 通过`getReadableDatabase()`打开只读数据库SQLiteDatabase。
 - 通过`getWritableDatabase()`打开可写数据库SQLiteDatabase。
 
-示例代码
+== 示例代码 ==
 {{{class="brush:java"
 private class DatabaseHelper extends SQLiteOpenHelper {
     public DatabaseHelper(Context context, String name, CursorFactory factory, int version) {
@@ -205,13 +205,13 @@ try {
 === 查询数据 ===
 ==== 查询参数说明 ====
 - query(String table, String[] columns, String selection, String[] selectionArgs, String groupBy, String having, String orderBy)
-- table: 表名
-- columns: 需要查询的列,如果是null，则返回所有列
-- selection: 与SQL的关键字WHERE关联，但排除WHERE。如果是null，则返回所有列
-- selectionArgs: 
-- groupBy: 与SQL的关键字GROUP BY 关联，但排除GROUP BY。如果是null， 则不分组。
-- having: 与SQL的关键字HAVING关联，但排除HAVING。如果是null，则包含所有行。
-- orderBy: 与SQL的关键字ORDER BY关联，但排除ORDER BY。如果是null，则不排序。
+    - table: 表名
+    - columns: 需要查询的列,如果是null，则返回所有列
+    - selection: 与SQL的关键字WHERE关联，但排除WHERE。如果是null，则返回所有列
+    - selectionArgs: 用来匹配selection参数的字符串数组。 
+    - groupBy: 与SQL的关键字GROUP BY 关联，但排除GROUP BY。如果是null， 则不分组。
+    - having: 与SQL的关键字HAVING关联，但排除HAVING。如果是null，则包含所有行。
+    - orderBy: 与SQL的关键字ORDER BY关联，但排除ORDER BY。如果是null，则不排序。
 
 {{{class="brush:java"
 String col[] = { "stud_no", "stud_name" };

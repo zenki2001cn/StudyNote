@@ -2,18 +2,24 @@
 
 %toc
 
-== 下载源码包 ==
+== 安装 ==
+=== 下载源码包 ===
 {{{class="brush:bash"
 $ wget -c http://fcitx.googlecode.com/files/fcitx-4.1.1_all.tar.bz2
+
+# 或者从源安装
+$ sudo add-apt-repository ppa:fcitx-team/nightly
+$ sudo apt-get update
+$ sudo apt-get install fcitx
 }}}
 
-== 下载相关工具 ==
+=== 下载相关工具 ===
 {{{class="brush:bash"
 $ sudo apt-get install libunique-dev
 $ sudo apt-get install intltool
 }}}
 
-== 安装流程 ==
+=== 安装流程 ===
 {{{class="brush:bash"
 # 解压并进入目录：
 $ tar xvf fcitx-4.1.1_all.tar.bz2
@@ -27,4 +33,15 @@ $ cd build
 $ cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_GTK3_IM_MODULE=Off
 $ make
 $ sudo make install
+}}}
+
+== Tips ==
+=== 图形界面无法打开的问题 ===
+{{{class="brush:bash"
+# 编辑/etc/profile，加入以下内容
+export XMODIFIERS="@im=fcitx"
+export XIM=fcitx
+export XIM_PROGRAM=fcitx
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
 }}}

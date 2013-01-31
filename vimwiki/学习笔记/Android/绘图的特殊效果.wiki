@@ -2,8 +2,7 @@
 
 %toc
 
-- 使用BlurMaskFilter类实现绘画的特殊效果
-
+== BlurMaskFilter ==
 {{{class="brush:java"
 private Bitmap drawImageDropShadow(Bitmap originalBitmap) {
     BlurMaskFilter blurFilter = new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL);

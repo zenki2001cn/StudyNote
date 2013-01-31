@@ -18,9 +18,10 @@ import android.net.Uri;
 - 在访问Provider时通过获取ContentResolver对象实例进行访问。
 
 == 示例代码 ==
-=== 继承ContentProvider子类 ===
+- 定义MyProvider并继承ContentProvider。
 - 数据库创建参见[[SQLiteDatabase]]
 
+=== MyProvider类 ===
 {{{class="brush:java"
 public class MyProvider extends ContentProvider {
 
@@ -62,6 +63,12 @@ public class MyProvider extends ContentProvider {
         return false;
     }
     
+    // ......
+}
+}}}
+
+=== bulkInsert ===
+{{{class="brush:java"
     // 插入数组类型
     @Override
     public int bulkInsert(Uri uri, ContentValues[] values) {
@@ -98,7 +105,10 @@ public class MyProvider extends ContentProvider {
         }
         return i;
     }
+}}}
 
+=== insert ===
+{{{class="brush:java"
     // 重载insert方法，该方法用来插入数据
     @Override
     public Uri insert(Uri uri, ContentValues values) {
@@ -147,7 +157,10 @@ public class MyProvider extends ContentProvider {
         
         return ret;
     }
+}}}
 
+=== delete ===
+{{{class="brush:java"
     // 重载delete方法，该方法用来删除数据
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
@@ -178,7 +191,10 @@ public class MyProvider extends ContentProvider {
 
         return result;
     }
+}}}
 
+=== query ===
+{{{class="brush:java"
     // 重载query方法，该方法用来查询数据
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
@@ -202,7 +218,10 @@ public class MyProvider extends ContentProvider {
         
         return cursor;
     }
-
+}}}
+    
+=== update ===
+{{{class="brush:java"
     // 重载update方法，该方法用来更新数据
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
@@ -232,7 +251,10 @@ public class MyProvider extends ContentProvider {
         
         return result;
     }
+}}}
     
+=== getType ===
+{{{class="brush:java"
     // 重载getType方法，该方法用来返回MIME类型
     @Override
     public String getType(Uri uri) {
@@ -249,6 +271,7 @@ public class MyProvider extends ContentProvider {
 }
 }}}
 
+== 使用MyProvider ==
 === 添加ContentProvider配置 ===
 {{{class="brush:xml"
 <provider android:name=".MyProvider"  

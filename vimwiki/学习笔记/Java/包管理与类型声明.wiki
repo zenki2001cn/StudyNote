@@ -30,6 +30,13 @@ CLASSPATH=.:$JAVA_HOME:$PROJECT_HOME/XXX.jar
 === friendly访问权限 ===
 *不加任何修饰符的默认权限，该权限说明在包内部是可见的，外部是不可见的*
 
+| 修饰符    | Class | Package | Subclass | World |
+|-----------|-------|---------|----------|-------|
+| public    | Y     | Y       | Y        | Y     |
+| protected | Y     | Y       | Y        | N     |
+| none      | Y     | Y       | N        | N     |
+| private   | Y     | N       | N        | N     |
+
 == 组合和继承 ==
 === 组合 ===
 *当一个类中包含了多个类，则是将多个类组合成具有新特性的类*

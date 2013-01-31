@@ -89,7 +89,7 @@ $ zip update.zip -ry ./META-INF/ ./system/
 - 7.签名update.zip
 
 {{{class="brush:bash"
-$ java –jar SignApk.jar -w test-keys.x509.pem test-keys.pk8 update.zip update_signed.zip 
+$ java -jar SignApk.jar -w test-keys.x509.pem test-keys.pk8 update.zip update_signed.zip 
 }}}
 
 == updater-script脚本注解 ==
