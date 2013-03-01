@@ -1,5 +1,7 @@
 = 使用SAX解析XML文件 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import org.xml.sax.helpers.DefaultHandler;

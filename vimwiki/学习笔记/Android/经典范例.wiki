@@ -1,0 +1,65 @@
+= 经典范例 =
+
+%toc
+
+== 自定义组件 ==
+=== Async_ListView_GridView ===
+- 实现异步加载图片的ListView和GridView
+- [[https://github.com/chrisbanes/Android-BitmapCache|Android-BitmapCache]]使用
+- link: https://github.com/lucasr/smoothie
+
+[[{{http:pic/Async_ListView_GridView.png}}]]
+
+=== CalendarView ===
+- 实现日期控件
+- Calendar类的使用
+- link: https://github.com/SimonVT/android-calendarview
+
+{{http:pic/CalendarView.png}}
+
+=== CoverFlow ===
+- 实现3D效果的CoverFlow控件
+- link: http://code.google.com/p/android-coverflow/source/checkout
+
+{{http:pic/CoverFlow.png}}
+
+=== DirectionalViewPager ===
+- 实现可水平和垂直拖拉的ViewPager
+- ViewPager和Fragment的使用
+- link: https://github.com/JakeWharton/Android-DirectionalViewPager/
+
+{{http:pic/DirectionalViewPager.png}}
+
+=== GraphView ===
+- 实现曲线和柱状图
+- 自定义View
+- Paint、Path、Matrix使用
+- link: https://github.com/renard314/GraphView
+
+{{http:pic/GraphView.png}}
+
+=== ListView3d ===
+- 实现3D效果的ListView
+- 自定义ListView
+- Camera、Matrix、Paint使用
+- link: https://github.com/renard314/ListView3d
+
+{{http:pic/ListView3d}}
+
+=== Lsn_Youku ===
+- 实现Youku圆盘菜单
+- Animation类使用
+
+{{http:pic/Lsn_Youku.png}}
+
+=== MagicTextView ===
+- 自定义的TextView
+- 自定义属性的范例
+- BlurMaskFilter、WeakHashMap、BlurMaskFilter、PorterDuff、TextPaint类使用
+- link: https://github.com/m5/MagicTextView
+
+{{http:pic/MagicTextView.png}}
+
+== 工具库 ==
+
+== 应用程序 ==

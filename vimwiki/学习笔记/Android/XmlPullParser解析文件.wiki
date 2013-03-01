@@ -1,5 +1,7 @@
 = XmlPullParser解析 =
 
+%toc
+
 == 相关类 == 
 {{{class="brush:java"
 import org.xmlpull.v1.XmlPullParser;

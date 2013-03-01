@@ -43,4 +43,5 @@
 == 开发手册 ==
     - [[Android APP]]
     - [[Android Framework]]
+    - [[经典范例]]
     - [[网址]]

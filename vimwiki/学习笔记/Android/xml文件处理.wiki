@@ -1,5 +1,8 @@
 = xml文件处理 =
 
+%toc
+
 - [[使用DOM解析文件]]
-- [[XmlPullParser解析文件]]
 - [[使用SAX解析]]
+- [[XmlPullParser解析文件]]
+- [[XmlResouceParser解析文件]]

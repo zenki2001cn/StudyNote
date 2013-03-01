@@ -1,0 +1,83 @@
+= 使用XmlResouceParser解析文件 =
+
+%toc
+
+== 相关类 == 
+{{{class="brush:java"
+import android.content.res.XmlResourceParser;
+import android.util.Xml;
+}}}
+
+== 基本处理流程 ==
+- 通过资源ID获取`XmlResouceParser`类对象，XmlResouceParser类是XmlPullParser类的子类：
+    - getResouce.getXml(int id)
+    - getRawResouce(int id)
+- 通过`getEventType()`方法和`next()`方法遍历整个xml模型树。
+
+== EventType类型 ==
+getEventType()和next()方法返回读取到的xml数据类型，用户根据该数据的类型进行相应的处理
+| 类型标识       | 值 | 描述         |
+|----------------|----|--------------|
+| START_DOCUMENT | 0  | 文档起始标识 |
+| END_DOCUMENT   | 1  | 文档结束标识 |
+| START_TAG      | 2  | 标签开始标识 |
+| END_TAG        | 3  | 标签结束标识 |
+| TEXT           | 4  | 文本内容标识 |
+
+== 示例程序 ==
+{{{class="brush:java"
+public void parseXml() {
+    // 获取res/xml下的原生XML文件
+    XmlResourceParser parser = getResources().getXml(R.xml.persons);
+    try {
+        StringBuilder sb = new StringBuilder();
+        // 获取eventType
+        int eventType = parser.getEventType();
+        
+        // 获取TAG层级，outside层级为0，root层级为1，依次递增。
+        // <!-- outside -->     0
+        // <root>               1
+        // sometext             1
+        //   <foobar>           2
+        //   </foobar>          2
+        // </root>              1
+        // <!-- outside -->     0
+        final int depth = parser.getDepth();
+        
+        while (eventType != XmlResourceParser.END_DOCUMENT) {
+            switch (eventType) {
+                case XmlResourceParser.START_TAG:
+                    String tagName = parser.getName();
+
+                    if (("person").equals(tagName)) {
+                        // 得到person属性
+                        String personid = parser.getAttributeValue(0);
+                        sb.append("ID:" + personid);
+                    } else if ("name".equals(parser.getName())) {
+                        // 得到name属性
+                        String name = parser.nextText();
+                        sb.append("姓名:" + name);
+                    } else if ("age".equals(parser.getName())) {
+                        // 得到age属性
+                        String age = parser.nextText();
+                        sb.append("年龄:" + age);
+                    }
+                    break;
+                case XmlResourceParser.END_TAG:
+                    // 结束时加空行
+                    if ("person".equals(parser.getName())) {
+                        sb.append("\n");
+                    }
+                    break;
+                default:
+                    break;
+            }
+            // 解析下一个事件
+            eventType = parser.next();
+        }
+        // 将解析的结果放在文本编辑框
+        edtContent.setText(sb.toString());
+    } catch (Exception e) {
+    }
+}
+}}}

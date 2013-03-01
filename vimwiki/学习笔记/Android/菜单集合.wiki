@@ -7,9 +7,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 }}}
 
+== 例程源码(JAVA) ==
 - 需要重写onCreateOptionsMenu方法,在其中加载菜单
-
-例程源码(JAVA)
 {{{class="brush:java"
 
 ......
@@ -31,8 +30,7 @@ public boolean onCreateOptionsMenu(Menu menu) {
 }
 }}}
 
-- 根据需要创建不同的菜单,可在XML中定义
-
+== 菜单类型 ==
 - [[文本菜单]]
 - [[图标文本菜单]]
 - [[子菜单]]

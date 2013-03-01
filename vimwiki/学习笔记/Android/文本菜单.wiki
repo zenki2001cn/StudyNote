@@ -1,6 +1,6 @@
 = 文本菜单 =
 
-例程源码(XML)
+== 例程源码(XML) ==
 {{{class="brush:xml"
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
