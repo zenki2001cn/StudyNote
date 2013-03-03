@@ -60,6 +60,85 @@
 
 {{http:pic/MagicTextView.png}}
 
+=== MenuDrawer ===
+- 自定义抽屉样式的菜单
+- 自定义View
+- 管理View层级
+- 自定义属性
+- link: https://github.com/SimonVT/android-menudrawer
+
+{{http:pic/MenuDrawer.png}}
+
+=== NumberPicker ===
+- 实现数字选择控件
+- 自定义滚动条
+- 自定义属性
+- link: https://github.com/SimonVT/android-numberpicker
+
+{{http:pic/NumberPicker.png}}
+
+=== PhotoView ===
+- 图片查看
+- 实现图片缩放等操作
+- link: http://play.google.com/store/apps/details?id=uk.co.senab.photoview.sample
+
+{{http:pic/PhotoView.png}}
+
+=== PieChartView ===
+- 饼图效果
+- 自定义ViewGroup
+- 画图、图像效果，圆弧处理
+
+{{http:pic/PieChartView.png}}
+
+=== PullToRefresh1 ===
+- 瀑布效果的ListView
+- 滚动条使用示例
+- 动画效果展示
+- link: https://github.com/johannilsson/android-pulltorefresh
+
+{{http:pic/PullToRefresh1.png}}
+
+=== PullToRefresh2 ===
+- 瀑布效果的ListView、GridView、ViewPager、WebView等等
+- 滚动条使用示例
+- 动画效果、声音展示
+- link: https://github.com/chrisbanes/Android-PullToRefresh
+
+{{http:pic/PullToRefresh2.png}}
+
+=== ScrollBarPanel_ListView ===
+- 自定义ListView
+- 动画效果
+- 自定义属性
+- link: https://github.com/rno/Android-ScrollBarPanel
+
+{{http:pic/ScrollBarPanel_ListView.png}}
+
+=== SlidingPanelEx ===
+- 动画效果的菜单显示
+
+{{http:pic/SlidingPanelEx.png}}
+
+=== UnderGarment_Drawer ===
+- 抽屉效果的侧边栏
+- 视图层级管理
+- 自定义FrameLayout
+- link: https://github.com/eddieringle/android-undergarment
+
+{{http:pic/UnderGarment_Drawer.png}}
+
+=== ViewPager3D ===
+- 3D效果的ViewPager
+- link: https://github.com/renard314/ViewPager3D
+
+=== ViewPagerIndicator ===
+- ViewPager的指示器
+- PageIndicator接口实现
+- link: http://viewpagerindicator.com/
+
+{{http:pic/ViewPagerIndicator.png}}
+
 == 工具库 ==
 
 == 应用程序 ==
