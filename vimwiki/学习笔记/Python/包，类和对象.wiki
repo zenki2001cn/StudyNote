@@ -72,7 +72,6 @@ class FileInfo(UserDict):
 == 类的初始化 ==
 - _init_方法是可选的，但是如果定义了该方法，就必须调用基类的_init_。
 - 类成员方法的第一个参数必须为self，包括_init_方法。
-
 {{{class="brush:python"
 class FileInfo(UserDict):
     "store file metadata"
@@ -130,10 +129,16 @@ def __setitem__(self, key, item): self.data[key] = item
 {'name':'/music/_singles/kairo.mp3', 'genre':32}
 }}}
 
+=== ___delitem___ ===
+- 当你在类实例中使用del时，Python替你调用__delitem__专用方法。
+{{{class="brush:python"
+def __delitem__(self, key): 
+    del self.data[key]
+}}}
+
 == 返回字符串值 ==
 === ___repr___ ===
 - __repr__ 是一个专用的方法，在当调用repr(instance)时被调用。repr函数是一个内置函数，它返回一个对象的字符串表示。它可以用在任何对象上，不仅仅是类的实例。
-
 {{{class="brush:python"
 def __repr__(self): 
     return repr(self.data) 
@@ -142,7 +147,6 @@ def __repr__(self):
 == 对象比较 ==
 === ___cmp___ ===
 - __cmp__ 在比较类实例时被调用。通常，你可以通过使用“==”比较任意两个Python对象，不只是类实例。
-
 {{{class="brush:python"
 def __cmp__(self, dict):
     if isinstance(dict, UserDict):            
@@ -152,26 +156,15 @@ def __cmp__(self, dict):
 == 返回对象长度 ==
 === ___len___ ===
 - __len__ 在调用len(instance)时被调用。len是一个内置函数，可以返回一个对象的长度。它可以用于任何被认为理应有长度的对象。对于类实例，定义__len__ 方法，接着自已编写长度的计算，然后调用len(instance)，Python将替你调用你的__len__专用方法。
-
 {{{class="brush:python"
 def __len__(self): 
     return len(self.data)
-}}}
-
-== 删除成员数据 ==
-=== ___delitem___ ===
-- 当你在类实例中使用del时，Python替你调用__delitem__专用方法。
-
-{{{class="brush:python"
-def __delitem__(self, key): 
-    del self.data[key]
 }}}
 
 == 模块名称 ==
 === ___module___ ===
 - 每个Python类都拥有一个内置的类属性__module__，它定义了这个类的模块的名字。
 - 将它与sys.modules字典复合使用，你可以得到定义了某个类的模块的引用。
-
 {{{class="brush:python"
 # 从类的__module__方法中得到该类从属的模块
 >>> from fileinfo import MP3FileInfo
@@ -182,3 +175,8 @@ def __delitem__(self, key):
 >>> sys.modules[MP3FileInfo.__module__]
 <module 'fileinfo' from 'fileinfo.pyc'>
 }}}
+
+== 对象属性 ==
+=== ___dict___ ===
+- 每个类对象包含一个字典成员__dict__，它返回一组`成员名称：值`。
+- 可通过遍历该变量，访问该类对象的成员和方法。

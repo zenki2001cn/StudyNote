@@ -1,0 +1,100 @@
+= 自定义控件属性 =
+
+%toc
+
+== 声明自定义属性的名称 ==
+- 在res/attrs.xml中添加自定义属性的名称。
+- `MyView`是自定义控件的类名。
+{{{class="brush:xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <!-- MyView是自定义控件类名 -->
+    <declare-styleable name="MyView">
+        <attr name="TextAttrExt" format="reference|string"></attr>
+        <attr name="OrientalAttrExt">
+            <enum name="Horizontal" value="1"></enum>
+            <enum name="Vertical" value="0"></enum>
+        </attr>
+        <attr name="BackgroundAttrExt" format="reference|color"></attr>
+    </declare-styleable>
+</resources>
+}}}
+
+== 添加自定义属性 ==
+- 在定义控件的布局文件中，添加自定义属性的值。
+    - 首先要定一个XML的名字空间：xmlns:zenki="http://schemas.android.com/apk/res-auto"
+    - 每个自定义属性前都需要添加名字空间的标识。
+{{{class="brush:xml"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <!-- res-auto可改成res/package_name的形式 -->
+    xmlns:zenki="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.example.testcustomattrbuite.MyView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        <!-- 以下是自定义属性 -->
+        zenki:TextAttrExt="@string/hello_world" 
+        zenki:OrientalAttrExt="Horizontal"
+        zenki:BackgroundAttrExt="@drawable/my_view_background"/>
+
+</RelativeLayout>
+}}}
+
+== 解析自定义属性方法一 ==
+{{{class="brush:java"
+private void getAttrMethod(AttributeSet attrs) {
+    int resourceId = -1;
+    
+    // 获取TypedArray对象
+    TypedArray typeArray = getContext().obtainStyledAttributes(attrs, R.styleable.MyView);
+    // 获取属性值的数量
+    int count = typeArray.getIndexCount();
+    for (int i = 0; i < count; i++) {
+        // 获取属性ID
+        int attr = typeArray.getIndex(i);
+        // 获取资源ID
+        resourceId = typeArray.getResourceId(attr, 0);
+        
+        switch (attr) {
+        case R.styleable.MyView_TextAttrExt:
+            mText = typeArray.getResources().getText(resourceId).toString();
+            break;
+        case R.styleable.MyView_OrientalAttrExt:
+            mOriental = typeArray.getInt(attr, 0);
+            break;
+        case R.styleable.MyView_BackgroundAttrExt:
+            mBitmap = BitmapFactory.decodeResource(typeArray.getResources(), resourceId);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    typeArray.recycle();
+}
+}}}
+
+== 解析自定义属性方法二 ==
+- 使用构造函数传递的`AttributeSet`对象获取属性列表。
+{{{class="brush:java"
+private void getAttrMethod(Context context, AttributeSet attrs) {
+    // 获取属性个数
+    int count = attrs.getAttributeCount();
+    String name;
+    for (int i = 0; i < count; i++) {
+        // 按照序号，获取属性名字
+        name = attrs.getAttributeName(i);
+        if (name.equals("text")) {
+            // 调用getAttributeValue方法获取资源ID
+            int resouceId = Integer.valueOf(attrs.getAttributeValue(i).substring(1));
+            if (resouceId > 0) {
+                // 根据资源ID获取属性值
+                mTextContent = context.getResources().getText(resouceId).toString();
+            }
+        }
+    }
+}
+}}}

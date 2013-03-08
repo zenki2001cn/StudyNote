@@ -1,0 +1,50 @@
+= 字符串和数值转换 =
+
+%toc
+
+== str - 数字=>字符串 ==
+{{{class="brush:python"
+>>> str(100)
+'100'
+}}}
+
+== int、float - 字符串=>数字 ==
+{{{class="brush:python"
+>>> int('100')
+100
+>>> float('100.00')
+100.0
+}}}
+
+== ord - 字符=>数字 ==
+{{{class="brush:python"
+>>> ord('a')
+97
+}}}
+
+== hex - 数字=>十六进制字符串 ==
+{{{class="brush:python"
+>>> hex(97)
+'0x61'
+}}}
+
+== float.fromhex - 十六进制字符串=>数字 ==
+{{{class="brush:python"
+>>> float.fromhex('0x61')
+97.0
+}}}
+
+== oct - 数字=>八进制字符串 ==
+{{{class="brush:python"
+>>> oct(97)
+'0141'
+}}}
+
+== binascii - 二进制<=>十六进制字符串 ==
+{{{class="brush:python"
+>>> import binascii
+>>> repr(binascii.a2b_hex('0099'))
+"'\\x00\\x99'"
+>>> binascii.b2a_hex('\x00\x99')
+'0099'
+}}}
