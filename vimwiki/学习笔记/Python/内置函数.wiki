@@ -3,7 +3,8 @@
 %toc
 
 == type和types（判断对象类型） ==
-- type用来判定成员对象的类型。
+- type是内置方法，返回参数指定成员对象的类型。
+- types是一个类，该类包含了所有对象类型的定义。
 
 {{{class="brush:python"
 >>> type(1)           
@@ -30,6 +31,7 @@ True
 - 在Python中，函数内部的变量引用都被认为是局部变量，global修饰符用来引用全局变量。
     - globals是内部方法，返回所有的全局变量定义，`该方法返回的值可以被修改`。
     - locals是内部方法，返回所有的局部变量定义，`该方法返回的值是只读的`。
+- global用来修改一个变量名，使之成为全局变量。通过global修饰的外部变量，才能在函数内部被修改。
 
 {{{class="brush:python"
 # 通过global修饰的变量引用，才能在函数内部修改。
@@ -107,6 +109,14 @@ False
 True
 >>> print string.join.__doc__    
 join(list [,sep]) -> string
+}}}
+
+== isinstance（判断一个对象是否是类的实例） ==
+{{{class="brush:python"
+>>> import types
+>>> str = 'hello'
+>>> isinstance(str, types.StringType)
+True
 }}}
 
 == eval（执行字符串代码） ==
