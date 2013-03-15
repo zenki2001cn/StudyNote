@@ -13,17 +13,17 @@ import android.widget.ViewSwitcher;
 - 通过ImageSwitcher.setImageResource()方法显示图片
 
 == 示例代码 ==
-
 === 定义ImageSwitcher资源 ===
 {{{class="brush:xml"
 <ImageSwitcher android:id="@+id/switcher"
-		android:layout_width="fill_parent" android:layout_height="300dp"
-		android:layout_alignParentTop="true" android:layout_alignParentLeft="true" 
-/>
+		android:layout_width="fill_parent" 
+        android:layout_height="300dp"
+		android:layout_alignParentTop="true" 
+        android:layout_alignParentLeft="true" />
 }}}
 
 === 定义切换动画资源 ===
-anim/push_left_in.xml
+==== anim/push_left_in.xml ====
 {{{class="brush:xml"
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
@@ -34,7 +34,7 @@ anim/push_left_in.xml
 </set>
 }}}
 
-anim/push_left_out.xml
+==== anim/push_left_out.xml ====
 {{{class="brush:xml"
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
@@ -49,7 +49,7 @@ anim/push_left_out.xml
 </set>
 }}}
 
-anim/push_right_in.xml
+==== anim/push_right_in.xml ====
 {{{class="brush:xml"
 ?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
@@ -60,7 +60,7 @@ anim/push_right_in.xml
 </set>
 }}}
 
-anim/push_right_out.xml
+==== anim/push_right_out.xml ====
 {{{class="brush:xml"
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
@@ -98,7 +98,7 @@ public View makeView() {
 }
 }}}
 
-=== 图片切换显示 ===
+=== 使用ImageSwitcher显示图片 ===
 {{{class="brush:java"
 mSwitcher.setInAnimation(AnimationUtils.loadAnimation(this, R.anim.push_left_in));
 mSwitcher.setOutAnimation(AnimationUtils.loadAnimation(this, R.anim.push_right_out));

@@ -627,7 +627,32 @@ extcalc
 goldendict
 
 4.34. awk使用
-* cat /proc/devices|grep usb |awk '{print $1;}'
+4.34.1 语法关键字
+{处理每行要执行的语句}
+BEGIN{执行前的语句}
+END{处理完所有行后执行的语句}
+
+4.34.2 内建变量
+$0      当前记录（这个变量中存放着整个行的内容）
+$1~$n   当前记录的第n个字段，字段间由FS分隔
+FS      输入字段分隔符，默认是空格或Tab
+NF      当前记录中的字段个数，就是有多少列
+NR      已经读出的记录数，就是行号，从1开始，如果有多个文件话，这个值也是不断累加中。
+FNR     当前记录数，与NR同的是，这个值会是各个文件自己的行号
+RS      输入的记录分隔符，默认为换行符
+OFS     输出字段分隔符，默认是认也是空格ORS输出的记录分隔符，默认为换行符
+FILENAME 当前输入文件的名字
+
+4.34.3 示例
+$ cat /proc/devices|grep usb |awk '{print $1;}'
+$ git st |grep deleted |echo git co `awk '{print $3}'`|bash
+$ cat /etc/passwd | awk -F'[:;]' '{print $1}'
+$ awk 'BEGIN{FS=":"} {print $1,$3,$6}' /etc/passwd
+$ netstat -na|grep :8000|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -r -n
+$ history | awk '{a[$2]++}END{for(i in a){print a[i] " " i}}' | sort -rn | head
+
+参考手册: http://www.gnu.org/software/gawk/manual/gawk.html
+          http://coolshell.cn/articles/9070.html
 
 4.35. cut使用
 * ifconfig eth0 |head -2|tail -1 |awk {'print $2'} |cut -d : -f 2

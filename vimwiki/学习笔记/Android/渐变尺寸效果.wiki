@@ -35,15 +35,15 @@ import android.view.animation.AnimationUtils;
 ?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
     <scale  
-        android:interpolator="@android:anim/accelerate_decelerate_interpolator" <!!--动画的插入器-->
-        android:fromXScale="0.0"    <!!--动画开始时，X轴伸缩尺寸-->
-        android:toXScale="1.4"      <!!--动画结束时，X轴伸缩尺寸-->
-        android:fromYScale="0.0"    <!!--动画起始时，Y轴伸缩尺寸-->
-        android:toYScale="1.4"      <!!--动画结束时，Y轴伸缩尺寸-->
-        android:pivotX="50%"        <!!--动画相对于物体的X坐标开始位置-->
-        android:pivotY="50%"        <!!--动画相对于物体的Y坐标开始位置-->
-        android:fillAfter="false"   <!!--在动画结束后应用-->
-        android:duration="700"      <!!--持续时间-->
+        android:interpolator="@android:anim/accelerate_decelerate_interpolator" <!--动画的插入器-->
+        android:fromXScale="0.0"    <!--动画开始时，X轴伸缩尺寸-->
+        android:toXScale="1.4"      <!--动画结束时，X轴伸缩尺寸-->
+        android:fromYScale="0.0"    <!--动画起始时，Y轴伸缩尺寸-->
+        android:toYScale="1.4"      <!--动画结束时，Y轴伸缩尺寸-->
+        android:pivotX="50%"        <!--动画相对于物体的X坐标开始位置-->
+        android:pivotY="50%"        <!--动画相对于物体的Y坐标开始位置-->
+        android:fillAfter="false"   <!--在动画结束后应用-->
+        android:duration="700"      <!--持续时间-->
     />
 </set>
 }}}

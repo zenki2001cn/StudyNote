@@ -16,6 +16,8 @@
     - [[精密计时器]]
     - [[吐司消息]]
     - [[WebView]]
+    - [[ExtendableListView]]
+    - [[ImageSwitcher]]
 
 == 自定义控件 ==
     - [[使用selector控制焦点和状态]]

@@ -1,3 +1,0 @@
-= 切换器使用 =
-
-- [[ImageSwitcher]]

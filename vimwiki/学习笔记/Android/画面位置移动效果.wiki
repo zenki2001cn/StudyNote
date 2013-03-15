@@ -22,11 +22,11 @@ import android.view.animation.AnimationUtils;
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
     <translate
-        android:fromXDelta="30" <!!--动画开始时，X坐标的位置-->
-        android:toXDelta="-80"  <!!--动画结束时，X坐标的位置-->
-        android:fromYDelta="30" <!!--动画开始时，Y坐标的位置-->
-        android:toYDelta="300"  <!!--动画结束时，Y坐标的位置-->
-        android:duration="2000" <!!--动画持续时间-->
+        android:fromXDelta="30" <!--动画开始时，X坐标的位置-->
+        android:toXDelta="-80"  <!--动画结束时，X坐标的位置-->
+        android:fromYDelta="30" <!--动画开始时，Y坐标的位置-->
+        android:toYDelta="300"  <!--动画结束时，Y坐标的位置-->
+        android:duration="2000" <!--动画持续时间-->
     />
 </set>
 }}}

@@ -22,9 +22,9 @@ import android.view.animation.AnimationUtils;
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android" >
     <alpha
-        android:fromAlpha="0.1" <!!--起始透明度-->
-        android:toAlpha="1.0"   <!!--结束透明度-->
-        android:duration="3000" <!!--持续时间-->
+        android:fromAlpha="0.1" <!--起始透明度-->
+        android:toAlpha="1.0"   <!--结束透明度-->
+        android:duration="3000" <!--持续时间-->
     /> 
 </set>
 }}}

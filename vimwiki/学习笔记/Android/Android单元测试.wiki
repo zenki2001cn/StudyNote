@@ -16,16 +16,16 @@ import android.test.ActivityInstrumentationTestCase;
 === Manifest配置 ===
 {{{class="brush:xml"
 <?xml version="1.0" encoding="utf-8"?>
-<!!-- 包名中加入tests以和源工程的包区别开 -->
+<!-- 包名中加入tests以和源工程的包区别开 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="org.example.test.tests"
           android:versionCode="1"
           android:versionName="1.0">
-    <!!-- 加入必须的库 -->
+    <!-- 加入必须的库 -->
     <application>
         <uses-library android:name="android.test.runner" />
     </application>
-    <!!-- name表示执行的测试类，targetPackage表示测试的目标类 -->
+    <!-- name表示执行的测试类，targetPackage表示测试的目标类 -->
     <instrumentation android:name="android.test.InstrumentationTestRunner"
                      android:targetPackage="org.example.test"
                      android:label="Tests for MyTest"/>

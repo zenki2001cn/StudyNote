@@ -109,7 +109,6 @@ final static void loop() :: 进入当前线程的消息循环
 === 基本处理流程 ===
 ==== 带有消息循环的线程 ====
 - 普通线程是没有消息循环队列的，而UI线程有消息循环队列，创建一个带有循环队列的线程需要`Looper`类
-
 {{{class="brush:java"
 class LooperThread extends Thread {
     public Handler mHandler;
@@ -131,7 +130,6 @@ class LooperThread extends Thread {
 ==== 子线程向主线程投递消息 ====
 - 通过`Looper.getMainLooper`获取主线程的Looper，并初始化一个Handler
 - 通过该Handler向主线程投递消息
-
 {{{class="brush:java"
 Handler handler = new Handler(){
     public void handleMessage(Message msg) {
@@ -139,6 +137,24 @@ Handler handler = new Handler(){
         String obj = (String) msg.obj + ", myThread";
         Message msg = hd.obtainMessage(1, 1, 1, obj);
         hd.sendMessage(msg);
+    }
+};
+}}}
+
+==== 延迟执行线程 ====
+- 使用postDelayed方法延迟执行线程函数
+{{{class="brush:java"
+handler.removeCallbacks(sendData);
+handler.postDelayed(sendData, 1000);
+
+private final Runnable sendData = new Runnable(){
+    public void run(){
+        try {
+            //prepare and send the data here..
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }   
     }
 };
 }}}

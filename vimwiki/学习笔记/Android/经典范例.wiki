@@ -30,6 +30,14 @@
 
 {{http:pic/DirectionalViewPager.png}}
 
+=== ExtendEditText ===
+- 正则匹配的编辑框
+- 正则表达式的示例
+- 监听EditText的输入事件
+- link: https://github.com/demdxx/android-extend-edittext
+
+{{http:pic/ExtendEditText.png}}
+
 === GraphView ===
 - 实现曲线和柱状图
 - 自定义View
@@ -77,6 +85,14 @@
 
 {{http:pic/NumberPicker.png}}
 
+=== PathButton ===
+- 实现Path样式的弹出菜单
+- 角度的计算
+- 动画的应用
+- link: https://github.com/houjinyun/PathButtonAndroid
+
+{{http:pic/PathButton.png}}
+
 === PhotoView ===
 - 图片查看
 - 实现图片缩放等操作
@@ -119,6 +135,12 @@
 - 动画效果的菜单显示
 
 {{http:pic/SlidingPanelEx.png}}
+
+=== SwitchButton ===
+- 可拖动的开关按钮
+- link: http://ankri.de/switch-button-for-android-2-3-gingerbread/
+
+{{http:pic/switch_button.png}}
 
 === UnderGarment_Drawer ===
 - 抽屉效果的侧边栏

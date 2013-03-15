@@ -150,6 +150,15 @@ protected void onLayout(boolean changed, int l, int t, int r, int b) {
 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) { 
     super.onMeasure(widthMeasureSpec,heightMeasureSpec); 
 
+    final int width = MeasureSpec.getSize(widthMeasureSpec);
+    final int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+    if (widthMode != MeasureSpec.EXACTLY) {
+    }
+
+    final int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+    if (heightMode != MeasureSpec.EXACTLY) {
+    }
+
     // 调整子视图的大小
     int childCount = getChildCount(); 
     for (int i = 0; i < childCountnt; i++) { 

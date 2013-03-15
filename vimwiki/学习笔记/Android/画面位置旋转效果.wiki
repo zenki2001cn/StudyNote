@@ -35,12 +35,12 @@ import android.view.animation.AnimationUtils;
 <?xml version="1.0" encoding="utf-8"?>
 <set xmlns:android="http://schemas.android.com/apk/res/android">
     <rotate
-        android:interpolator="@android:anim/accelerate_decelerate_interpolator"     <!!--动画插入器-->
-        android:fromDegrees="0"     <!!--动画起始时物体角度-->
-        android:toDegrees="+350"    <!!--动画结束时物体角度-->
-        android:pivotX="50%"        <!!--动画相对于物体的X坐标位置-->
-        android:pivotY="50%"        <!!--动画相对于物体的Y坐标位置-->
-        android:duration="3000"     <!!--动画持续时间-->
+        android:interpolator="@android:anim/accelerate_decelerate_interpolator"     <!--动画插入器-->
+        android:fromDegrees="0"     <!--动画起始时物体角度-->
+        android:toDegrees="+350"    <!--动画结束时物体角度-->
+        android:pivotX="50%"        <!--动画相对于物体的X坐标位置-->
+        android:pivotY="50%"        <!--动画相对于物体的Y坐标位置-->
+        android:duration="3000"     <!--动画持续时间-->
     />
 </set>
 }}}

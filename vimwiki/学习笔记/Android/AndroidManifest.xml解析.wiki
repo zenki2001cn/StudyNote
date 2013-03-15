@@ -30,36 +30,36 @@
     android:versionCode="1
     android:versionName="1.0" >  
    
-    <!!-- 应用程序节点 -->
+    <!-- 应用程序节点 -->
     <application 
         android:icon="@drawable/icon"
         android:label="@string/app_name"
         android:theme="@style/Em1.Base.Theme">  
         
-        <!!-- Activity节点 -->
+        <!-- Activity节点 -->
         <activity class=".HelloActivity">  
-            <!!-- Intent过滤器 -->
+            <!-- Intent过滤器 -->
             <intent-filter>  
-                <!!-- Intent动作 -->
+                <!-- Intent动作 -->
                 <action android:value="android.intent.action.MAIN"/>  
-                <!!-- Intent属性 -->
+                <!-- Intent属性 -->
                 <category android:value="android.intent.category.LAUNCHER"/>  
                 <category android:name="android.intent.category.HOME"/>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>  
         </activity>
 
-        <!!-- provider节点 -->
+        <!-- provider节点 -->
         <provider android:name=".MyProvider"
             android:authorities="com.zenki.myprovider" />
 
-        <!!-- receiver节点 -->
+        <!-- receiver节点 -->
         <receiver android:name=".ConnectionStatus" />
         
-        <!!-- 本地service节点 -->
+        <!-- 本地service节点 -->
         <service android:name=".LocalService" />
 
-        <!!-- 远程service节点 -->
+        <!-- 远程service节点 -->
         <service android:name=".app.RemoteService" android:process=":remote">
             <intent-filter>
                 <action android:name="com.example.android.apis.app.IRemoteService" />
@@ -70,15 +70,15 @@
 
     </application>  
     
-    <!!-- 用户权限设置 -->
+    <!-- 用户权限设置 -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     
-    <!!-- 用户权限设置 -->
+    <!-- 用户权限设置 -->
     <uses-library android:name="com.mokoid.led"/>
     
-    <!!-- SDK版本 -->
+    <!-- SDK版本 -->
     <uses-sdk android:minSdkVersion="5" android:targetSdkVersion="5"/>
     
 </manifest>
