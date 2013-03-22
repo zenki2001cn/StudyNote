@@ -25,16 +25,15 @@ Uri表示需要操作的数据，主要包含两部分信息：
 }}}
 
 === Uri的组成和说明 ===
-{{http:pic/uri.jpg}}
+- scheme：ContentProvider（内容提供者）的scheme由Android规定为：content://、file://、或者http://
+- 主机名（或Authority）：用于唯一标识这个ContentProvider，外部调用者可以根据这个标识来找到它，例如："google.com"、"bob@google.com:80"。
+- 路径（path）：可以用来表示我们要操作的数据，路径的构建应根据业务而定，如下：
+    * 要操作contact表中id为10的记录，表示为: `/contact/10`
+    * 要操作contact表中id为10的记录的name字段，表示为: `/contact/10/name`
+    * 要操作contact表中的所有记录，表示为: `/contact`
+    * 带参数的记录，表示为: `/contact?name=bob`
 
-{{{class="brush:text"
-1.scheme：ContentProvider（内容提供者）的scheme由Android规定为：content://。
-2.主机名（或Authority）：用于唯一标识这个ContentProvider，外部调用者可以根据这个标识来找到它。
-3.路径（path）：可以用来表示我们要操作的数据，路径的构建应根据业务而定，如下：
-* 要操作contact表中id为10的记录，表示为:/contact/10
-* 要操作contact表中id为10的记录的name字段，表示为:contact/10/name
-* 要操作contact表中的所有记录，表示为:/contact
-}}}
+{{http:pic/uri.jpg}}
 
 == 辅助类 ==
 === UriMatcher ===
@@ -60,10 +59,10 @@ int id = uriMatcher.match(uri);
 
 {{{class="brush:java"
 // 为指定的URI添加ID
-static Uri.Builder appendId(Uri.Builder  builder, long id)
+static Uri.Builder appendId(Uri.Builder builder, long id)
 
 // 解析出URI的ID
-static long parseId(Uri  contentUri)
+static long parseId(Uri contentUri)
 
 // 组合新的ID，从而生成URI
 static Uri withAppendedId(Uri contentUri, long id)
@@ -83,6 +82,7 @@ static Uri withAppendedId(Uri contentUri, long id)
 | String       | getAuthority()                                      | 获取Authority部分   |
 | Uri          | parse(String uriString)                             | 从字符串返回Uri     |
 | Uri          | withAppendedPath  (Uri baseUri, String pathSegment) | 添加新的片断组成Uri |
+| String       | getQueryParameter (String key)                      | 获取key对应的参数值 |
 
 == 示例代码 ==
 - [[ContentProvider子类]]

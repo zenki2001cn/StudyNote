@@ -17,6 +17,14 @@
 
 {{http:pic/CalendarView.png}}
 
+=== Circlemenu ===
+- 圆形菜单按钮
+- 旋转动画实现
+- 自定义View实现
+- link: https://github.com/szugyi/CircleMenu
+
+{{http:pic/CircleMenu.png}}
+
 === CoverFlow ===
 - 实现3D效果的CoverFlow控件
 - link: http://code.google.com/p/android-coverflow/source/checkout
