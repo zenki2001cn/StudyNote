@@ -679,4 +679,8 @@ easy_install --upgrade ...
 $ strace -f -o /tmp/t -e trace=open man man
 $ cat /tmp/t
 
+4.40 ulipad - Python代码编辑器
+下载地址
+$ svn checkout http://ulipad.googlecode.com/svn/trunk/ ulipad-read-only
+
 % vim:ft=txt

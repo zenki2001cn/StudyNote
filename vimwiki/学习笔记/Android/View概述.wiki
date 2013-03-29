@@ -1,4 +1,6 @@
-= 使用View =
+= View概述 =
+
+%toc
 
 == 典型使用View的流程方法 ==
 * 通过改写XML资源文件来设置View属性
@@ -17,9 +19,9 @@
 | 附着     | onAttachedWindow, onDetechedFromWindow, onWindowVisibilityChanged | 当窗口消失或离开窗口的事件响应    |
 
 == 与视图绑定的IDs ==
-通常需要将视图与一个ID绑定,使Activity可以获取到该视图的对象
+- 通常需要将视图与一个ID绑定,使Activity可以获取到该视图的对象
 
-1.在资源文件中定义ID
+=== 在资源文件中定义ID ===
 {{{class="brush: xml"
 <Button id="@+id/my_button"
      android:layout_width="wrap_content"
@@ -27,13 +29,13 @@
      android:text="@string/my_button_text"/>
 }}}
 
-2.在onCreate方法中查找视图
+=== 在onCreate方法中查找视图 ===
 {{{class="brush: java"
 Button myButton = (Button) findViewById(R.id.my_button);
 }}}
 
 == View的位置,大小,边距，可见性 ==
-View的位置以左上角为基准,通过调用getLeft()和getTop()来返回当前位置.
+- View的位置以左上角为基准,通过调用getLeft()和getTop()来返回当前位置.
 {{{class="brush: text"
 getRight = getLeft() + getWidth()
 getBottom = getTop() + getHeight()
@@ -63,7 +65,7 @@ getPaddingBottom()
 
 *2.在事件处理中View的边界如果发生变化,会调用requestLayout*
 
-*3.在事件处理中如果View发生变化,会调用invalidate*
+*3.在事件处理中如果View的视图发生变化,会调用invalidate*
 
 *4.在处理UI事件时应该使用单独的线程*
 
@@ -82,7 +84,7 @@ protected void onDraw(Canvas canvas) {
 }}}
 
 == 焦点处理 ==
-以下方法处理焦点的控制
+- 以下方法处理焦点的控制
 {{{class="brush: java"
 isFocusable()
 setFocusable(boolean)
@@ -92,7 +94,7 @@ requestFocus()
 }}}
 
 == 触摸模式 ==
-以下方法处理触摸模式
+- 以下方法处理触摸模式
 {{{class="brush: java"
 isFocusableInTouchMode()
 setFocusableInTouchMode(boolean)
@@ -100,18 +102,22 @@ isInTouchMode()
 }}}
 
 == 卷轴 ==
-以下方法处理卷轴
+- 以下方法处理卷轴
 {{{class="brush: java"
 scrollBy(int, int)
 scrollTo(int, int)
 awakenScroolBars()
 }}}
 
-== Tags ==
-Tags用来标识View附带的额外数据
+== tag ==
+- tag用来标识View附带的额外数据
+{{{class="brush:java"
+void setTag(Object tag)
+void setTag(int key, Object tag)
+}}}
 
 == 动画 ==
-以下方法可以将Animation对象加入到View
+- 以下方法可以将Animation对象加入到View
 {{{class="brush: java"
 setAnimation(Animation)
 startAnimation(Animation)
@@ -128,6 +134,7 @@ protected Parcelable onSaveInstanceState() {
     bundle.putParcelable("android123_state", p);
     return bundle;
 }
+
 @Override
 protected void onRestoreInstanceState(Parcelable state) { 
     Bundle bundle = (Bundle) state;

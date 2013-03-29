@@ -136,12 +136,20 @@ def __delitem__(self, key):
     del self.data[key]
 }}}
 
-== 返回字符串值 ==
+== 反向引用 ==
 === ___repr___ ===
 - __repr__ 是一个专用的方法，在当调用repr(instance)时被调用。repr函数是一个内置函数，它返回一个对象的字符串表示。它可以用在任何对象上，不仅仅是类的实例。
 {{{class="brush:python"
 def __repr__(self): 
     return repr(self.data) 
+}}}
+
+== 返回字符串 ==
+=== ___str___ ===
+- 当str方法调用时，以一个字符串形式表示该对象。
+{{{class="brush:python"
+def __str__(self):
+    return self.name
 }}}
 
 == 对象比较 ==

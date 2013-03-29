@@ -232,6 +232,16 @@ $ git checkout -f file1 file2
 2.12 清除暂存区
 $ rm .git/index
 
+2.13 查看分支和文件
+2.13.1 ls-remote - 查看远程分支
+$ git ls-remote master
+
+2.13.2 ls-tree   - 查看库目录树
+$ git ls-tree master
+
+2.13.3 ls-files  - 查看库文件
+$ git ls-files master
+
 3. Git 高级应用
 3.1 patch   补丁生成和应用
 3.1.1 生成标准patch

@@ -245,3 +245,14 @@ helloworld
 >>> reduce(lambda x, y : x + y, [1, 2, 3, 4], 10)
 20
 }}}
+
+== print（打印输出） ==
+
+{{{class="brush:python"
+# 向标准输出打印
+>>> print "%s %s" % ("hello", "world")
+hello world
+# 向错误输出打印
+>>> print >>sys.stderr, "%s %s" % ("hello", "world")
+hello world
+}}}
