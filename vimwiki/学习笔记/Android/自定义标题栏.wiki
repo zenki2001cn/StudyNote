@@ -18,7 +18,7 @@ import android.widget.TextView;
     # requestWindowFeature(Window.FEATURE_CUSTOM_TITLE)设置自定义属性
     # getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title_1)设置标题栏布局
 
-例程源码(JAVA)
+== 例程源码(JAVA) ==
 {{{class="brush:java"
 public class CustomTitle extends Activity {
     
@@ -57,7 +57,7 @@ public class CustomTitle extends Activity {
 }
 }}}
 
-例程源码(xml)
+== 例程源码(xml) ==
 {{{class="brush:xml"
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" 
     android:id="@+id/screen"

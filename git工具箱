@@ -154,6 +154,9 @@ $ git push origin testing
 $ git push ssh://Zenki@gerrit.ext.ti.com:29418/apps/Foxconn/omap3/framework HEAD:refs/heads/master
 $ git push -u origin gh-pages
 
+# 将本地仓库master分支上的改动merge到远端仓库kernel-repo的redcoral_2.4分支
+$ git push kernel-repo master:redcoral_2.4
+
 2.7 log     显示日志信息
 $ git log
 # 显示简要的版本信息和日志
@@ -223,8 +226,12 @@ $ git reset ded0993b22b7c81d82d17374eb5df9bf6e6f23a2
 >>>>>>> 
 
 2.11 恢复修改文件
-2.11.1 从服务器更新文件
+2.11.1 从远程更新库
+# 将服务器origin库更新到本地testing
 $ git pull origin testing
+
+# 将远端仓库kernel-repo的redcoral_2.4分支的改动merge到本地的master分支
+$ git pull kernel-repo redcoral_2.4:master
 
 2.11.2 恢复修改过的文件
 $ git checkout -f file1 file2
@@ -359,8 +366,10 @@ foo.txt
 $ git tag -a v1.0 -m "tag v1.0"
 
 3.6.2 分享标签
+# 分享标签v1.0
 $ git push origin v1.0
-$ git push --tags
+# 分享所有标签
+$ git push origin --tags
 $ git push origin refs/tags/*
 
 3.6.3 列出所有标签
@@ -370,7 +379,7 @@ $ git tag -l
 # 删除本地标签
 $ git tag -d v1.0
 # 删除远程库的标签
-$ git push origin :v1.0
+$ git push origin v1.0
 
 3.7 hooks   自动化脚本
 # 在.git/hooks/目录中可以编写各种脚本，

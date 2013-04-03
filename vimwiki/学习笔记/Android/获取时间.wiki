@@ -1,9 +1,11 @@
 = 获取时间 =
 
-调用java.util.Calendar类。
+%toc
+
+- 调用java.util.Calendar类。
 - 取值的时候，调用get()方法。
 
-例程源码(Java)
+== 例程源码(Java) ==
 {{{class="brush:java"
 final Calendar calendar = Calendar.getInstance();
  

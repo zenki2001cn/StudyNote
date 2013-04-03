@@ -1,0 +1,15 @@
+= 日期和时间 =
+
+%toc
+
+{{{class="brush:java"
+Date date = new Date();
+String str;
+
+/* 输出格式: 2006-4-16 */
+str = DateFormat.getDateInstance(DateFormat.DEFAULT).format(date);
+
+/* 输出格式: 2006-01-01 00:00:00 */
+java.text.DateFormat fmt = new java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+str = fmt.format(date);
+}}}

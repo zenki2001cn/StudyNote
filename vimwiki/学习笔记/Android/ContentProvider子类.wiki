@@ -312,3 +312,31 @@ while(!cursor.isAfterLast()) {
     }
 }
 }}}
+
+=== 监听ContentProvider中的数据变化 ===
+- 如果ContentProvider的访问者需要知道ContentProvider中的数据是否发生变化，可以在ContentProvider发生数据变化时调用getContentResolver().notifyChange(uri, null)来通知注册在此URI上的访问者：
+{{{class="brush:java"
+public class PersonContentProvider extends ContentProvider {
+    public Uri insert(Uri uri, ContentValues values) {
+        db.insert("person", "personid", values);
+        getContext().getContentResolver().notifyChange(uri, null);
+    }
+}
+}}}
+
+- 如果ContentProvider的访问者需要得到数据变化通知，必须使用ContentObserver对数据（数据采用uri描述）进行监听，当监听到数据变化通知时，系统就会调用ContentObserver的onChange()方法：
+{{{class="brush:java"
+getContentResolver().registerContentObserver(
+        Uri.parse("content://com.ljq.providers.personprovider/person"), 
+        true, 
+        new PersonObserver(new Handler()));
+        
+public class PersonObserver extends ContentObserver{
+    public PersonObserver(Handler handler) {
+        super(handler);
+    }
+   
+    public void onChange(boolean selfChange) {
+    }
+}
+}}}

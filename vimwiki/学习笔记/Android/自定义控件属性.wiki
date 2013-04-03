@@ -51,7 +51,8 @@
 - 解析属性值时，将R.style.MyViewDefaultStyle作为默认的风格资源，参见下面的`解析自定义属性-方法一`。
 {{{class="brush:xml"
 <resources>
-    <style name="MyViewDefaultStyle">
+    <!-- 这里的风格可以继承自系统风格 -->
+    <style name="MyViewDefaultStyle" parent="@android:style/Widget.Button">
         <item name="TextAttrExt">@string/hello_world</item>
         <item name="OrientalAttrExt">Horizontal</item>
         <item name="BackgroundAttrExt">@drawable/my_view_background</item> 
@@ -66,13 +67,14 @@
 </resources>
 }}}
 
-== 解析自定义属性 ==
-=== 方法一 - 仅设置主题风格 ===
+== 如何解析自定义属性 ==
+=== 方法一 - 通过指定主题风格 ===
 - 在构造函数中指定默认的风格。
 {{{class="brush:java"
 public MyText(Context context, AttributeSet attrs) {
-    // 第三个参数为attrs.xml文件中定义的属性值，它是一个风格的引用，
-    // 该属性必须在主题中定义它的引用值
+    // 首先在attrs.xml文件中定义属性值，它是一个风格的引用，
+    // 其次，在styles.xml中定义一组自定义风格
+    // 最后，在主题中指定myViewStyle的引用值
 	this(context, attrs, R.attr.myViewStyle);
 }
 }}}

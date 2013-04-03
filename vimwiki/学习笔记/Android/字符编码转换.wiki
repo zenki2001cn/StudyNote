@@ -1,5 +1,7 @@
 = 字符编码转换 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import java.nio.charset.Charset;
@@ -10,7 +12,6 @@ import org.apache.http.util.EncodingUtils;
 
 - String类的getBytes()将字符串转换成字节数组
 - String类构造函数接受一个描述字符集的字符串参数
-
 {{{class="brush:java"
 String str1 = "你好";
 System.out.println(str1);
@@ -23,7 +24,6 @@ System.out.println(str3);
 }}}
 
 - 使用EncodingUtils类.getString()方法
-
 {{{class="brush:java"
 String str2 = EncodingUtils.getString(str1.getBytes(), "UTF-8");
 }}}

@@ -1,5 +1,7 @@
 = 全屏显示 =
 
+%toc
+
 == 相关类 ==
 {{{class="brush:java"
 import android.app.Activity;
@@ -8,25 +10,22 @@ import android.view.WindowManager.LayoutParams;
 }}}
 
 - 调用Activity.getWindow()方法取得Window实例,对取得的Window实例，调用addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)方法进行全屏表示。
- 
-*更严密的说，如果标题栏(TitleBar)处在表示状态的时候，需要隐藏标题栏(TitleBar)。*
+- *更严密的说，如果标题栏(TitleBar)处在表示状态的时候，需要隐藏标题栏(TitleBar)。*
 
-例程源码(Java)
+== 例程源码(Java) ==
 {{{class="brush: java"
-package com.adakoda.fullscreentest;
- 
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.Window;
-import android.view.WindowManager;
- 
 public class FullScreenTestActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // 全屏无标题
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().requestWindowFeature(Window.FEATURE_NO_TITLE);
+        
+        // 替换系统锁屏
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         
         setContentView(R.layout.main);
     }
