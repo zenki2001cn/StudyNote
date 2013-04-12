@@ -172,7 +172,7 @@ $ git clone https://Zenki.J.Zha@127.0.0.1:8080/Gerrit_project_test.git
 {{{class="brush:bash"
 $ git config remote.origin.push refs/heads/*:refs/for/*
 $ git push origin
-# 或者
+# 或者如下命令，这里的master和本地当前的branch名字一致
 $ git push origin HEAD:refs/for/master
 
 # 成功的信息

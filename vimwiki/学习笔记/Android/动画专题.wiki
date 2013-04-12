@@ -28,3 +28,25 @@ import android.graphics.drawable.AnimationDrawable;
 - [[画面位置旋转效果]]
 - [[帧动画]]
 
+== 监听动画事件 ==
+- 实现AnimationListener接口，该接口提供了动画播放过程中的回调。
+- 通常应该在动画结束时，清除动画对象。
+{{{class="brush:java"
+final static class IndicatorAnimListener implements AnimationListener {
+    public IndicatorAnimListener() {
+    }
+
+    @Override
+    public void onAnimationEnd(Animation animation) {
+        mView.clearAnimation();
+    }
+
+    @Override
+    public void onAnimationRepeat(Animation animation) {
+    }
+
+    @Override
+    public void onAnimationStart(Animation animation) {
+    }
+}
+}}}

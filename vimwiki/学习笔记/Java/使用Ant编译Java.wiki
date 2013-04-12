@@ -128,9 +128,11 @@ ant.java.version: Ant检测到的JDK的版本。
 === java ===
 - 运行Java程序
 {{{class="brush:xml"
-<target name="run" depends="compile">
+<target jar="${some.jar}" fork="true" spawn="false" name="run" depends="compile">
     <java classname="HelloWorld">
         <classpath>
+            <arg value="${some.arg1}" />
+            <arg value="${some.arg2}" />
             <pathelement path="build/classes"/>
         </classpath>
     </java>
@@ -282,6 +284,54 @@ ant.java.version: Ant检测到的JDK的版本。
         </copy>
 
     </target>
+    
+    <!--
+     ===================================================================
+        条件判断的使用
+     ===================================================================
+    -->
+    <target name="-signapk" description="Sign the target APK">
+        <condition property="signplatform" value="true" else="false">
+            <equals arg1="${sign.key.type}" arg2="platform" />
+        </condition>
+        <condition property="signpateo" value="true" else="false">
+            <equals arg1="${sign.key.type}" arg2="pateo" />
+        </condition>
+        <if condition="${signplatform}">
+            <then>
+                <echo>sign apk [platform]:${out.packaged.sign.file}</echo>    
+			    <java jar="${signapk.file.jar}" fork="true" spawn="false" output="selenium.log">
+				    <arg value="${platform.x509.pem}" />
+				    <arg value="${platform.pk8}" />
+				    <arg value="${out.packaged.file}" />
+				    <arg value="${out.packaged.sign.file}" />
+			    </java>
+            </then>
+            <else>
+                <if condition="${signpateo}">
+                <then>
+                    <echo>sign apk [pateo]:${out.packaged.sign.file}</echo>    
+			        <java jar="${signapk.file.jar}" fork="true" spawn="false" output="selenium.log">
+				    <arg value="${pateo.x509.pem}" />
+				    <arg value="${pateo.pk8}" />
+				    <arg value="${out.packaged.file}" />
+				    <arg value="${out.packaged.sign.file}" />
+			        </java>
+                </then>
+                <else>
+                    <echo>sign apk [shared]:${out.packaged.sign.file}</echo>
+			        <java jar="${signapk.file.jar}" fork="true" spawn="false" output="selenium.log">
+				    <arg value="${shared.x509.pem}" />
+				    <arg value="${shared.pk8}" />
+				    <arg value="${out.packaged.file}" />
+				    <arg value="${out.packaged.sign.file}" />
+			        </java>
+                </else>
+                </if>
+            </else>
+        </if>
+    </target>
+    
     <!--
      ===================================================================
       Cleans everything(File Tasks)

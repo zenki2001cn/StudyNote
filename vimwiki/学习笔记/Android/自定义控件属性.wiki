@@ -68,7 +68,16 @@
 }}}
 
 == 如何解析自定义属性 ==
-=== 方法一 - 通过指定主题风格 ===
+=== 方法一 - 布局XML中指定 ===
+{{{class="brush:xml"
+<MyView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    style="@style/ASSwitchButton"
+</MyView>
+}}}
+
+=== 方法二 - 通过指定主题风格 ===
 - 在构造函数中指定默认的风格。
 {{{class="brush:java"
 public MyText(Context context, AttributeSet attrs) {
@@ -79,7 +88,7 @@ public MyText(Context context, AttributeSet attrs) {
 }
 }}}
 
-=== 方法二 - 静态设置属性值 ===
+=== 方法三 - 静态设置属性值 ===
 - 该方法需要配置一个默认的style来描述控件的属性值，参见上面一节`通过定义风格文件指定属性值`的内容。
 - obtainStyledAttributes方法中第三个参数即为加载的style资源文件ID。
 - 直接根据R文件中的属性ID获取属性值。
@@ -97,16 +106,17 @@ private void getAttrMethod(AttributeSet attrs, int defStyle) {
 }
 }}}
 
-=== 方法三 - 动态解析资源 ===
+=== 方法四 - 动态解析资源 ===
 - 一般分两步读取自定义属性：
     - 首先读取attrs.xml中定义的属性名称，编译后属性的ID命名规则是`属性风格名称_属性名称`，例如MyView_TextAttrExt。
     - Resource对象根据属性名称在R文件中的定义——即属性ID，查找对应的资源ID，获取资源。
 {{{class="brush:java"
-private void getAttrMethod(AttributeSet attrs) {
+private void getAttrMethod(AttributeSet attrs, int defStyle) {
     int resourceId = -1;
     
     // 获取TypedArray对象
-    TypedArray typeArray = getContext().obtainStyledAttributes(attrs, R.styleable.MyView);
+    TypedArray typeArray = getContext().obtainStyledAttributes(attrs, R.styleable.MyView, defStyle, 0);
+    
     // 获取属性值的数量
     int count = typeArray.getIndexCount();
     for (int i = 0; i < count; i++) {
@@ -135,7 +145,7 @@ private void getAttrMethod(AttributeSet attrs) {
 }
 }}}
 
-=== 方法四 - 动态解析资源 ===
+=== 方法五 - 动态解析资源 ===
 - 使用构造函数传递的`AttributeSet`对象获取属性列表。
 {{{class="brush:java"
 private void getAttrMethod(Context context, AttributeSet attrs) {

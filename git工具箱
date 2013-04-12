@@ -148,8 +148,9 @@ $ git commit --amend
 $ git commit --amend -m "new message"
 
 2.6 push    上传文件
+* 用法： git push remote_repo [local_branch:]remote_branch
+
 # 提交所有修改到远程服务器，这样，其它团队成员才能更新到这些修改
-$ git push
 $ git push origin testing
 $ git push ssh://Zenki@gerrit.ext.ti.com:29418/apps/Foxconn/omap3/framework HEAD:refs/heads/master
 $ git push -u origin gh-pages
@@ -227,6 +228,11 @@ $ git reset ded0993b22b7c81d82d17374eb5df9bf6e6f23a2
 
 2.11 恢复修改文件
 2.11.1 从远程更新库
+* 用法：git pull remote_repo [remote_branch:]local_branch
+
+# 用rebase的方式更新
+$ git pull --rebase origin
+
 # 将服务器origin库更新到本地testing
 $ git pull origin testing
 
@@ -379,7 +385,7 @@ $ git tag -l
 # 删除本地标签
 $ git tag -d v1.0
 # 删除远程库的标签
-$ git push origin v1.0
+$ git push origin :v1.0
 
 3.7 hooks   自动化脚本
 # 在.git/hooks/目录中可以编写各种脚本，
@@ -414,9 +420,47 @@ $ git gc
 
 3.10 rebase 合并并行的分支
 # 当本地开发和远程开发产生分叉时，可使用rebase来合并提交，消除这两个分叉。
+# 下面操作的步骤是
+# 1. 将mywork分支上的提交取消掉，并把它们保存为临时补丁（在.git/rebase中）。
+# 2. 与origin合并，并根据临时补丁，创建新的提交。
+# 3. 删除掉mywork分支上老的提交。
+# 4. 最终结果看起来是删除了mywork上的分叉，和origin分支在同一个历史轨迹上。
+$ git checkout mywork
 $ git rebase origin
 # 如果需要解决冲突后，继续rebase
 $ git rebase --continue
+
+# 图解rebase ############################
+# ---------------------------------------
+[origin]
+				origin
+				  |
+				  v
+c1 <- c2 <- c3 <- c4
+		\
+		 \--c5 <- c6
+				   ^
+				   |
+				   mywork
+# ---------------------------------------
+[merge]         origin
+                  |
+                  v
+c1 <- c2 <- c3 <- c4
+        \           \
+         \--c5 <- c6 \-- c7
+                          ^
+                          |
+                        mywork
+# ---------------------------------------
+[rebase]        origin
+                  |
+                  v
+c1 <- c2 <- c3 <- c4 <- c5 <- c6
+                              ^
+                              |
+                              mywork
+# ---------------------------------------
 
 3.11 rebase & merge 恢复悬空对象
 # 检查是否有误删的文件，它们会被显示为dangling对象
@@ -427,6 +471,11 @@ $ git show SHA1
 $ git rebase SHA1
 # 恢复dangling对象，可恢复分支状态
 $ git merge SHA1
+
+3.12 filter-branch 分支过滤
+3.12.1 从所有提交中删除文件
+# 删除当前分支中所有提交的*.txt文件
+$ git filter-branch --tree-filter 'rm -f *.txt' HEAD
 
 4. Git 图形界面
 # 查看历史版本的图形化工具
