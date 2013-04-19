@@ -30,7 +30,7 @@ import android.graphics.drawable.AnimationDrawable;
 
 == 监听动画事件 ==
 - 实现AnimationListener接口，该接口提供了动画播放过程中的回调。
-- 通常应该在动画结束时，清除动画对象。
+- 通常应该在动画结束时，清除动画对象，以免造成闪烁。
 {{{class="brush:java"
 final static class IndicatorAnimListener implements AnimationListener {
     public IndicatorAnimListener() {
@@ -38,7 +38,10 @@ final static class IndicatorAnimListener implements AnimationListener {
 
     @Override
     public void onAnimationEnd(Animation animation) {
+        // 清除动画
         mView.clearAnimation();
+        // 如果需要过渡到其他动画
+        view.setAnimation(anotherAnim);
     }
 
     @Override
