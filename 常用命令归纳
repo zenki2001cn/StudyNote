@@ -63,42 +63,33 @@ slurm -L -i eth0
 ntop
 使用http://localhost:3000进行访问
 
-1.9. 修改MAC地址、包伪装
-ifconfig eth0 hw ether 00:23:ae:b4:3d:49 
-
-echo "1" > /proc/sys/net/ipv4/ip_forward
-iptables -F
-iptables -P INPUT ACCEPT
-iptables -P FORWARD ACCEPT
-iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o eth0 -jMASQUERADE
-
-1.10. dig
-1.10.1 查询域名服务器
+1.9. dig
+1.9.1 查询域名服务器
 $ dig -x host
 
-1.10.2 通过 DNS 来读取 Wikipedia 的词条
+1.9.2 通过 DNS 来读取 Wikipedia 的词条
 $ dig +short txt <keyword>.wp.dg.cx
 
-1.11. ssh翻墙
+1.10. ssh翻墙
 ssh -qTfnN -D 7070 zenki2001cn@216.194.70.6 
 使用firefox插件autoproxy插件访问本地端口7070
 
-1.12. 带路径的Ping程序
+1.11. 带路径的Ping程序
 mtr google.com
 
-1.13. BT下载
+1.12. BT下载
 mldonkey
 
-1.14. 简单的HTTP server
+1.13. 简单的HTTP server
 python -m SimpleHTTPServer
 
-1.15. 基于文本的网页浏览器
+1.14. 基于文本的网页浏览器
 w3m
 ls | w3m
 cat foo.html | w3m -T text/html
 elinks
 
-1.16. firefox的插件
+1.15. firefox的插件
 Vimperator                  --- vim插件
 Adblock Plus                --- 广告阻止
 Download StatusBar          --- 下载状态栏
@@ -114,19 +105,40 @@ SQLite Manager              --- SQL查看器
 Zotero                      --- 文档、网页标签管理
 AutoProxy                   --- 翻墙代理
 
-1.17 暴力破解工具
+1.16 暴力破解工具
 medusa
 medusa -d 列出模块支持
 medusa -h host -u user -p password -M module
 
-1.18 获取IP地址
+1.17 获取IP地址
 * ifconfig eth0 |head -2|tail -1 |awk {'print $2'} |cut -d : -f 2
 
-1.19 通过socket接收网络命令的工具
-1.19.1 socat
+1.18 通过socket接收网络命令的工具
+1.18.1 socat
 
-1.20. 简单的SMTP server
+1.19. 简单的SMTP server
 $ python -m smtpd -n -c DebuggingServer localhost:1025
+
+1.20 iptables - IP路由和端口转发
+1.20.1 IP路由
+$ ifconfig eth0 hw ether 00:23:ae:b4:3d:49 
+$ echo "1" > /proc/sys/net/ipv4/ip_forward
+$ iptables -F
+$ iptables -P INPUT ACCEPT
+$ iptables -P FORWARD ACCEPT
+$ iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o eth0 -jMASQUERADE
+
+1.20.3 端口映射
+                                
+                +--------------------+                                  +-------------------+
+ 219.239.xx.xx  |eth1    PC-A    eth0| 172.18.10.212 <--> 172.18.10.205 |eth0    PC-B       |
+                +--------------------+                                  +-------------------+
+# 发送到A机器的8080端口的数据转发到B机器的80端口
+$ iptables -t nat -A PREROUTING -d 219.239.xx.xx -p tcp --dport 8080 -j DNAT --to-destination 172.18.10.205:80
+$ iptables -t nat -A POSTROUTING -d 172.18.10.205 -p tcp --dport 80 -j SNAT --to 172.18.10.212
+# 开通eth0的转发机制，即将eth0作为网桥
+$ iptables -A FORWARD -o eth0 -d 172.18.10.205 -p tcp --dport 80 -j ACCEPT
+$ iptables -A FORWARD -i eth0 -s 172.18.10.205 -p tcp --sport 80 -j ACCEPT
 
 2. 系统相关
 2.1. 查看硬件信息
