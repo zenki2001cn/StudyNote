@@ -13,22 +13,29 @@ import android.view.WindowManager.LayoutParams;
 - *更严密的说，如果标题栏(TitleBar)处在表示状态的时候，需要隐藏标题栏(TitleBar)。*
 
 == 例程源码(Java) ==
+=== 进入全屏 ===
 {{{class="brush: java"
-public class FullScreenTestActivity extends Activity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        // 全屏无标题
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().requestWindowFeature(Window.FEATURE_NO_TITLE);
-        
-        // 替换系统锁屏
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
-        
-        setContentView(R.layout.main);
-    }
+public void enterFullScreen() {
+    // 全屏无标题
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    getWindow().requestWindowFeature(Window.FEATURE_NO_TITLE);
+    
+    // 替换系统锁屏
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+    
+    setContentView(R.layout.main);
 }
 }}}
 
+=== 退出全屏 ===
+{{{class="brush:java"
+public void exitFullScreen() {
+    final WindowManager.LayoutParams attrs = getWindow().getAttributes();
+    attrs.flags &= (~WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    getWindow().setAttributes(attrs);
+    getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+    
+    mIsFullScreen = false;
+}
+}}}
