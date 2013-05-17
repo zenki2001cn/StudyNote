@@ -6,7 +6,10 @@
 {{{class="brush:bash"
 # 1. 下载工具和库
 $ sudo apt-get install mercurial libncurses* libncurses5-dev \
-               ruby-dev python2.6-dev libperl-dev
+               ruby-dev python2.6-dev libperl-dev libgnome2-dev \
+               libgnomeui-dev libgtk2.0-dev libatk1.0-dev \
+               libbonoboui2-dev libcairo2-dev libx11-dev libxpm-dev \
+               libxt-dev
 
 # 2. 下载vim源码
 $ hg clone https://vim.googlecode.com/hg/ vim
@@ -18,7 +21,8 @@ $ cd vim
 $ ./configure --enable-multibyte=yes --with-features=huge --enable-xim=yes --enable-pythoninterp=yes \
               --enable-gui=yes --enable-cscope=yes --enable-fontset=yes --enable-perlinterp=yes \
               --enable-mzschemeinterp=yes --enable-luainterp=yes --enable-rubyinterp=yes \
-              --enable-tclinterp=yes --enable-xim=yes --with-vim-name=vim7.3 --enable-sniff=yes
+              --enable-tclinterp=yes --enable-xim=yes --with-vim-name=vim7.3 --enable-sniff=yes \
+              --enable-gui=gnome2
 
 # 4. 安装vim
 $ make

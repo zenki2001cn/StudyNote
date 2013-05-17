@@ -282,6 +282,7 @@ $ ssh-copy-id remote-machine
 $ ssh-keygen -t rsa -C "zenki2001cn@163.com"
 $ scp ~/.ssh/identity.pub remote-machine
 $ ssh remote-machine
+# 其中，需要哪个用户免密码，就将公钥复制到哪个用户目录的.ssh下
 $ cat identity.pub >> ~/.ssh/authorized_keys
 
 2.24.2 端口转发
@@ -306,7 +307,7 @@ $ fusermount -u /path/to/mount/point
 $ ssh -t host_A ssh host_B
 $ ssh -t host1 ssh -t host2 ssh -t host3 ssh -t host4 ...
 
-2.24.5. ssh翻墙
+2.24.5 ssh翻墙
 ssh -qTfnN -D 7070 zenki2001cn@216.194.70.6 
 使用firefox插件autoproxy插件访问本地端口7070
 
