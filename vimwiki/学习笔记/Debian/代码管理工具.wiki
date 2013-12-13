@@ -4,3 +4,4 @@
 
 - [[Gerrit]] --- CodeReview系统
 - [[Jenkins和Hundson]] --- 代码构建系统
+- [[Redmine]] --- 项目管理系统

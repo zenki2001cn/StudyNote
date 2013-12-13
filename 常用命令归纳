@@ -700,4 +700,7 @@ $ cat /tmp/t
 下载地址
 $ svn checkout http://ulipad.googlecode.com/svn/trunk/ ulipad-read-only
 
+4.41 pmap - 进程内存查看
+$ pmap -d pid
+
 % vim:ft=txt

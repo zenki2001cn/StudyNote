@@ -1,0 +1,84 @@
+= Redmine项目管理系统 =
+
+%toc
+
+== 安装准备 ==
+- 首先下载Bitnami一键安装程序([[http://bitnami.com/stack/redmine/installer|下载地址]])。
+- 执行以下命令进行安装：
+{{{class="brush:bash"
+$ ./bitnami-redmine-2.3.0-0-linux-installer.run
+}}}
+
+== 运行Redmine ==
+- 执行以下命令启动：
+{{{class="brush:bash"
+$ /opt/redmine-2.3.0-0/ctlscript.sh start
+}}}
+
+== 配置要点 ==
+=== 1.插件安装 ===
+{{{class="brush:text"
+    插件安装在程序根目录apps/redmine/htdocs/plugins/下。安装方法可参考各插件的说明文档。
+通常将插件拷贝到该目录下后，执行如下命令：
+    ./ruby/bin/rake redmine:plugins:migrate
+}}}
+
+- scrum2b: [[https://github.com/scrum2b/scrum2b|下载地址]]
+
+=== 2.配置文件 ===
+- 配置文件是程序根目录下的properties.ini
+{{{class="brush:bash"
+[General]
+installdir=/opt/redmine-2.3.0-0
+base_stack_name=BitNami Redmine Stack
+base_stack_version=2.3.0-0
+base_stack_platform=linux
+base_stack_service=
+require_root_privileges=1
+
+[Apache]
+apache_server_port=8088
+apache_user=daemon
+apache_group=daemon
+apache_server_ssl_port=443
+apache_root_directory=/opt/redmine-2.3.0-0/apache2
+apache_domainname=ruizhantech-PowerEdge-R720
+apache_configuration_directory=/opt/redmine-2.3.0-0/apache2/conf
+
+[MySQL]
+mysql_port=3308
+mysql_host=localhost
+mysql_root_directory=/opt/redmine-2.3.0-0/mysql
+mysql_binary_directory=/opt/redmine-2.3.0-0/mysql/bin
+mysql_data_directory=/opt/redmine-2.3.0-0/mysql/data
+mysql_arguments=-u root -S /opt/redmine-2.3.0-0/mysql/tmp/mysql.sock
+mysql_socket=/opt/redmine-2.3.0-0/mysql/tmp/mysql.sock
+
+[PHP]
+php_binary_directory=/opt/redmine-2.3.0-0/php/bin
+php_configuration_directory=/opt/redmine-2.3.0-0/php/etc
+
+[Ruby]
+ruby_root_directory=/opt/redmine-2.3.0-0/ruby
+
+[Subversion]
+subversion_port=3690
+subversion_root_directory=/opt/redmine-2.3.0-0/subversion
+
+[ImageMagick]
+imagemagick_root_directory=/opt/redmine-2.3.0-0/common
+
+[SMTP]
+smtp_host=smtp.163.com
+smtp_port=25
+smtp_user=ruizhantech
+smtp_password=redmine
+smtp_protocol=tls
+}}}
+
+=== 3.邮件配置 ===
+- 邮件发送的SMTP设置在前文提到的properties.ini文件中。
+- 实现文件在apps/redmine/htdocs/config/configuration.yml中。
+
+=== 4.mysql移植和安装 ===
+- 参考根目录下mysql/INSTALL-BINARY说明文档。
