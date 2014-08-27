@@ -11,6 +11,9 @@
 >>> a_list 
 ['a', 'b', 'mpilgrim', 'z', 'example'] 
 
+>>> a_list[::-1]
+['example', 'z', 'mpilgrim', 'b', 'a'] 
+
 >>> a_list[1:3] 
 ['b', 'mpilgrim'] 
 
