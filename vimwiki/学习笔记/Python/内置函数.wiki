@@ -191,6 +191,17 @@ helloworld
 >>> re = __import__('re')
 >>> unittest = __import__('unittest')
 
+# 导入动态链接库
+>>> cdll = __import__('pychartdir27')
+>>> cdll.callMethod
+>>> <function pychartdir27.callMethod>
+
+>>> cdll.id
+>>> 'pychartdir27'
+
+>>> cdll.applyMethod
+>>> <function pychartdir27.applyMethod>
+
 # 查看返回的变量
 >>> sys
 >>> <module 'sys' (built-in)>
