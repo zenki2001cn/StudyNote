@@ -327,6 +327,9 @@ find . -iname "*.rst" -exec mv '{}' '{}'.html \;
 3.2. 根据用户名查找文件
 find . -user zenki
 
+# 查找并删除不是.c或.h结尾的文件
+find . -type f -not \( -name "*.c" -or -name "*.h" \) -delete
+
 3.3. chm查看及解压
 chmsee
 archmage

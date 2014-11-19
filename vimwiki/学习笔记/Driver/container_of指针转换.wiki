@@ -8,18 +8,28 @@
 }}}
 
 == container_of宏 ==
-- 通常C语言通过在struct中包含另一个struct来实现继承。如何根据父类对象指针获取子类的对象呢？Linux Kernel中使用`container_of`宏定义。
+- 通常C语言通过在struct中包含另一个struct来实现继承，被包含的struct称为父类。如何根据父类对象指针获取子类的对象呢？Linux Kernel中使用`container_of`宏定义。
+- 通俗的说，就是通过`成员变量`的指针获取包`含它的结构体`的指针。
 {{{class="brush:c"
 /**
- * container_of - cast a member of a structure out to the containing structure
- * @ptr:	the pointer to the member.
- * @type:	the type of the container struct this is embedded in.
- * @member:	the name of the member within the struct.
+ * @ptr:	成员变量指针。
+ * @type:	包含该成员的结构体类型。
+ * @member:	成员变量名。
  *
  */
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
 	(type *)( (char *)__mptr - offsetof(type,member) );})
+}}}
+
+- 在0地址上分配一个子类对象，并将父类的对象（参数一）保存为子类成员的临时变量__mptr。
+{{{class="brush:c"
+const typeof( ((type *)0)->member ) *__mptr = (ptr);
+}}}
+
+- 用(char *)__mptr减去member在结构体中的偏移量，得到的值就是整个结构体变量的首地址（整个宏的返回值就是这个首地址）。
+{{{class="brush:c"
+(type *)( (char *)__mptr - offsetof(type,member) );
 }}}
 	
 === offsetof宏 ===
@@ -34,9 +44,9 @@
 
 == 示例说明 ==
 - 该示例中，struct scull_dev包含struct cdev对象，并且对象名是m_cdev。
-    - container_of宏接收的第一个参数是指向m_cdev成员的指针。
-    - 第二个参数是需要返回的对象类型。
-    - 第三个参数是一个成员变量名，由于container_of是宏定义，它可以将该变量名和第二个参数组合，返回其地址。
+    - 第一个参数是指向结构体中父类对象的指针。
+    - 第二个参数是需要返回的子类对象类型。
+    - 第三个参数是父类对象变量字符串，由于container_of是宏定义，它将该变量名和第二个参数组合，返回其地址。
 - container_of最终将m_cdev的指针转换，得到了继承子类struct scull_dev对象的指针。
 {{{class="brush:c"
 # scull_dev结构描述
