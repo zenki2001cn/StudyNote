@@ -700,11 +700,29 @@ $ easy_install --upgrade ...
 $ strace -f -o /tmp/t -e trace=open man man
 $ cat /tmp/t
 
-4.40 ulipad - Python代码编辑器
+4.40 Python代码编辑器
+4.40.1 ulipad
 下载地址
 $ svn checkout http://ulipad.googlecode.com/svn/trunk/ ulipad-read-only
 
+4.40.2 spyder
+ubuntu软件中心
+
 4.41 pmap - 进程内存查看
 $ pmap -d pid
+
+5. 学习工具
+5.1 几何画图
+5.1.1 GeoGebra  - 几何画图、曲线拟合、矩阵变换
+ubuntu软件中心
+
+5.1.2 
+
+5.2 科学计算
+5.2.1 Scilab    - Linux版的Matlab
+5.2.2 QtiPlot   - 曲线拟合
+5.2.3 KmPlot    - 函数画图
+5.2.4 Genius    - 可编程计算器
+ubuntu软件中心
 
 % vim:ft=txt
