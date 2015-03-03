@@ -2,12 +2,7 @@
 
 %toc
 
-== 相机标定原理 ==
-{{http:pic/1.jpeg}}
-{{http:pic/2.jpeg}}
-{{http:pic/3.jpeg}}
-{{http:pic/4.jpeg}}
-{{http:pic/5.jpeg}}
-{{http:pic/6.jpeg}}
-{{http:pic/7.jpeg}}
-{{http:pic/8.jpeg}}
+- [[相机标定原理]]
+- [[Opencv Tips]]
+
+

@@ -1,0 +1,29 @@
+= 克莱姆法则 =
+
+%toc
+
+== 二阶克莱姆法则的几何解释 ==
+{{http:pic/4-1}}
+
+{{http:pic/4-2}}
+
+{{http:pic/4-3}}
+
+{{http:pic/4-4}}
+{{http:pic/4-5}}
+{{http:pic/4-6}}
+
+== 三阶克莱姆法则的几何解释 ==
+{{http:pic/4-7}}
+
+{{http:pic/4-8}}
+
+{{http:pic/4-9}}
+
+{{http:pic/4-10}}
+
+{{http:pic/4-11}}
+{{http:pic/4-12}}
+{{http:pic/4-13}}
+
+

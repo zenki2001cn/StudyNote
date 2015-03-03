@@ -1,0 +1,174 @@
+= 基本数据结构和操作 =
+
+%toc
+
+== Opencv图像类型定义 ==
+{{{class="brush:c"
+IPL_DEPTH_8U        无符号8位整型
+IPL_DEPTH_8S        有符号8位整型
+IPL_DEPTH_16S       有符号16位整型
+IPL_DEPTH_32S       有符号32位整型
+IPL_DEPTH_32F       32位浮点数
+IPL_DEPTH_64F       64位浮点数
+}}}
+
+== 快速访问Mat所有元素 ==
+{{{class="brush:c"
+Mat mat;
+float s = 0.0f;
+
+// 遍历每一行元素
+for (int row = 0; row < mat->rows; row++) {
+    // 获取指向每行的指针
+    const float *ptr = (const float*) (mat->data + row * mat->step);
+    
+    // 遍历每一行的每一列元素
+    for (int col = 0; col < mat->cols; col ++) {
+        s = *ptr++;
+    }
+}
+}}}
+
+== 快速访问IplImage所有元素 ==
+{{{class="brush:c"
+// 遍历每一行元素
+for (int y = 0; y < image->height; y++) {
+    // 获取指向每行的指针
+    uchar *ptr = (uchar*) image->imageData + y * image->widthStep;
+
+    // 遍历每一行每一列的元素
+    for (int x = 0; x < image->width; x++) {
+        // 3通道图像需要乘以3
+        ptr[3*x] = 255;
+        ptr[3*x+1] = 255;
+        ptr[3*x+2] = 255;
+    }
+}
+}}}
+
+== 矩阵和图像操作函数 ==
+| 函数名            | 说明                                             |
+|-------------------|--------------------------------------------------|
+| cvAbs             | 计算数组中所有元素的绝对值                       |
+| cvAbsDiff         | 计算两个数组差值的绝对值                         |
+| cvAbsDiffS        | 计算数组和标量差值的绝对值                       |
+| cvAdd             | 两个数组元素级的加运算                           |
+| cvAddS            | 一个数组和一个标量的元素级的加运算               |
+| cvAddWeighted     | 两个数组的元素级的加权相加运算                   |
+| cvAvg             | 计算数组中所有元素的平均值                       |
+| cvAvgSdv          | 计算数组中所有元素的绝对值和标量差               |
+| cvCalcCovarMatrix | 计算一组n维空间向量的协方差                      |
+| cvCmp             | 对两个数组中的所有元素运用设置的比较操作         |
+| cvCmpS            | 对数组和标量运用比较操作                         |
+| cvConvertScale    | 用可选的缩放值转换数组类型                       |
+| cvConvertScaleAbs | 计算缩放的绝对值后，再转换数组类型               |
+| cvCopy            | 把数组的值复制到另一个数组中                     |
+| cvCountNonZero    | 计算数组中非0值的个数                            |
+| cvCrossProduct    | 计算两个三维向量的叉积                           |
+| cvCvtColor        | 将数组通道转换到另一个色彩空间                   |
+| cvDet             | 计算方阵的行列式                                 |
+| cvDiv             | 数组的元素级除法运算                             |
+| cvDotProduct      | 两个向量的点积                                   |
+| cvEigenVV         | 计算方阵的特征值和特征向量                       |
+| cvFlip            | 围绕选定轴翻转                                   |
+| cvGEMM            | 矩阵乘法                                         |
+| cvGetCol          | 从一个数组的列中复制数据                         |
+| cvGetCols         | 从多列中复制数据                                 |
+| cvGetDiag         | 复制对角线上的所有元素                           |
+| cvGetDims         | 返回数组的维数                                   |
+| cvGetDimSize      | 返回数组所有维的大小                             |
+| cvGetRow          | 从数组行中复制元素值                             |
+| cvGetRows         | 从多个行中复制元素值                             |
+| cvGetSize         | 得到二维的数组尺寸，返回CvSize                   |
+| cvGetSubRect      | 从一个数组的子区域复制元素                       |
+| cvInRange         | 检查一个数组的元素是否在另外两个数组的值的范围内 |
+| cvInRangeS        | 检查一个标量值是否在两位两个标量的范围内         |
+| cvInvert          | 求矩阵的逆矩阵                                   |
+| cvMahalonobis     | 求两个向量见的马氏距离                           |
+| cvMax             | 两个数组间元素级的求最大值                       |
+| cvMaxS            | 一个数组和一个标量间取最大值操作                 |
+| cvMerge           | 将几个单通道图像合并成一个多通道图像             |
+| cvMin             | 两个数组间元素级的求最小值                       |
+| cvMinS            | 一个数组和一个标量间取最小值操作                 |
+| cvMinMaxLoc       | 寻找数组中的最大最小值                           |
+| cvMul             | 计算两个数组的元素级乘积                         |
+| cvNot             | 按位对数组的每一个元素求反                       |
+| cvNorm            | 计算两个数组的正态相关性                         |
+| cvNormalize       | 将数组中元素归一化                               |
+| cvOr              | 两个数组进行按位或操作                           |
+| cvOrS             | 在数组与标量之间进行按位或操作                   |
+| cvReduce          | 通过给定的操作符将二维数组约简为向量             |
+| cvRepeat          | 以平铺的方式进行数组复制                         |
+| cvSet             | 用给定值初始化数组                               |
+| cvSetZero         | 将数组所有元素初始化为0                          |
+| cvSetIdentity     | 将数组对角线元素赋值为1，其他为0                 |
+| cvSolve           | 求出线性方程组的解                               |
+| cvSplit           | 将多通道数组分解成多个单通道数组                 |
+| cvSub             | 两个数组元素级相减                               |
+| cvSubS            | 元素级的从数组中减去标量                         |
+| cvSubRS           | 元素级的从标量中减去数组                         |
+| cvSum             | 数组中所有元素求和                               |
+| cvSVD             | 二维矩阵的奇异值分解                             |
+| cvSVBkSb          | 奇异值回代计算                                 |
+| cvTrace           | 计算矩阵迹                                       |
+| cvTranspose       | 矩阵的转置运算                                   |
+| cvXor             | 两个数组按位异或操作                             |
+| cvXorS            | 数组和标量之间按位异或操作                       |
+| cvZero            | 将数组所有元素置0                                |
+
+== 绘图函数 ==
+| 函数名           | 说明           |
+|------------------|----------------|
+| cvLine           | 画直线         |
+| cvRectangle      | 画矩形         |
+| cvCircle         | 画圆           |
+| cvFillPoly       | 画多边形一     |
+| cvFillConvexPoly | 画多边形二     |
+| cvPolyLine       | 画多边形三     |
+| cvPutText        | 绘制文字       |
+| cvInitFont       | 初始化文字类型 |
+
+== 数据存储和序列化 ==
+{{{class="brush:c"
+// 存储数据
+int store_data(const char *filename)
+{
+    FileStorage fs(filename, FileStorage::WRITE);
+
+    if (env != NULL) {
+        // 创建块
+        fs << "data";
+        // 块开始
+        fs << "{";
+        fs << "rect_black_1" << rect_black_1;
+        fs << "rect_black_2" << rect_black_2;
+        fs << "rect_black_3" << rect_black_3;
+        // 块结束
+        fs << "}";
+    }
+
+    return 0;
+}
+
+// 读取数据
+int reload_data(const char *filename)
+{
+    if (access(filename, R_OK) < 0) {
+        return -1;
+    }
+
+    FileStorage fs(filename, FileStorage::READ);
+    FileNode node;
+
+    if (env != NULL) {
+        // 读取指定的块
+        node = fs["data"];
+        vector<int> rc;
+        node["rect_black_1"] >> rect_black_1; 
+        node["rect_black_2"] >> rect_black_2; 
+        node["rect_black_3"] >> rect_black_3; 
+    }
+
+    return 0;
+}
+}}}
