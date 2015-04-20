@@ -7,6 +7,8 @@
 - 每次调用next()方法会返回yield表达式的值。
 - 可通过for循环自动执行一个Generator函数的next()方法。
 - 当循环结束时，next()方法会返回None。
+- send()方法作用与next()一样，区别是可以给yield传递参数。
+- [[http://www.cnblogs.com/coderzh/archive/2008/05/18/1202040.html|参考链接]]
 
 {{{class="brush:python"
 def generator():
@@ -17,12 +19,63 @@ def generator():
 >>> func.next()
 here
 
+# 手动调用send()方法
+>>> func = generator()
+>>> func.send("there")
+there
+
 # 通过循环调用next()方法
+# 推荐内置的for循环，或内置的next()函数
 >>> for i in func:
 ...     print i
 
 here
 None
+}}}
+
+== 迭代器函数和next方法 ==
+- 对于原生支持随机访问的数据结构（如tuple、list），迭代器和经典for循环的索引访问相比并无优势，反而丢失了索引值。但对于无法随机访问的数据结构（比如set）而言，迭代器是唯一的访问元素的方式。
+- 迭代器的一大优点是不要求事先准备好整个迭代过程中所有的元素。迭代器仅仅在迭代到某个元素时才计算该元素，而在这之前或之后，元素可以不存在或者被销毁。这个特点使得它特别适合用于遍历一些巨大的或是无限的集合，比如几个G的文件，或是斐波那契数列等等。
+- 迭代器更大的功劳是提供了一个统一的访问集合的接口，只要定义了__iter__()方法对象，就可以使用迭代器访问。
+    - `next`方法：返回迭代器的下一个元素。
+    - `__iter__`方法：返回迭代器对象本身
+
+{{{class="brush:python"
+# 生成斐波那契数列
+class Fab(object):
+    def __init__(self, max):
+        self.max = max
+        self.n, self.a, self.b = 0, 0, 1
+ 
+    def __iter__(self):
+        return self                                     # 通常返回对象自身
+ 
+    def next(self):
+        if self.n < self.max:                           # 
+            r = self.b
+            self.a, self.b = self.b, self.a + self.b    # 更新值
+            self.n = self.n + 1                         # 更新计数
+            return r
+            
+        raise StopIteration()                           # 大于最大值，抛出异常
+        
+# 使用示例一：通过for循环迭代
+for key in Fabs(5):
+    print key
+    
+# 使用示例二：通过next方法迭代
+>>> f = fab(3)
+>>> f.next()
+1
+>>> f.next()
+1
+>>> f.next()
+2
+>>> f.next()
+Traceback (most recent call last):
+ File "<pyshell#62>", line 1, in <module>
+  f.next()
+StopIteration
 }}}
 
 == 可选参数和命名参数 ==
@@ -73,6 +126,8 @@ def foo():
         因此在=号右边再次引用时，该变量会引起没有定义的异常。
         """
         foo_a = foo_a + 1
+        # foo_b = foo_a + 1     // 可执行通过，foo_b等于101，foo_a仍然等于100
+        # foo_a = 1 + 1         // 可执行通过，bar内部的foo_a等于2，foo内部的foo_a仍然等于100
         print foo_a     # 引起未定义的局部变量异常
 
     bar()

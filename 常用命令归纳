@@ -59,6 +59,9 @@ netperf
 1.7.5 slurm
 slurm -L -i eth0
 
+1.7.6 nload
+nload wlan0
+
 1.8. 网络流量分析的Web端服务
 ntop
 使用http://localhost:3000进行访问
@@ -141,6 +144,13 @@ $ iptables -t nat -A POSTROUTING -d 172.18.10.205 -p tcp --dport 80 -j SNAT --to
 # 开通eth0的转发机制，即将eth0作为网桥
 $ iptables -A FORWARD -o eth0 -d 172.18.10.205 -p tcp --dport 80 -j ACCEPT
 $ iptables -A FORWARD -i eth0 -s 172.18.10.205 -p tcp --sport 80 -j ACCEPT
+
+1.21 邮件客户端
+1.20.1 Thunderbird
+* 插件列表：
+    1.Thunderbird Conversations         邮件查看
+    2.Lightning                         日历
+    3.ImportExportTools                 配置文件导出
 
 2. 系统相关
 2.1. 查看硬件信息
@@ -330,9 +340,19 @@ find . -user zenki
 # 查找并删除不是.c或.h结尾的文件
 find . -type f -not \( -name "*.c" -or -name "*.h" \) -delete
 
+# 查找大小超过10M的文件
+find /home -size +10M
+
+# 查找120天前被修改过的文件
+find /home -mtime +120
+
+# 查找90天内未被访问过的文件
+find /home \!-atime -90
+
 3.3. chm查看及解压
 chmsee
 archmage
+kchmviewer
 
 3.4. pdf转换html
 pdftohtml
@@ -535,7 +555,11 @@ F10     step命令
 indent
 
 4.7. 内存泄漏检查工具
-valgrind
+4.7.1 valgrind
+
+4.7.2 kcachegrind
+valgrind --tool=callgrind [myprogram args]
+kcachegrind打开生成文件callgrind.out.xxx
 
 4.8. makefile生成工具
 cmake
@@ -710,6 +734,11 @@ ubuntu软件中心
 
 4.41 pmap - 进程内存查看
 $ pmap -d pid
+
+4.42 解决无法链接共享库的方法
+* 添加库路径到配置文件，如：/etc/ld.so.conf.d/opencv.conf
+* 刷新系统缓存：sudo ldconfig -v
+* 查找共享库：sudo updatedb && locate libopencv_core.so.2.4
 
 5. 学习工具
 5.1 几何画图

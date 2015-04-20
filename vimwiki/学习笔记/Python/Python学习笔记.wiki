@@ -9,6 +9,26 @@
 - [[包，类和对象]]
 - [[正则表达式]]
 - [[Unicode字符串]]
-- [[字符串和数值转换]]
+- [[字符串和数值转换|字符串转换和格式化]]
+- [[拷贝对象|浅拷贝和深拷贝]]
+- [[推导式生成器]]
+- [[http://www.jb51.net/article/54911.htm|常用模块备忘]]
+- [[http://blog.jobbole.com/48541/|12种基础用例]]
+- [[http://blog.jobbole.com/63320/|30个实用小技巧]]
+
+== 进阶知识 ==
+- [[排列和组合]]
+- [[分组格式化]]
+- [[http://www.cnblogs.com/coderzh/archive/2010/04/27/python-cookbook33-Decorators.html|Decorators详解]]
+- [[http://www.admin10000.com/document/4268.html|高级数据结构]]
+- [[http://www.admin10000.com/document/4035.html|Comprehensions、Decorators、ContextLib、Descriptors和MetaClasses]]
+- [[http://blog.jobbole.com/66097/|Iterators、Generators和itertools]]
+- [[http://blog.jobbole.com/66895/|Closures、Decorators和functools]]
 
 == 代码片段 ==
+- [[http://www.pythontab.com/html/2014/pythonhexinbiancheng_1114/910.html|各种排序方法]]
+- [[http://www.cnblogs.com/coderzh/archive/2008/05/18/1201993.html|初始化多维数组]]
+- [[http://www.jb51.net/article/55817.htm|INI文件读写]]
+- [[http://www.cnblogs.com/codingmylife/p/3630701.html|拷贝函数签名]]
+- [[http://www.cnblogs.com/codingmylife/archive/2013/05/31/3110656.html|枚举实现]]
+- [[http://www.cnblogs.com/codingmylife/p/3641494.html|无参数的装饰器]]

@@ -1,50 +1,100 @@
-= 字符串和数值转换 =
+= 字符串操作 =
 
 %toc
 
-== str - 数字=>字符串 ==
+== 字符串和数值转换 ==
+=== str - 数字=>字符串 ===
 {{{class="brush:python"
 >>> str(100)
 '100'
 }}}
 
-== int、float - 字符串=>数字 ==
+=== int、float - 字符串=>数字 ===
 {{{class="brush:python"
 >>> int('100')
 100
 >>> float('100.00')
 100.0
+
+# 二进制字符串转换为十进制
+>>> int('100101', 2)
+37
 }}}
 
-== ord - 字符=>数字 ==
+=== ord - 字符=>数字 ===
 {{{class="brush:python"
 >>> ord('a')
 97
 }}}
 
-== hex - 数字=>十六进制字符串 ==
+=== hex - 数字=>十六进制字符串 ===
 {{{class="brush:python"
 >>> hex(97)
 '0x61'
 }}}
 
-== float.fromhex - 十六进制字符串=>数字 ==
+=== float.fromhex - 十六进制字符串=>数字 ===
 {{{class="brush:python"
 >>> float.fromhex('0x61')
 97.0
 }}}
 
-== oct - 数字=>八进制字符串 ==
+=== oct - 数字=>八进制字符串 ===
 {{{class="brush:python"
 >>> oct(97)
 '0141'
 }}}
 
-== binascii - 二进制<=>十六进制字符串 ==
+=== binascii - 二进制<=>十六进制字符串 ===
 {{{class="brush:python"
 >>> import binascii
 >>> repr(binascii.a2b_hex('0099'))
 "'\\x00\\x99'"
 >>> binascii.b2a_hex('\x00\x99')
 '0099'
+}}}
+
+== str.format高级用法 ==
+{{{class="brush:python"
+>>> name = 'xianglong'
+>>> messages = 4
+
+# 通过位置
+>>> 'Hello {0}, you have {1} messages'.format(name, messages)
+>>> 'Hello xianglong, you have 4 messages'
+
+# 通过关键字参数
+>>> 'Hello {name}, you have {messages} messages'.format(name=name, messages=messages)
+>>> 'Hello xianglong, you have 4 messages'
+
+# 通过下标
+>>> 'Hello {0[0]}, you have {0[1]} messages'.format([name, messages])
+>>> 'Hello xianglong, you have 4 messages'
+
+# 格式限定符：填充与对齐
+# ^、<、>分别是居中、左对齐、右对齐，后面带宽度
+# :号后面带填充的字符，只能是一个字符，不指定的话默认是用空格填充
+>>> 'Hello {0:>14}, you have {1:>14} messages'.format(name, messages)
+>>> 'Hello      xianglong, you have              4 messages'
+
+# 格式限定符：精度与类型f
+>>> '{:.2f}'.format(321.33345)
+>>> '321.33'
+
+# 格式限定符：b、d、o、x分别是二进制、十进制、八进制、十六进制
+>>> '{:b}'.format(14)
+>>> '1110'
+
+>>> '{:d}'.format(14)
+>>> '14'
+
+>>> '{:o}'.format(14)
+>>> '16'
+
+>>> '{:x}'.format(14)
+>>> 'e'
+
+# 格式限定符：千位分隔符
+>>> '{:,}'.format(1234567890)
+>>> '1,234,567,890'
 }}}

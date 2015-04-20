@@ -11,8 +11,16 @@
 >>> a_list 
 ['a', 'b', 'mpilgrim', 'z', 'example'] 
 
+# 步进为2切片
+>>> a_list[::2]
+['a', 'mpilgrim', 'example'] 
+
+# 负步进切片
 >>> a_list[::-1]
 ['example', 'z', 'mpilgrim', 'b', 'a'] 
+
+>>> a_list[::-2]
+['example', 'mpilgrim', 'a'] 
 
 >>> a_list[1:3] 
 ['b', 'mpilgrim'] 
@@ -31,6 +39,17 @@
 
 >>> a_list[:] 
 ['a', 'b', 'mpilgrim', 'z', 'example']
+}}}
+
+=== slice命名切片 ===
+{{{class="brush:python"
+# slice(start, end, step)
+>>> a = [0, 1, 2, 3, 4, 5]
+>>> sl = slice(1, -1, 1)
+>>> sl
+slice(1, -1, 1)
+>>> a[sl]
+[1, 2, 3, 4]
 }}}
 
 === extend和append ===
@@ -71,6 +90,26 @@
 ['mpilgrim', 'sa', 'master', 'secret']
 >>> ["%s=%s" % (k, v) for k, v in params.items()] 
 ['server=mpilgrim', 'uid=sa', 'database=master', 'pwd=secret']
+
+# 摊平列表
+>>> a = [[1, 2], [3, 4], [5, 6]]
+>>> list(itertools.chain.from_iterable(a))
+[1, 2, 3, 4, 5, 6]
+ 
+>>> sum(a, [])
+[1, 2, 3, 4, 5, 6]
+ 
+>>> [x for l in a for x in l]
+[1, 2, 3, 4, 5, 6]
+ 
+>>> a = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+>>> [x for l1 in a for l2 in l1 for x in l2]
+[1, 2, 3, 4, 5, 6, 7, 8]
+ 
+>>> a = [1, 2, [3, 4], [[5, 6], [7, 8]]]
+>>> flatten = lambda x: [y for l in x for y in flatten(l)] if type(x) is list else [x]
+>>> flatten(a)
+[1, 2, 3, 4, 5, 6, 7, 8]
 }}}
 
 == 字符串处理 ==
@@ -141,6 +180,13 @@
 >>> d = {"server":"mpilgrim", "database":"master"}
 >>> d
 {'server': 'mpilgrim', 'database': 'master'}
+
+# 通过列表组装
+>>> given = ['John', 'Eric', 'Terry', 'Michael']
+>>> family = ['Cleese', 'Idle', 'Gilliam', 'Palin']
+>>> pythons = dict(zip(given, family))
+>>> print pythons
+{'John': 'Cleese', 'Michael': 'Palin', 'Eric': 'Idle', 'Terry': 'Gilliam'}
 }}}
 
 === 修改字典成员 ===
@@ -161,4 +207,252 @@
 {{{class="brush:python"
 >>> for k, v in os.environ.items():
 ...     print "%s=%s" % (k, v)
+
+# 直接遍历key
+>>> for key in os.environ.items():
+...     print key
+}}}
+
+=== 映射字典 ===
+{{{class="brush:python"
+>>> m = {x: x ** 2 for x in range(5)}
+>>> m
+{0: 0, 1: 1, 2: 4, 3: 9, 4: 16}
+ 
+>>> m = {x: 'A' + str(x) for x in range(5)}
+>>> m
+{0: 'A0', 1: 'A1', 2: 'A2', 3: 'A3', 4: 'A4'}
+}}}
+
+=== 字典排序 ===
+{{{class="brush:python"
+>>> m = dict((str(x), x) for x in range(10))
+>>> print ', '.join(m.keys())
+1, 0, 3, 2, 5, 4, 7, 6, 9, 8
+
+# 递增排序
+>>> m = collections.OrderedDict((str(x), x) for x in range(10))
+>>> print ', '.join(m.keys())
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+
+# 递减排序
+>>> m = collections.OrderedDict((str(x), x) for x in range(10, 0, -1))
+>>> print ', '.join(m.keys())
+10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+}}}
+
+=== 缺省字典 ===
+{{{class="brush:python"
+# 一般字典在缺少key时会引发异常
+>>> m = dict()
+>>> m['a']
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+KeyError: 'a'
+
+# 使用collections.defaultdict避免引发异常
+>>> m = collections.defaultdict(int)
+>>> m['a']
+0
+>>> m['b']
+0
+>>> m = collections.defaultdict(str)
+>>> m['a']
+''
+>>> m['b'] += 'a'
+>>> m['b']
+'a'
+>>> m = collections.defaultdict(lambda: '[default value]')
+>>> m['a']
+'[default value]'
+>>> m['b']
+'[default value]'
+}}}
+
+== 命名元组（namedtuple） ==
+- 使用collections.namedtuple模块。
+
+{{{class="brush:python"
+# 命名元组
+>>> Point = collections.namedtuple('Point', ['x', 'y'])
+>>> p = Point(x=1.0, y=2.0)
+>>> p
+Point(x=1.0, y=2.0)
+>>> p.x
+1.0
+>>> p.y
+2.0
+
+# 命名元组继承
+>>> class Point(collections.namedtuple('PointBase', ['x', 'y'])):
+...     __slots__ = ()
+...     def __add__(self, other):
+...         return Point(x=self.x + other.x, y=self.y + other.y)
+...
+>>> p = Point(x=1.0, y=2.0)
+>>> q = Point(x=2.0, y=3.0)
+>>> p + q
+Point(x=3.0, y=5.0)
+}}}
+
+== 集合和统计（Counter） ==
+- 使用collections.Counter。
+
+=== 列表集合 ===
+{{{class="brush:python"
+>>> A = {1, 2, 3, 3}
+>>> A
+set([1, 2, 3])
+>>> B = {3, 4, 5, 6, 7}
+>>> B
+set([3, 4, 5, 6, 7])
+
+# 合并集合
+>>> A | B
+set([1, 2, 3, 4, 5, 6, 7])
+
+# 求交集
+>>> A & B
+set([3])
+
+# A-B
+>>> A - B
+set([1, 2])
+
+# B-A
+>>> B - A
+set([4, 5, 6, 7])
+
+# 求异或
+>>> A ^ B
+set([1, 2, 4, 5, 6, 7])
+
+>>> (A ^ B) == ((A - B) | (B - A))
+True
+}}}
+
+=== 多重集合 ===
+{{{class="brush:python"
+>>> A = collections.Counter([1, 2, 2])
+>>> B = collections.Counter([2, 2, 3])
+>>> A
+Counter({2: 2, 1: 1})
+>>> B
+Counter({2: 2, 3: 1})
+
+# 求合集
+>>> A | B
+Counter({2: 2, 1: 1, 3: 1})
+
+# 求交集
+>>> A & B
+Counter({2: 2})
+
+# 求合集
+>>> A + B
+Counter({2: 4, 1: 1, 3: 1})
+
+# 求差集
+>>> A - B
+Counter({1: 1})
+
+# 求差集
+>>> B - A
+Counter({3: 1})
+}}}
+
+=== 集合统计 ===
+{{{class="brush:python"
+>>> A = collections.Counter([1, 1, 2, 2, 3, 3, 3, 3, 4, 5, 6, 7])
+>>> A
+Counter({3: 4, 1: 2, 2: 2, 4: 1, 5: 1, 6: 1, 7: 1})
+
+# 统计出现1次的元素
+>>> A.most_common(1)
+[(3, 4)]
+
+# 统计出现3次的元素
+>>> A.most_common(3)
+[(3, 4), (1, 2), (2, 2)]
+}}}
+
+== 有效数组Array ==
+- Array模块定义了一个很像list的新对象类型，不同之处在于它限定了这个类型只能装一种类型的元素。Array元素的类型是在创建并使用的时候确定的。
+- 如果你的程序需要优化内存的使用，并且你确定你希望在list中存储的数据都是同样类型的，那么使用Array模块很合适。
+
+{{{class="brush:python"
+import array
+from timeit import Timer
+ 
+def arraytest():
+    a = array.array("i", [1, 2, 3, 4, 5])
+    b = array.array(a.typecode, (2 * x for x in a))
+ 
+def enumeratetest():
+    a = array.array("i", [1, 2, 3, 4, 5])
+    for i, x in enumerate(a):
+        a[i] = 2 * x
+ 
+if __name__=='__main__':
+    m = Timer("arraytest()", "from __main__ import arraytest")
+    n = Timer("enumeratetest()", "from __main__ import enumeratetest")
+ 
+    print m.timeit() # 5.22479210582
+    print n.timeit() # 4.34367196717
+}}}
+
+== 优先级队列Heapq ==
+- Heapq模块使用一个用堆实现的优先级队列。堆是一种简单的有序列表，并且置入了堆的相关规则。
+
+{{{class="brush:python"
+import heapq
+ 
+portfolio = [
+    {'name': 'IBM', 'shares': 100, 'price': 91.1},
+    {'name': 'AAPL', 'shares': 50, 'price': 543.22},
+    {'name': 'FB', 'shares': 200, 'price': 21.09},
+    {'name': 'HPQ', 'shares': 35, 'price': 31.75},
+    {'name': 'YHOO', 'shares': 45, 'price': 16.35},
+    {'name': 'ACME', 'shares': 75, 'price': 115.65}
+]
+
+cheap = heapq.nsmallest(3, portfolio, key=lambda s: s['price'])
+expensive = heapq.nlargest(3, portfolio, key=lambda s: s['price'])
+ 
+print cheap
+ 
+# [{'price': 16.35, 'name': 'YHOO', 'shares': 45}, 
+# {'price': 21.09, 'name': 'FB', 'shares': 200}, 
+# {'price': 31.75, 'name': 'HPQ', 'shares': 35}]
+ 
+print expensive
+ 
+# [{'price': 543.22, 'name': 'AAPL', 'shares': 50}, 
+# {'price': 115.65, 'name': 'ACME', 'shares': 75}, 
+# {'price': 91.1, 'name': 'IBM', 'shares': 100}]
+}}}
+
+== 有序列表Bisect ==
+- Bisect模块能够提供保持list元素序列的支持。它使用了二分法完成大部分的工作。它在向一个list插入元素的同时维持list是有序的。
+
+{{{class="brush:python"
+import bisect
+ 
+a = [(0, 100), (150, 220), (500, 1000)]
+ 
+bisect.insort_right(a, (250,400))
+bisect.insort_right(a, (399, 450))
+print a 
+
+# [(0, 100), (150, 220), (250, 400), (500, 1000)]
+ 
+# 仅返回插入点位置，不修改列表
+print bisect.bisect(a, (550, 1200)) 
+
+# 5
+
+bisect.insort_right(a, (550, 1200))
+print a 
+
+# [(0, 100), (150, 220), (250, 400), (399, 450), (500, 1000), (550, 1200)]
 }}}

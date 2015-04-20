@@ -53,15 +53,9 @@ class MP3FileInfo(FileInfo):
 
 == 私有成员和公有成员 ==
 - 与大多数语言一样，Python 也有私有的概念：
-    * 私有函数不可以从它们的模块外面被调用
-    * 私有类方法不能够从它们的类外面被调用
-    * 私有属性不能够从它们的类外面被访问
-
-{{{class="brush:text"
-    如果一个Python函数，类方法，或属性的名字以两个下划线开始(但不是结束)，它是私有的；其它所有的都是公有的。
-Python没有类方法保护的概念(只能用于它们自已的类和子类中)。类方法或者是私有(只能在它们自已的类中使用)或者是
-公有(任何地方都可使用)。
-}}}
+    * 私有函数`可以`被子类重载和`覆盖`，使用`前后双下划线`，如`__name__`和`__my_name__`。
+    * 私有类方法`不能`够被子类`覆盖`，使用`前双下划线__`作为前缀，如`__my_name()`、`__say_hello`。
+    * 私有成员或方法`不能`够从它们的类外面`被访问`，使用`单下划线_`作为前缀，如`_name`、`_hello()`。
 
 == 类的继承 ==
 {{{class="brush:python"
@@ -70,8 +64,8 @@ class FileInfo(UserDict):
 }}}
 
 == 类的初始化 ==
-- _init_方法是可选的，但是如果定义了该方法，就必须调用基类的_init_。
-- 类成员方法的第一个参数必须为self，包括_init_方法。
+- _init_方法是可选的，但是如果定义了该方法，就必须调用基类的__init__。
+- 类成员方法的第一个参数必须为self，包括__init__方法。
 {{{class="brush:python"
 class FileInfo(UserDict):
     "store file metadata"
@@ -188,3 +182,32 @@ def __len__(self):
 === ___dict___ ===
 - 每个类对象包含一个字典成员__dict__，它返回一组`成员名称：值`。
 - 可通过遍历该变量，访问该类对象的成员和方法。
+
+== 属性 ==
+=== 只读属性@pproperty ===
+- 通过修饰符设置类成员为只读，且使函数直接返回值。
+{{{class="brush:python"
+class A(object):
+    @property
+    def say_hello(self):
+        print "hello"
+}}}
+
+=== 可写属性property ===
+- 类的函数作为一种属性被访问
+{{{class="brush:python"
+class A(object):
+    def __init__(self):
+        self._msg = None
+
+    def get_msg(self):
+        return self._msg
+        
+    def set_msg(self, msg):
+        self._msg = msg
+
+    # 内置函数property
+    hello = property(set_msg, get_msg)
+}}}
+
+

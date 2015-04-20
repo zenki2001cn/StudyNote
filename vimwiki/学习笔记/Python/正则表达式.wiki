@@ -2,6 +2,8 @@
 
 %toc
 
+[[http://www.cnblogs.com/coderzh/archive/2008/05/06/1185755.html|参考链接]]
+
 == 基础概念 ==
 - 使用正则表达式需要导入`re`模块。
 - 一个正则表达式的字符串可以使用`r'pattern'`的形式表示。

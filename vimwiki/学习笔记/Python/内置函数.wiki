@@ -257,13 +257,63 @@ helloworld
 20
 }}}
 
-== print（打印输出） ==
+== print（格式化打印输出） ==
 
 {{{class="brush:python"
 # 向标准输出打印
 >>> print "%s %s" % ("hello", "world")
 hello world
+
 # 向错误输出打印
 >>> print >>sys.stderr, "%s %s" % ("hello", "world")
 hello world
+
+# 格式化
+print("%+10x" % 10)     # +a
+print("%04d" % 5)       # 0005
+print("%6.3f" % 2.3)    # 2.300
+
+# 动态格式化参数，*号由4代替
+print("%.*f" % (4, 1.2))    # 1.2000
+}}}
+
+== zip（数据扁平处理） ==
+{{{class="brush:python"
+# 打包和解包列表
+>>> a = [1, 2, 3]
+>>> b = ['a', 'b', 'c']
+>>> z = zip(a, b)
+>>> z
+[(1, 'a'), (2, 'b'), (3, 'c')]
+>>> zip(*z)
+[(1, 2, 3), ('a', 'b', 'c')]
+
+# 合并相邻列表项，每2个合并一组
+>>> a = [1, 2, 3, 4, 5, 6]
+>>> zip(*([iter(a)] * 2))
+[(1, 2), (3, 4), (5, 6)]
+
+# 生成滑动窗口
+>>> from itertools import islice
+>>> def n_grams(a, n):
+...     z = (islice(a, i, None) for i in range(n))
+...     return zip(*z)
+...
+>>> a = [1, 2, 3, 4, 5, 6]
+>>> n_grams(a, 2)
+[(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
+>>> n_grams(a, 3)
+[(1, 2, 3), (2, 3, 4), (3, 4, 5), (4, 5, 6)]
+>>> n_grams(a, 4)
+[(1, 2, 3, 4), (2, 3, 4, 5), (3, 4, 5, 6)]
+
+# 反转字典
+>>> m = {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+>>> m.items()
+[('a', 1), ('c', 3), ('b', 2), ('d', 4)]
+>>> zip(m.values(), m.keys())
+[(1, 'a'), (3, 'c'), (2, 'b'), (4, 'd')]
+>>> mi = dict(zip(m.values(), m.keys()))
+>>> mi
+{1: 'a', 2: 'b', 3: 'c', 4: 'd'}
 }}}
