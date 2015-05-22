@@ -1,0 +1,80 @@
+= gobject生成多语言绑定 =
+
+%toc
+
+== 1. 安装gobject introspection ==
+{{{class="brush:bash"
+$ sudo apt-get install libgirepository1.0-dev
+}}}
+
+== 2. C代码绑定 ==
+{{{class="brush:c"
+#ifndef FOO_H  
+#define FOO_H  
+  
+void foo_hello (void);  
+
+/** 
+ * foo_hello: 
+ * 
+ * This function just for test. 
+ */  
+void  
+foo_hello (void)  
+{  
+    printf("hello foo!\n");  
+}
+#endif
+}}}
+
+== 3. 编译动态链接库 ==
+{{{class="brush:bash"
+$ gcc -fPIC -shared foo.c -o libfoo.so.0
+}}}
+
+== 4. 生成gir ==
+{{{class="brush:bash"
+# 以Aravis库为例
+$ g-ir-scanner --add-include-path=. -n Aravis --pkg=glib-2.0  --nsversion=0.4 --library=libaravis-0.4.la *.[ch] -o Aravis.gir
+}}}
+
+== 5. 生成typelib ==
+{{{class="brush:bash"
+$ g-ir-compiler --includedir=. Aravis.gir -o Aravis.typelib
+}}}
+
+== 6. 安装gir ==
+{{{class="brush:bash"
+$ sudo cp Foo-1.0.gir /usr/share/gir-1.0/  
+$ sudo cp Foo-1.0.typelib /usr/lib/girepository-1.0/
+
+# 添加库路径到/etc/ld.so.conf
+$ sudo ldconfig
+}}}
+
+== 7. 测试 ==
+{{{class="brush:python"
+from gi.repository import Foo  
+Foo.hello()
+}}}
+
+== 8.测试脚本 ==
+{{{class="brush:bash"
+#!/usr/bin/env bash
+
+g-ir-scanner --add-include-path=. --pkg=glib-2.0 --nsversion=0.4 --library=libaravis-0.4.la *.[ch] -o ArvCamera-0.4.gir \
+             -n ArvCamera
+
+g-ir-compiler --includedir=. -o ArvCamera-0.4.typelib ArvCamera-0.4.gir
+
+if [[ $? == 0 ]]; then
+    echo "ok"
+    sudo cp ArvCamera-0.4.gir /usr/share/gir-1.0/
+    sudo cp ArvCamera-0.4.typelib /usr/lib/girepository-1.0/
+
+    sudo ldconfig
+fi
+}}}
+
+== 9.示例 ==
+[[http://garfileo.is-programmer.com/2012/2/20/gobject-introspection-introduction.32200.html]]

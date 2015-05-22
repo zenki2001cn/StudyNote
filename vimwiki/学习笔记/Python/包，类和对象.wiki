@@ -210,4 +210,19 @@ class A(object):
     hello = property(set_msg, get_msg)
 }}}
 
+=== 导出单个文件的对象 ===
+- `__all__`变量导出单个文件中的对象或属性。
+{{{class="brush:python"
+class IModbusDecoder(object):
+    pass
+    
+class IModbusFramer(object):
+    pass
+    
+class IModbusFramer(object):
+    pass
 
+__all__ = [
+    'IModbusDecoder', 'IModbusFramer', 'IModbusSlaveContext',
+]
+}}}

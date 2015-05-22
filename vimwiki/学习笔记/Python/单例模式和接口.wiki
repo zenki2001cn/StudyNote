@@ -1,0 +1,50 @@
+= 单例模式和接口 =
+
+%toc
+
+== 单例模式 ==
+- 定义一个基类Singleton，需要使用单例模式的类可继承自该类。
+{{{class="brush:python"
+class Singleton(object):
+    '''
+    单例模式基类
+    '''
+    def __new__(cls, *args, **kwargs):
+        ''' Create a new instance
+        '''
+        if '_inst' not in vars(cls):
+            cls._inst = object.__new__(cls)
+        return cls._inst
+        
+class ModbusAccessControl(Singleton):
+    '''
+    实现类
+    '''
+    pass
+}}}
+
+== 接口定义 ==
+- 先定义一个异常类`NotImplementedException`，该类继承自Exception。
+- 定义一个接口类，每一个方法直接返回`NotImplementedException`。
+- 定义一个实现类，继承自接口类`IPayloadBuilder`。
+{{{class="brush:python"
+class NotImplementedException(ModbusException):
+    def __init__(self, string=""):
+        message = "[Not Implemented] %s" % string
+        ModbusException.__init__(self, message)
+
+class IPayloadBuilder(object):
+    '''
+    接口只定义方法，直接返回一个未实现的异常。
+    '''
+    def build(self):
+        raise NotImplementedException("build")
+        
+class PayloadBuilderImpl(IPayloadBuilder):
+    '''
+    接口只定义方法，直接返回一个未实现的异常。
+    '''
+    def build(self):
+        print 'OK'
+
+}}}
