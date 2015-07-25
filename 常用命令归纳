@@ -25,8 +25,13 @@ Server端：nc -l -p port
 Client端：nc ip port
 
 1.5. 网络端口查看程序
+1.5.1 nmap
 nmap -A -T4 xxx.xxx.xxx.xxx-xxx -p port xxx-xxx
 nmap -PN xxx.xxx.xxx.xxx-xxx
+
+1.5.2 zmap
+# 整句表示利用10M带宽扫描100000IP地址的端口，并将结果输出到results.txt中
+zmap -B 10M -p 80 -n 100000 -G "01:00:5e:00:00:02" -o results.txt
 
 1.6. 网站镜像工具
 httrack
@@ -61,6 +66,9 @@ slurm -L -i eth0
 
 1.7.6 nload
 nload wlan0
+
+1.7.7 ss
+查看套接字统计信息
 
 1.8. 网络流量分析的Web端服务
 ntop
@@ -146,7 +154,7 @@ $ iptables -A FORWARD -o eth0 -d 172.18.10.205 -p tcp --dport 80 -j ACCEPT
 $ iptables -A FORWARD -i eth0 -s 172.18.10.205 -p tcp --sport 80 -j ACCEPT
 
 1.21 邮件客户端
-1.20.1 Thunderbird
+1.21.1 Thunderbird
 * 插件列表：
     1.Thunderbird Conversations         邮件查看
     2.Lightning                         日历
@@ -524,6 +532,8 @@ sudo apt-get install rabbitvcs-cli rabbitvcs-core rabbitvcs-gedit rabbitvcs-naut
 脚本如下查看tools/add_lang_to_source_hilight.sh
 
 3.25 du、ncdu
+
+3.26 lsblk
 
 4. 开发工具
 4.1. agave配色方案生成器

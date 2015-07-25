@@ -3,7 +3,7 @@
 %toc
 
 {{{class="brush:python"
-# () => 生成器
+# () => 生成器，与列表相比，它不会一次载入整个列表到内存中。
 >>> (x for x in range(10))
 >>> <generator object <genexpr> at 0x995666c>
 

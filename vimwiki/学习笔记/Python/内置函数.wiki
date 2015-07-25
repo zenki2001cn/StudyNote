@@ -318,7 +318,7 @@ print("%.*f" % (4, 1.2))    # 1.2000
 {1: 'a', 2: 'b', 3: 'c', 4: 'd'}
 }}}
 
-== repr ==
+== repr（返回对象的字符串表示） ==
 - 返回对象的字符串表示。
 {{{class="brush:python"
 >>> a = 'hello'
@@ -328,4 +328,23 @@ print("%.*f" % (4, 1.2))    # 1.2000
 >>> b = 1
 >>> repr(b)
 >>> '1'
+}}}
+
+== with as（优雅的异常处理机制） ==
+{{{class="brush:python"
+class Sample:
+    # 定义_enter_方法用于初始化
+    def __enter__(self):
+        print "In __enter__()"
+        return "Foo"
+ 
+    # 定义_exit_方法用于释放资源
+    def __exit__(self, type, value, trace):
+        print "In __exit__()"
+ 
+def get_sample():
+    return Sample()
+ 
+with get_sample() as sample:
+    print "sample:", sample
 }}}
