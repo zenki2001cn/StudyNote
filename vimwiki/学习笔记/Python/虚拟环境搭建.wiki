@@ -1,0 +1,7 @@
+= 虚拟环境搭建 =
+
+%toc
+
+- [[http://www.nowamagic.net/academy/detail/1330228|链接1]]
+- [[http://www.nowamagic.net/academy/detail/1330231|链接2]]
+- [[http://liuzhijun.iteye.com/blog/1872241|链接3]]

@@ -16,6 +16,7 @@
 - [[http://www.jb51.net/article/54911.htm|常用模块备忘]]
 - [[http://blog.jobbole.com/48541/|12种基础用例]]
 - [[http://blog.jobbole.com/63320/|30个实用小技巧]]
+- [[虚拟环境搭建]]
 
 == 进阶知识 ==
 - [[排列和组合]]
