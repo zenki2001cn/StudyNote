@@ -348,3 +348,35 @@ def get_sample():
 with get_sample() as sample:
     print "sample:", sample
 }}}
+
+== property（将函数变成可访问的属性） ==
+- birth是可读写属性，而age就是一个只读属性，因为age可以根据birth和当前时间计算出来。
+{{{class="brush:python"
+# 实现方式一
+class Student(object):
+    @property
+    def birth(self):
+        return self._birth
+
+    @birth.setter
+    def birth(self, value):
+        self._birth = value
+
+    @property
+    def age(self):
+        return 2014 - self._birth
+        
+# 实现方式二
+class Student(object):
+    @property
+    def birth(self):
+        return self._birth
+
+    def set_birth(self, value):
+        self._birth = value
+        
+    def get_birth(self):
+        return self._birth
+
+    self._birth = property(get_birth, set_birth)
+}}}

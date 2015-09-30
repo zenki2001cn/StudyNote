@@ -17,6 +17,9 @@ $ git config --global http.sslcainfo ~/10.180.34.35.crt
 访问https
 $ git clone https://username@IP_Address/project_location
 
+1.4 设置传输字节大小
+$ git config http.postBuffer 54288000
+
 1.4 访问SSH服务器
 1.4.1   生成公钥和密钥
 $ ssh-keygen -t rsa -C "zenki2001cn@163.com"
@@ -227,7 +230,7 @@ $ git reset ded0993b22b7c81d82d17374eb5df9bf6e6f23a2
 >>>>>>> 
 
 2.11 恢复修改文件
-2.11.1 从远程更新库
+2.11.1 pull 从远程更新库
 * 用法：git pull remote_repo [remote_branch:]local_branch
 
 # 用rebase的方式更新
@@ -239,8 +242,12 @@ $ git pull origin testing
 # 将远端仓库kernel-repo的redcoral_2.4分支的改动merge到本地的master分支
 $ git pull kernel-repo redcoral_2.4:master
 
-2.11.2 恢复修改过的文件
+2.11.2 checkout 检出分支和历史版本
+# 恢复修改过的文件
 $ git checkout -f file1 file2
+
+# 检出不带历史记录的分支
+$ git checkout --orphan branch_A
 
 2.12 清除暂存区
 $ rm .git/index
@@ -254,6 +261,10 @@ $ git ls-tree master
 
 2.13.3 ls-files  - 查看库文件
 $ git ls-files master
+
+2.13.4 set-url && add - 变更和添加远程地址
+$ git remote set-url origin git@182.168.6.79:android/test.git
+$ git remote add someone git@182.168.6.79:android/test.git
 
 3. Git 高级应用
 3.1 patch   补丁生成和应用
@@ -284,19 +295,22 @@ $ git am --skip
 $ git am --resolved
 
 3.2 branch  分支操作
-3.2.1 创建分支
+3.2.1 branch - 创建分支
 $ git branch testing
 
-3.2.2 切换分支
+3.2.2 checkout - 切换分支
 # 在创建分支前，如果有修改的文件，会延续到分支中。
 # 并且这些修改可以在分支中被提交。
 $ git checkout testing
 
-3.2.3 合并分支
+3.2.3 merge	- 合并分支
 # 切换到主分支master，然后合并testing的分支
 # 如果合并发生冲突，需要自己解决冲突
 $ git checkout master
-$ git merge testing
+$ git merge -no-ff testing
+
+3.2.4 cherry-pick - 合并单独的commit
+$ git cherry-pick [commit_hash]
 
 3.2.4 查看远程分支
 $ git branch -r
@@ -476,6 +490,12 @@ $ git merge SHA1
 3.12.1 从所有提交中删除文件
 # 删除当前分支中所有提交的*.txt文件
 $ git filter-branch --tree-filter 'rm -f *.txt' HEAD
+
+3.13 verify-pack 查看打包信息
+$ git verify-pack -v .git/objects/pack/pack-88f29e98ae1ce62becf81ee9e94f9d69adc964bf.idx
+
+3.14 archive 代码归档
+$ git archive -o ../updated.zip HEAD
 
 4. Git 图形界面
 # 查看历史版本的图形化工具
