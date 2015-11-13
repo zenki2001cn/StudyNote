@@ -320,6 +320,8 @@ print("%.*f" % (4, 1.2))    # 1.2000
 
 == repr（返回对象的字符串表示） ==
 - 返回对象的字符串表示。
+- 类需要实现__repr__方法。
+
 {{{class="brush:python"
 >>> a = 'hello'
 >>> repr(a)
@@ -328,6 +330,15 @@ print("%.*f" % (4, 1.2))    # 1.2000
 >>> b = 1
 >>> repr(b)
 >>> '1'
+
+# 类实现__repr__方法
+class Student:
+    def __init__(self, name, grade, age):
+        self.name = name
+        self.grade = grade
+        self.age = age
+    def __repr__(self):
+        return repr((self.name, self.grade, self.age))
 }}}
 
 == with as（优雅的异常处理机制） ==
@@ -351,6 +362,7 @@ with get_sample() as sample:
 
 == property（将函数变成可访问的属性） ==
 - birth是可读写属性，而age就是一个只读属性，因为age可以根据birth和当前时间计算出来。
+
 {{{class="brush:python"
 # 实现方式一
 class Student(object):
@@ -379,4 +391,23 @@ class Student(object):
         return self._birth
 
     self._birth = property(get_birth, set_birth)
+}}}
+
+== sorted（排序） ==
+- 可排序类型如下：
+    - 第一类是所有的序列类型，比如list(列表)、str(字符串)、tuple(元组)。
+    - 第二类是一些非序列类型，比如dict(字典)、file(文件)。
+    - 第三类是你定义的任何包含`__iter__()`或`__getitem__()`方法的类的对象。
+
+{{{class="brush:python"
+>>> from operator import itemgetter, attrgetter
+# 排序列表
+>>> sorted(student_tuples, cmp=None, key=itemgetter(2))
+[('dave', 'B', 10), ('jane', 'B', 12), ('john', 'A', 15)]
+# 排序对象
+>>> sorted(student_objects, cmp=None, key=attrgetter('age'))
+[('dave', 'B', 10), ('jane', 'B', 12), ('john', 'A', 15)]
+# 排序字典
+>>> sorted(student_dict.iteritems(), cmp=None, key=itemgetter(1), reverse=False)
+[('dave', 'B', 10), ('jane', 'B', 12), ('john', 'A', 15)]
 }}}

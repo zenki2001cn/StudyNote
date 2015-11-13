@@ -55,7 +55,7 @@ class MP3FileInfo(FileInfo):
 - 与大多数语言一样，Python 也有私有的概念：
     * 私有函数`可以`被子类重载和`覆盖`，使用`前后双下划线`，如`__name__`和`__my_name__`。
     * 私有类方法`不能`够被子类`覆盖`，使用`前双下划线__`作为前缀，如`__my_name()`、`__say_hello`。
-    * 私有成员或方法`不能`够从它们的类外面`被访问`，使用`单下划线_`作为前缀，如`_name`、`_hello()`。
+    * 私有成员或方法`不能`够从它们的类外面`被访问`，使用`单下划线_`作为前缀，如`_name`、`_hello()`。注意，该方法不是Python语法强制规定，而是约定俗成。
 
 == 类的继承 ==
 {{{class="brush:python"
@@ -88,6 +88,49 @@ class FileInfo(UserDict):
 'store file metadata'
 >>> f
 {'name': '/music/_singles/kairo.mp3'}
+}}}
+
+== 静态方法、类方法和抽象方法 ==
+=== 静态方法 ===
+- 静态方法不依赖对象本身的状态，同时也可以被实例对象调用。
+- 可以在子类中被覆盖。
+{{{class="brush:python"
+class Pizza(object):
+    @staticmethod
+    def mix_ingredients(x, y):
+        return x + y
+
+    def cook(self):
+        return self.mix_ingredients(self.cheese, self.vegetables)
+}}}
+
+=== 类方法 ===
+- 类方法被绑定到类上，与实例对象无关。
+{{{class="brush:python"
+class Pizza(object):
+    radius = 42
+
+    @classmethod
+    def get_radius(cls):
+        return cls.radius
+}}}
+
+=== 抽象方法 ===
+{{{class="brush:python"
+# 方式一：
+class Pizza(object):
+    def get_radius(self):
+        raise NotImplementedError
+
+# 方式二：
+import abc
+
+class Pizza(object):
+    __metaclass__ = abc.ABCMeta
+    
+    @abc.abstractmethod
+    def get_radius(self):
+    """do something"""
 }}}
 
 == 获取和设置成员数据 ==
