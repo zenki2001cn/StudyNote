@@ -1,0 +1,136 @@
+= 迭代工具 =
+
+%toc
+
+== 无限循环迭代 ==
+=== 无限迭代器 - count ===
+- count([n])
+
+{{{class="brush:python"
+def count(n=0):
+    # count(10) --> 10 11 12 13 14 ...
+    while True:
+        yield n
+        n += 1
+}}}
+
+=== 切片 - islice ===
+- islice(iterable[, start], stop[, step])
+
+{{{class="brush:python"
+for i in islice(count(10), 5):
+    print(i)
+}}}
+
+=== 循环迭代 - cycle ===
+- cycle(iterable)
+
+{{{class="brush:python"
+for item in cycle('XYZ'):
+    print(item)
+}}}
+
+=== 重复迭代 - repeat ===
+- repeat(object[, times])
+
+{{{class="brush:python"
+repeat(5, 5)
+}}}
+
+== 有限循环迭代 ==
+=== 累加迭代 - accumulate ===
+- accumulate(iterable[, func])
+
+{{{class="brush:python"
+list(accumulate(range(10)))
+list(accumulate(range(1, 5), operator.mul))
+}}}
+
+=== 链接 - chain ===
+- chain(*iterable)
+- chain.from_iterable(*iterable)
+
+{{{class="brush:python"
+target = list(chain([1, 2], [3, 4], [5, 6]))
+target = list(chain.from_iterable([[1, 2], [3, 4], [5, 6]]))
+}}}
+
+=== 过滤 - compress ===
+- compress(iterable, bools)
+
+{{{class="brush:python"
+# 用bools选择器选择迭代对象的值。
+letters = 'ABCDEFG'
+bools = [True, False, True, True, False]
+list(compress(letters, bools))
+}}}
+
+=== 断言取余 - dropwhile ===
+- dropwhile(func, iterable)
+
+{{{class="brush:python"
+# 直到断言为True，返回剩余的数据
+list(dropwhile(lambda x: x<5, [1,4,6,4,1]))
+}}}
+
+=== 断言取余 - filterfalse ===
+- filterfalse(func, iterable)
+
+{{{class="brush:python"
+# 直到断言为False，返回剩余的数据
+list(filterfalse(lambda x: x<5, [1,4,6,4,1]))
+}}}
+
+=== 断言取值 - takewhile ===
+- takewhile(func, iterable)
+
+{{{class="brush:python"
+# 返回断言为True的当前数据
+list(takewhile(lambda x: x<5, [1,4,6,4,1]))
+}}}
+
+=== 分组 - groupby ===
+- groupby(iterable[, key])
+
+{{{class="brush:python"
+vehicles = [('Ford', 'Taurus'), ('Dodge', 'Durango'), 
+            ('Chevrolet', 'Cobalt'), ('Ford', 'F150'),
+            ('Dodge', 'Charger'), ('Ford', 'GT')]
+ 
+sorted_vehicles = sorted(vehicles)
+ 
+for key, group in groupby(sorted_vehicles, lambda make: make[0]):
+    for make, model in group:
+        print('{model} is made by {make}'.format(model=model, make=make))
+}}}
+
+=== 函数映射 - starmap ===
+- starmap(func, iterable)
+
+{{{class="brush:python"
+for item in starmap(operator.add, [(2,3), (4,5)]):
+}}}
+
+=== 拆解分流 - tee ===
+- tee(iterable, count)
+
+{{{class="brush:python"
+data = 'ABCDE'
+
+# 将一个可迭代对象，分解成多个迭代器
+iter1, iter2 = tee(data)
+
+for item in iter1:
+    print(item)
+for item in iter2:
+    print(item)
+}}}
+
+=== 配对 - zip_longest ===
+- zip_longest(*iterable, fill)
+
+{{{class="brush:python"
+# 长度不够的以fillvalue参数值补充
+for item in zip_longest('ABCD', 'xy', fillvalue='BLANK'):
+    print (item)
+}}}

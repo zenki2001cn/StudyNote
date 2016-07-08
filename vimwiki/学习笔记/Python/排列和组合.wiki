@@ -35,6 +35,7 @@
 
 == 组合 ==
 {{{class="brush:python"
+# 不含自身的组合
 >>> for c in itertools.combinations([1, 2, 3, 4, 5], 3):
 ...     print ''.join(str(x) for x in c)
 ...
@@ -48,6 +49,10 @@
 235
 245
 345
+
+# 包含自身的组合
+>>> for c in itertools.combinations_with_replacement([1, 2, 3, 4, 5], 3):
+...     print ''.join(str(x) for x in c)
 }}}
 
 == 映射 ==
