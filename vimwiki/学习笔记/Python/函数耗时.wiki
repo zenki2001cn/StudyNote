@@ -1,0 +1,22 @@
+= 函数耗时 =
+
+%toc
+
+{{{class="brush:python"
+# 修饰函数
+def ft(function):
+    @wraps(function)
+    def function_timer(*args, **kwargs):
+        t0 = time.time()
+        result = function(*args, **kwargs)
+        t1 = time.time()
+        print ("Total time running %s: %s seconds" %
+                (function.func_name, str(t1-t0)))
+        return result
+    return function_timer
+    
+# 调用测试函数进行耗时统计
+@ft
+my_func()
+}}}
+

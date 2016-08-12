@@ -169,8 +169,13 @@ $ iptables -A FORWARD -i eth0 -s 172.18.10.205 -p tcp --sport 80 -j ACCEPT
 * 下载方法：wget https://inxi.googlecode.com/svn/trunk/inxi 
 * 命令行使用方法：./inxi -c0 -v7
 
-2.2. 分区备份
+2.2. 分区相关
+2.2.1 分区备份
 partimage -z1 save /dev/sda1 save.img
+2.2.2 分区信息
+lsblk
+2.2.3 分区uuid
+blkid
 
 2.3. 查看x86平台的CPU信息
 x86info

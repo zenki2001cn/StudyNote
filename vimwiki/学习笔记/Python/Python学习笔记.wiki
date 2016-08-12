@@ -35,3 +35,4 @@
 - [[http://www.cnblogs.com/codingmylife/p/3630701.html|拷贝函数签名]]
 - [[http://www.cnblogs.com/codingmylife/archive/2013/05/31/3110656.html|枚举实现]]
 - [[http://www.cnblogs.com/codingmylife/p/3641494.html|无参数的装饰器]]
+- [[函数耗时]]
