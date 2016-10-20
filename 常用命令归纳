@@ -1,9 +1,16 @@
 1. 网络相关
-1.1. 搜索samba
+===========
+1.1. samba服务相关
+1.1.1 搜索samba服务器
 sudo smbclient -L //10.10.96.96
 
-1.2. 连接samba服务器
+1.1.2 连接samba服务器
 sudo mount -t smbfs|cifs //server//fold /dir -o user=user,passwd=passwd,iocharset=utf8
+
+1.1.3 Windows访问samba用户名问题
+useradd [username]
+smbpasswd -a [username]
+smbpasswd -e [username]
 
 1.2. 下载整个网站
 wget -r -p -k -np robots=off --accept=txt --reject=avi,rmvb url
@@ -25,9 +32,10 @@ Server端：nc -l -p port
 Client端：nc ip port
 
 1.5. 网络端口查看程序
-1.5.1 nmap
+1.5.1 nmap,zenmap
 nmap -A -T4 xxx.xxx.xxx.xxx-xxx -p port xxx-xxx
 nmap -PN xxx.xxx.xxx.xxx-xxx
+zenmap(nmapGUI版)
 
 1.5.2 zmap
 # 整句表示利用10M带宽扫描100000IP地址的端口，并将结果输出到results.txt中
@@ -141,17 +149,19 @@ $ iptables -P INPUT ACCEPT
 $ iptables -P FORWARD ACCEPT
 $ iptables -t nat -A POSTROUTING -s 192.168.0.0/24 -o eth0 -jMASQUERADE
 
-1.20.3 端口映射
+1.20.2 端口映射
                                 
                 +--------------------+                                  +-------------------+
  219.239.xx.xx  |eth1    PC-A    eth0| 172.18.10.212 <--> 172.18.10.205 |eth0    PC-B       |
                 +--------------------+                                  +-------------------+
 # 发送到A机器的8080端口的数据转发到B机器的80端口
-$ iptables -t nat -A PREROUTING -d 219.239.xx.xx -p tcp --dport 8080 -j DNAT --to-destination 172.18.10.205:80
+$ iptables -t nat -A PREROUTING -s 219.239.xx.xx -p tcp --dport 8080 -j DNAT --to-destination 172.18.10.205:80
 $ iptables -t nat -A POSTROUTING -d 172.18.10.205 -p tcp --dport 80 -j SNAT --to 172.18.10.212
 # 开通eth0的转发机制，即将eth0作为网桥
 $ iptables -A FORWARD -o eth0 -d 172.18.10.205 -p tcp --dport 80 -j ACCEPT
 $ iptables -A FORWARD -i eth0 -s 172.18.10.205 -p tcp --sport 80 -j ACCEPT
+
+1.20.3 fwbuild - iptables图形化界面
 
 1.21 邮件客户端
 1.21.1 Thunderbird
@@ -189,6 +199,8 @@ x86info
 ps axf                          : 列出所有进程
 ps aux | sort -nk +4 | tail     : 列出前十个最耗内存的进程
 
+2.4.5 smem
+
 2.5. 温度检测
 sensors
 cpu温度
@@ -202,7 +214,9 @@ KDE的远程桌面客户端
 krdc
 
 2.8. 系统启动设置
-sysv-rc-conf
+2.8.1 sysv-rc-conf
+2.8.2 chkconfig
+2.8.3 service
 
 2.9. lsof - 列出打开文件相关信息
 lsof
