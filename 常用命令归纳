@@ -354,6 +354,9 @@ ssh -qTfnN -D 7070 zenki2001cn@216.194.70.6
 2.25.1. 列出最常用的10条命令
 $ history | awk '{a[$2]++}END{for(i in a){print a[i] " " i}}' | sort -rn | head
 
+2.26 查看环境变量
+getconf -a
+
 3. 文件管理
 3.1. 批量utf8转换和修改文件名
 find  -type f -exec iconv -f GBK -t UTF-8 '{}' -o utf/'{}' \;
