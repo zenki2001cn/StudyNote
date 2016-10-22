@@ -201,6 +201,10 @@ ps aux | sort -nk +4 | tail     : 列出前十个最耗内存的进程
 
 2.4.5 smem
 
+2.4.6 pgrep, pkill
+pgrep -a chrome
+pkill -9 chrome
+
 2.5. 温度检测
 sensors
 cpu温度
@@ -356,6 +360,18 @@ $ history | awk '{a[$2]++}END{for(i in a){print a[i] " " i}}' | sort -rn | head
 
 2.26 查看环境变量
 getconf -a
+
+2.27 终端替代品
+2.27.1 Tilda
+2.27.2 Yakuake
+2.27.3 Guake
+2.27.4 Stjerm
+2.27.5 aterm
+2.27.6 Terminology
+
+2.28 安装monaco字体
+* 下载安装脚本：https://github.com/cstrap/monaco-font
+* 执行下载命令：sudo ./install-font-ubuntu.sh "https://github.com/todylu/monaco.ttf/blob/master/monaco.ttf?raw=true"
 
 3. 文件管理
 3.1. 批量utf8转换和修改文件名
