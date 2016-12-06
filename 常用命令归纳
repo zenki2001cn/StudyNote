@@ -78,6 +78,9 @@ nload wlan0
 1.7.7 ss
 查看套接字统计信息
 
+1.7.8 nslookup
+主机名和IP地址转换
+
 1.8. 网络流量分析的Web端服务
 ntop
 使用http://localhost:3000进行访问
@@ -182,10 +185,20 @@ $ iptables -A FORWARD -i eth0 -s 172.18.10.205 -p tcp --sport 80 -j ACCEPT
 2.2. 分区相关
 2.2.1 分区备份
 partimage -z1 save /dev/sda1 save.img
+
 2.2.2 分区信息
 lsblk
+
 2.2.3 分区uuid
 blkid
+
+2.2.4 fsarchiver
+# 备份分区，压缩等级为6，CPU为3，排除DATA文件夹
+sudo fsarchiver savefs -z 6 -j 3 -A -v ./zenki-portable-sdb1-sdb2.fsa /dev/sdb1 /dev/sdb2 --exclude=/var/DATA
+# 恢复备份文件到/dev/sdc1,/dev/sdc2
+sudo fsarchiver restfs /media/zenki/Win99/zenki-portable-sdb1-sdb2.fsa id=0,dest=/dev/sdc1 id=1,dest=/dev/sdc2
+# 查看压缩包信息
+fsarchiver archinfo zenki-portable-sdb1-sdb2.fsa
 
 2.3. 查看x86平台的CPU信息
 x86info
@@ -372,6 +385,9 @@ getconf -a
 2.28 安装monaco字体
 * 下载安装脚本：https://github.com/cstrap/monaco-font
 * 执行下载命令：sudo ./install-font-ubuntu.sh "https://github.com/todylu/monaco.ttf/blob/master/monaco.ttf?raw=true"
+
+2.29 桌面美化 - unity-tweak-tool
+$ sudo apt-get install unity-tweak-tool 
 
 3. 文件管理
 3.1. 批量utf8转换和修改文件名
