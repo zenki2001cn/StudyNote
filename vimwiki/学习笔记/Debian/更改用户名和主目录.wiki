@@ -1,0 +1,21 @@
+= 更改用户名和主目录 =
+
+%toc
+
+
+== 修改用户名 ==
+- 修改前需要进入recovery模式下。
+
+{{{class="brush:bash"
+$ usermod -l new_name -d /home/new_name -m old_name
+}}}
+
+== 修改组名 ==
+{{{class="brush:bash"
+$ groupmod -n new_name old_name
+}}}
+
+== 修改用户全称 ==
+{{{class="brush:bash"
+chfn -f full_name new_name
+}}}
