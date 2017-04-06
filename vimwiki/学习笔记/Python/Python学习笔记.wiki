@@ -14,6 +14,7 @@
 - [[拷贝对象|浅拷贝和深拷贝]]
 - [[推导式生成器]]
 - [[迭代工具|迭代工具 - itertools]]
+- [[shell工具|shell工具 - sh]]
 - [[http://www.jb51.net/article/54911.htm|常用模块备忘]]
 - [[http://blog.jobbole.com/48541/|12种基础用例]]
 - [[http://blog.jobbole.com/63320/|30个实用小技巧]]

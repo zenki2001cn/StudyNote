@@ -1,0 +1,91 @@
+= shell工具 - sh =
+
+%toc
+
+== 系统命令 ==
+{{{class="brush:python"
+import sh
+
+sh.ls('/home/zenki')
+# 命令行中有-的，需要用_代替
+sh.google_chrome('http://www.baidu.com')
+}}}
+
+== 自定义程序 ==
+{{{class="brush:python"
+import 
+
+sh.Command('/path/to/my/app')
+}}}
+
+== 命令行参数 ==
+{{{class="brush:python"
+import sh
+
+ls = sh.ls.bake('-l')
+ls('/home/zenki')
+
+# 多个命令行参数需用,号隔开
+sh.ls.('-l', '-m')
+
+# 关键字参数
+sh.ls.('-l', sort='time')
+}}}
+
+== 文件列表 ==
+{{{class="brush:python"
+import sh
+
+sh.glob('/home/zenki')
+}}}
+
+== 管道处理 ==
+{{{class="brush:python"
+import sh
+
+sh.sort(sh.du(sh.glob('/home/zenki/*')), '-rn')
+}}}
+
+== 管道处理 ==
+{{{class="brush:python"
+import sh
+
+# 加入参数：_piped=True
+sh.sort(sh.du(sh.glob('/home/zenki/*'), _piped=True), '-rn')
+}}}
+
+== 后台处理 ==
+{{{class="brush:python"
+import sh
+
+sh.sleep(3, _bg=True)
+}}}
+
+== 重定向 ==
+{{{class="brush:python"
+import sh
+
+sh.ls('/home/zenki/', _out='list.txt')
+}}}
+
+== 标准输入 ==
+{{{class="brush:python"
+import sh
+
+sh.cat(_in='test.txt')
+}}}
+
+== 程序返回值 ==
+{{{class="brush:python"
+import sh
+
+sh.app(_ok_code=[0, 3, 5])
+}}}
+
+== with环境中运行 ==
+{{{class="brush:python"
+import sh
+
+with sh.sudo:
+    sh.ls('/home/zenki')
+}}}
