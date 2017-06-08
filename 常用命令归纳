@@ -194,11 +194,15 @@ blkid
 
 2.2.4 fsarchiver
 # 备份分区，压缩等级为6，CPU为3，排除DATA文件夹
-sudo fsarchiver savefs -z 6 -j 3 -A -v ./zenki-portable-sdb1-sdb2.fsa /dev/sdb1 /dev/sdb2 --exclude=/var/DATA
+sudo fsarchiver savefs -z 6 -j 3 -A -v ./zenki-portable-sdb1-sdb2.fsa /dev/sdb1 /dev/sdb2 --exclude=DATA
 # 恢复备份文件到/dev/sdc1,/dev/sdc2
 sudo fsarchiver restfs /media/zenki/Win99/zenki-portable-sdb1-sdb2.fsa id=0,dest=/dev/sdc1 id=1,dest=/dev/sdc2
 # 查看压缩包信息
 fsarchiver archinfo zenki-portable-sdb1-sdb2.fsa
+
+2.2.5 tar备份&恢复
+sudo tar vzcpf /media/zenki/LinuxData/Backup/ubuntu_`date +%Y%m%d_%H`.tar.gz --exclude=/proc --exclude=/dev --exclude=/mnt --exclude=/media --exclude=/lost+found --exclude=/cdrom --exclude=/tmp --exclude=/sys --exclude=/home/zenki/.cache --exclude=/run / > /media/zenki/LinuxData/Backup/ubuntu_`date +%Y%m%d_%H`.log 1> /media/zenki/LinuxData/Backup/ubuntu_`date +%Y%m%d_%H`.error
+sudo tar vxzpf ubuntu*.tar.gz -C /
 
 2.3. 查看x86平台的CPU信息
 x86info
